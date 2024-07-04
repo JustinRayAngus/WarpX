@@ -21,6 +21,8 @@
  *        @param[in] LmdD is max(Debye length, minimal interparticle distance).
  *        @param[in] L is the Coulomb log. A fixed L will be used if L > 0,
  *        otherwise L will be calculated based on the algorithm.
+ *        @param[in] n12 = max(w1,w2)*min(N1,N2)/dV is the effective density
+ *        used for the normalized scattering length s12
  *        To see if there are nan or inf updated velocities,
  *        compile with USE_ASSERTION=TRUE.
  *
@@ -134,7 +136,7 @@ void UpdateMomentumPerezElastic (
         // Compute s
         const auto tts = m1*g1s*m2*g2s/(inv_c2*p1sm*p1sm) + T_PR(1.0);
         const auto tts2 = tts*tts;
-        s = n1*n2/n12 * dt*lnLmd*q1*q1*q2*q2 /
+        s = n12 * dt*lnLmd*q1*q1*q2*q2 /
             ( T_PR(4.0) * MathConst::pi * PhysConst::ep0 * PhysConst::ep0 *
                 m1*g1*m2*g2/(inv_c2*inv_c2) ) * gc*p1sm/mass_g * tts2;
 
@@ -144,7 +146,7 @@ void UpdateMomentumPerezElastic (
         const auto coeff = static_cast<T_PR>(
             std::pow(4.0*MathConst::pi/3.0,1.0/3.0));
         T_PR const vrel = mass_g*p1sm/(m1*g1s*m2*g2s*gc);
-        T_PR const sp = coeff * n1*n2/n12 * dt * vrel * (m1+m2) /
+        T_PR const sp = coeff * n12 * dt * vrel * (m1+m2) /
             amrex::max( m1*cbrt_n1*cbrt_n1,
                         m2*cbrt_n2*cbrt_n2);
 

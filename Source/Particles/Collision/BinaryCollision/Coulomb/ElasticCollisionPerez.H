@@ -86,7 +86,6 @@ void ElasticCollisionPerez (
     // local density
     T_PR n1  = T_PR(0.0);
     T_PR n2  = T_PR(0.0);
-    T_PR n12 = T_PR(0.0);
     for (T_index i1=I1s; i1<I1e; ++i1) { n1 += w1[ I1[i1] ]; }
     for (T_index i2=I2s; i2<I2e; ++i2) { n2 += w2[ I2[i2] ]; }
     // Intra-species: the density is in fact the sum of the density of
@@ -96,18 +95,6 @@ void ElasticCollisionPerez (
         n2 = n1;
     }
     n1 = n1 / dV; n2 = n2 / dV;
-    {
-      T_index i1 = I1s; T_index i2 = I2s;
-      for (T_index k = 0; k < max_N; ++k)
-      {
-        n12 += amrex::min( w1[ I1[i1] ], w2[ I2[i2] ] );
-        ++i1; if ( i1 == I1e ) { i1 = I1s; }
-        ++i2; if ( i2 == I2e ) { i2 = I2s; }
-      }
-      n12 = n12 / dV;
-    }
-    // Intra-species: Apply correction in collision rate
-    if (isSameSpecies) { n12 *= T_PR(2.0); }
 
     // compute Debye length lmdD
     T_PR lmdD;
@@ -150,6 +137,10 @@ void ElasticCollisionPerez (
           u1x[I1[i1]] = u1xbuf*std::cos(theta) - u1y[I1[i1]]*std::sin(theta);
           u1y[I1[i1]] = u1xbuf*std::sin(theta) + u1y[I1[i1]]*std::cos(theta);
 #endif
+          const T_PR wpmax = std::max(w1[ I1[i1] ],w2[ I2[i2] ]);
+          T_PR n12; // effective density used for s12
+          if (isSameSpecies) { n12 = wpmax*(min_N+max_N-1)/dV; }
+          else { n12 = wpmax*min_N/dV; }
 
           UpdateMomentumPerezElastic(
               u1x[ I1[i1] ], u1y[ I1[i1] ], u1z[ I1[i1] ],
