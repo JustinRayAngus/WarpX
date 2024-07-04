@@ -104,11 +104,11 @@ void UpdateMomentumPerezElastic (
     T_PR const g1s = ( T_PR(1.0) - vcDv1*inv_c2 )*gc*g1;
     T_PR const g2s = ( T_PR(1.0) - vcDv2*inv_c2 )*gc*g2;
 
-    // Compute s
-    T_PR s = 0;
+    // Compute s12
+    T_PR s12 = 0;
     if (p1sm > std::numeric_limits<T_PR>::min()) {
 
-        // s is non-zero (i.e. particles scatter) only if the relative
+        // s12 is non-zero (i.e. particles scatter) only if the relative
         // motion between particles is not negligible (p1sm non-zero)
 
         // Compute the Coulomb log lnLmd first
@@ -133,29 +133,29 @@ void UpdateMomentumPerezElastic (
                     T_PR(0.5)*std::log(T_PR(1.0)+lmdD*lmdD/(bmin*bmin)) );
         }
 
-        // Compute s
+        // Compute s12
         const auto tts = m1*g1s*m2*g2s/(inv_c2*p1sm*p1sm) + T_PR(1.0);
         const auto tts2 = tts*tts;
-        s = n12 * dt*lnLmd*q1*q1*q2*q2 /
+        s12 = n12 * dt*lnLmd*q1*q1*q2*q2 /
             ( T_PR(4.0) * MathConst::pi * PhysConst::ep0 * PhysConst::ep0 *
                 m1*g1*m2*g2/(inv_c2*inv_c2) ) * gc*p1sm/mass_g * tts2;
 
-        // Compute s'
+        // Compute s12'
         const auto cbrt_n1 = std::cbrt(n1);
         const auto cbrt_n2 = std::cbrt(n2);
         const auto coeff = static_cast<T_PR>(
             std::pow(4.0*MathConst::pi/3.0,1.0/3.0));
         T_PR const vrel = mass_g*p1sm/(m1*g1s*m2*g2s*gc);
-        T_PR const sp = coeff * n12 * dt * vrel * (m1+m2) /
+        T_PR const s12p = coeff * n12 * dt * vrel * (m1+m2) /
             amrex::max( m1*cbrt_n1*cbrt_n1,
                         m2*cbrt_n2*cbrt_n2);
 
-        // Determine s
-        s = amrex::min(s,sp);
+        // Determine s12
+        s12 = amrex::min(s12,s12p);
     }
 
-    // Only modify momenta if is s is non-zero
-    if (s > std::numeric_limits<T_PR>::min()) {
+    // Only modify momenta if is s12 is non-zero
+    if (s12 > std::numeric_limits<T_PR>::min()) {
 
         // Get random numbers
         T_PR r = amrex::Random(engine);
@@ -163,27 +163,29 @@ void UpdateMomentumPerezElastic (
         // Compute scattering angle
         T_PR cosXs;
         T_PR sinXs;
-        if ( s <= T_PR(0.1) )
+        if ( s12 <= T_PR(0.1) )
         {
             while ( true )
             {
-                cosXs = T_PR(1.0) + s * std::log(r);
+                cosXs = T_PR(1.0) + s12 * std::log(r);
                 // Avoid the bug when r is too small such that cosXs < -1
                 if ( cosXs >= T_PR(-1.0) ) { break; }
                 r = amrex::Random(engine);
             }
         }
-        else if ( s > T_PR(0.1) && s <= T_PR(3.0) )
+        else if ( s12 > T_PR(0.1) && s12 <= T_PR(3.0) )
         {
+            T_PR const s12sq = s12*s12;
+            T_PR const s12cu = s12*s12sq;
             T_PR const Ainv = static_cast<T_PR>(
-                0.0056958 + 0.9560202*s - 0.508139*s*s +
-                0.47913906*s*s*s - 0.12788975*s*s*s*s + 0.02389567*s*s*s*s*s);
+                0.0056958 + 0.9560202*s12 - 0.508139*s12sq +
+                0.47913906*s12cu - 0.12788975*s12sq*s12sq + 0.02389567*s12sq*s12cu);
             cosXs = Ainv * std::log( std::exp(T_PR(-1.0)/Ainv) +
                     T_PR(2.0) * r * std::sinh(T_PR(1.0)/Ainv) );
         }
-        else if ( s > T_PR(3.0) && s <= T_PR(6.0) )
+        else if ( s12 > T_PR(3.0) && s12 <= T_PR(6.0) )
         {
-            T_PR const A = T_PR(3.0) * std::exp(-s);
+            T_PR const A = T_PR(3.0) * std::exp(-s12);
             cosXs = T_PR(1.0)/A * std::log( std::exp(-A) +
                     T_PR(2.0) * r * std::sinh(A) );
         }
@@ -290,7 +292,7 @@ void UpdateMomentumPerezElastic (
         AMREX_ASSERT(!std::isinf(u1x+u1y+u1z+u2x+u2y+u2z));
 #endif
 
-    } // if s > std::numeric_limits<T_PR>::min()
+    } // if s12 > std::numeric_limits<T_PR>::min()
 
 }
 
