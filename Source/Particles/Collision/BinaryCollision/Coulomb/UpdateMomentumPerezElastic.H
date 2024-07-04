@@ -22,6 +22,7 @@
  *        @param[in] L is the Coulomb log. A fixed L will be used if L > 0,
  *        otherwise L will be calculated based on the algorithm.
  *        @param[in] n12 = max(w1,w2)*min(N1,N2)/dV is the effective density
+ *        @param[in] sigma_max is the maximum cross section based on mfp = atomic spacing
  *        used for the normalized scattering length s12
  *        To see if there are nan or inf updated velocities,
  *        compile with USE_ASSERTION=TRUE.
@@ -35,7 +36,7 @@ template <typename T_PR, typename T_R>
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void UpdateMomentumPerezElastic (
     T_PR& u1x, T_PR& u1y, T_PR& u1z, T_PR& u2x, T_PR& u2y, T_PR& u2z,
-    T_PR const n1, T_PR const n2, T_PR const n12,
+    T_PR const n12, T_PR const sigma_max,
     T_PR const q1, T_PR const m1, T_PR const w1,
     T_PR const q2, T_PR const m2, T_PR const w2,
     T_R const dt, T_PR const L, T_PR const lmdD,
@@ -140,15 +141,12 @@ void UpdateMomentumPerezElastic (
             ( T_PR(4.0) * MathConst::pi * PhysConst::ep0 * PhysConst::ep0 *
                 m1*g1*m2*g2/(inv_c2*inv_c2) ) * gc*p1sm/mass_g * tts2;
 
-        // Compute s12'
-        const auto cbrt_n1 = std::cbrt(n1);
-        const auto cbrt_n2 = std::cbrt(n2);
-        const auto coeff = static_cast<T_PR>(
-            std::pow(4.0*MathConst::pi/3.0,1.0/3.0));
-        T_PR const vrel = mass_g*p1sm/(m1*g1s*m2*g2s*gc);
-        T_PR const s12p = coeff * n12 * dt * vrel * (m1+m2) /
-            amrex::max( m1*cbrt_n1*cbrt_n1,
-                        m2*cbrt_n2*cbrt_n2);
+        // Compute s12' (upper limit on s12 set by mfp = atomic spacing)
+        // s12' = (4*pi/3/maxn^2)^(1/3)*n12*vrel_invar*dt
+        T_PR const vrel = mass_g*p1sm/(m1*g1s*m2*g2s*gc); // non-invariant vrel = |v1st-v2st|
+        T_PR const denom = T_PR(1.0) + p1sm*p1sm/(m1*g1s*m2*g2s)*inv_c2; // (1.0 - v1st*v2st/c^2)
+        T_PR const vrel_invar = vrel/denom; // invariant vrel for colinear velocities
+        T_PR const s12p = sigma_max * n12 * dt * vrel_invar;
 
         // Determine s12
         s12 = amrex::min(s12,s12p);

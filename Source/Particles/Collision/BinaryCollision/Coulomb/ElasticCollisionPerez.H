@@ -96,6 +96,10 @@ void ElasticCollisionPerez (
     }
     n1 = n1 / dV; n2 = n2 / dV;
 
+    // set max sigma based on mfp = atomic spacing
+    const auto maxn = amrex::max(n1,n2);
+    const auto sigma_max = static_cast<T_PR>(std::cbrt(4.0*MathConst::pi/3.0/maxn/maxn));
+
     // compute Debye length lmdD
     T_PR lmdD;
     if ( T1t < T_PR(0.0) || T2t < T_PR(0.0) ) {
@@ -106,7 +110,7 @@ void ElasticCollisionPerez (
                                     n2*q2*q2/(T2t*PhysConst::ep0) );
     }
     T_PR rmin = std::pow( T_PR(4.0) * MathConst::pi / T_PR(3.0) *
-               amrex::max(n1,n2), T_PR(-1.0/3.0) );
+               maxn, T_PR(-1.0/3.0) );
     lmdD = amrex::max(lmdD, rmin);
 
 #if (defined WARPX_DIM_RZ)
@@ -145,7 +149,7 @@ void ElasticCollisionPerez (
           UpdateMomentumPerezElastic(
               u1x[ I1[i1] ], u1y[ I1[i1] ], u1z[ I1[i1] ],
               u2x[ I2[i2] ], u2y[ I2[i2] ], u2z[ I2[i2] ],
-              n1, n2, n12,
+              n12, sigma_max,
               q1, m1, w1[ I1[i1] ], q2, m2, w2[ I2[i2] ],
               dt, L, lmdD,
               engine);
