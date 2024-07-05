@@ -18,7 +18,7 @@
 /* \brief Update particle velocities according to
  *        F. Perez et al., Phys.Plasmas.19.083104 (2012),
  *        which is based on Nanbu's method, PhysRevE.55.4642 (1997).
- *        @param[in] LmdD is max(Debye length, minimal interparticle distance).
+ *        @param[in] bmax is max(Debye length, minimal interparticle distance).
  *        @param[in] L is the Coulomb log. A fixed L will be used if L > 0,
  *        otherwise L will be calculated based on the algorithm.
  *        @param[in] n12 = max(w1,w2)*min(N1,N2)/dV is the effective density
@@ -39,7 +39,7 @@ void UpdateMomentumPerezElastic (
     T_PR const n12, T_PR const sigma_max,
     T_PR const q1, T_PR const m1, T_PR const w1,
     T_PR const q2, T_PR const m2, T_PR const w2,
-    T_R const dt, T_PR const L, T_PR const lmdD,
+    T_R const dt, T_PR const L, T_PR const bmax,
     amrex::RandomEngine const& engine)
 {
 
@@ -131,7 +131,7 @@ void UpdateMomentumPerezElastic (
 
             // Compute the Coulomb log lnLmd
             lnLmd = amrex::max( T_PR(2.0),
-                    T_PR(0.5)*std::log(T_PR(1.0)+lmdD*lmdD/(bmin*bmin)) );
+                    T_PR(0.5)*std::log(T_PR(1.0) + bmax*bmax/(bmin*bmin)) );
         }
 
         // Compute s12
@@ -142,7 +142,6 @@ void UpdateMomentumPerezElastic (
                 m1*g1*m2*g2/(inv_c2*inv_c2) ) * gc*p1sm/mass_g * tts2;
 
         // Compute s12' (upper limit on s12 set by mfp = atomic spacing)
-        // s12' = (4*pi/3/maxn^2)^(1/3)*n12*vrel_invar*dt
         T_PR const vrel = mass_g*p1sm/(m1*g1s*m2*g2s*gc); // non-invariant vrel = |v1st-v2st|
         T_PR const denom = T_PR(1.0) + p1sm*p1sm/(m1*g1s*m2*g2s)*inv_c2; // (1.0 - v1st*v2st/c^2)
         T_PR const vrel_invar = vrel/denom; // invariant vrel for colinear velocities
@@ -152,7 +151,7 @@ void UpdateMomentumPerezElastic (
         s12 = amrex::min(s12,s12p);
     }
 
-    // Only modify momenta if is s12 is non-zero
+    // Only modify momenta if s12 is non-zero
     if (s12 > std::numeric_limits<T_PR>::min()) {
 
         // Get random numbers

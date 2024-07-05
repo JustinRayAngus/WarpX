@@ -96,10 +96,6 @@ void ElasticCollisionPerez (
     }
     n1 = n1 / dV; n2 = n2 / dV;
 
-    // set max sigma based on mfp = atomic spacing
-    const auto maxn = amrex::max(n1,n2);
-    const auto sigma_max = static_cast<T_PR>(std::cbrt(4.0*MathConst::pi/3.0/maxn/maxn));
-
     // compute Debye length lmdD
     T_PR lmdD;
     if ( T1t < T_PR(0.0) || T2t < T_PR(0.0) ) {
@@ -109,9 +105,16 @@ void ElasticCollisionPerez (
         lmdD = T_PR(1.0)/std::sqrt( n1*q1*q1/(T1t*PhysConst::ep0) +
                                     n2*q2*q2/(T2t*PhysConst::ep0) );
     }
-    T_PR rmin = std::pow( T_PR(4.0) * MathConst::pi / T_PR(3.0) *
-               maxn, T_PR(-1.0/3.0) );
-    lmdD = amrex::max(lmdD, rmin);
+
+    // compute atomic spacing
+    const T_PR maxn = amrex::max(n1,n2);
+    const auto rmin = static_cast<T_PR>( 1.0/std::cbrt(4.0*MathConst::pi/3.0*maxn) );
+
+    // bmax (i.e., screening length) cannot be smaller than atomic spacing
+    const T_PR bmax = amrex::max(lmdD, rmin);
+
+    // set max cross section based on mfp = atomic spacing
+    const T_PR sigma_max = T_PR(1.0) / (maxn * rmin);
 
 #if (defined WARPX_DIM_RZ)
     T_PR * const AMREX_RESTRICT theta1 = soa_1.m_rdata[PIdx::theta];
@@ -141,8 +144,10 @@ void ElasticCollisionPerez (
           u1x[I1[i1]] = u1xbuf*std::cos(theta) - u1y[I1[i1]]*std::sin(theta);
           u1y[I1[i1]] = u1xbuf*std::sin(theta) + u1y[I1[i1]]*std::cos(theta);
 #endif
+
+          // compute the effective density used for s12 in UpdateMomentumPerezElastic()
+          T_PR n12;
           const T_PR wpmax = std::max(w1[ I1[i1] ],w2[ I2[i2] ]);
-          T_PR n12; // effective density used for s12
           if (isSameSpecies) { n12 = wpmax*(min_N+max_N-1)/dV; }
           else { n12 = wpmax*min_N/dV; }
 
@@ -151,7 +156,7 @@ void ElasticCollisionPerez (
               u2x[ I2[i2] ], u2y[ I2[i2] ], u2z[ I2[i2] ],
               n12, sigma_max,
               q1, m1, w1[ I1[i1] ], q2, m2, w2[ I2[i2] ],
-              dt, L, lmdD,
+              dt, L, bmax,
               engine);
 
 #if (defined WARPX_DIM_RZ)
