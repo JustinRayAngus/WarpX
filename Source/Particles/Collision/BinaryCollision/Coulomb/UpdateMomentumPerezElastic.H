@@ -130,7 +130,7 @@ void UpdateMomentumPerezElastic (
             // they incorrectly use h instead of hbar. See NRL formulary. Also see "An
             // introduction to the physics of the Coulomb logarithm, with emphasis on
             // quantum-mechanical effects", J. Plasma Phys. vol. 85 (2019). by J.A. Krommes
-            constexpr T_PR bmin_qm = static_cast<T_PR>(PhysConst::hbar*0.5/p1sm);
+            const T_PR bmin_qm = static_cast<T_PR>(PhysConst::hbar*0.5/p1sm);
 
             // Set the minimum impact parameter
             const T_PR bmin = amrex::max(bmin_qm, b0);
@@ -166,31 +166,25 @@ void UpdateMomentumPerezElastic (
         // Compute scattering angle
         T_PR cosXs;
         T_PR sinXs;
-        if ( s12 <= T_PR(0.1) )
+        if ( s12 <= T_PR(0.1466) )
         {
-            while ( true )
-            {
-                cosXs = T_PR(1.0) + s12 * std::log(r);
-                // Avoid the bug when r is too small such that cosXs < -1
-                if ( cosXs >= T_PR(-1.0) ) { break; }
-                r = amrex::Random(engine);
-            }
+            T_PR const Ainv = static_cast<T_PR>(s12*(1.0 - s12/2.0 + s12*s12/6.0));
+            r = amrex::Random(engine);
+            cosXs = T_PR(1.0) + Ainv*std::log(T_PR(1.0) - r*(T_PR(1.0)-std::exp(-T_PR(2.0)/Ainv)));
         }
-        else if ( s12 > T_PR(0.1) && s12 <= T_PR(3.0) )
+        else if ( s12 > T_PR(0.1466) && s12 <= T_PR(3.0) )
         {
             T_PR const s12sq = s12*s12;
             T_PR const s12cu = s12*s12sq;
             T_PR const Ainv = static_cast<T_PR>(
                 0.0056958 + 0.9560202*s12 - 0.508139*s12sq +
                 0.47913906*s12cu - 0.12788975*s12sq*s12sq + 0.02389567*s12sq*s12cu);
-            cosXs = Ainv * std::log( std::exp(T_PR(-1.0)/Ainv) +
-                    T_PR(2.0) * r * std::sinh(T_PR(1.0)/Ainv) );
+            cosXs = T_PR(1.0) + Ainv*std::log(T_PR(1.0) - r*(T_PR(1.0)-std::exp(-T_PR(2.0)/Ainv)));
         }
         else if ( s12 > T_PR(3.0) && s12 <= T_PR(6.0) )
         {
-            T_PR const A = T_PR(3.0) * std::exp(-s12);
-            cosXs = T_PR(1.0)/A * std::log( std::exp(-A) +
-                    T_PR(2.0) * r * std::sinh(A) );
+            T_PR const Ainv = T_PR(1.0)/(T_PR(3.0) * std::exp(-s12));
+            cosXs = T_PR(1.0) + Ainv*std::log(T_PR(1.0) - r*(T_PR(1.0)-std::exp(-T_PR(2.0)/Ainv)));
         }
         else
         {
