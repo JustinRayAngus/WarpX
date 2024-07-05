@@ -21,7 +21,7 @@
  *        @param[in] bmax is max(Debye length, minimal interparticle distance).
  *        @param[in] L is the Coulomb log. A fixed L will be used if L > 0,
  *        otherwise L will be calculated based on the algorithm.
- *        @param[in] n12 = max(w1,w2)*min(N1,N2)/dV is the effective density
+ *        @param[in] n12 = max(w1,w2)*min(N1,N2)/dV is the effective density used for s12
  *        @param[in] sigma_max is the maximum cross section based on mfp = atomic spacing
  *        used for the normalized scattering length s12
  *        To see if there are nan or inf updated velocities,
@@ -125,9 +125,15 @@ void UpdateMomentumPerezElastic (
                 (T_PR(4.0)*MathConst::pi*PhysConst::ep0) * gc/mass_g *
                 ( m1*g1s*m2*g2s/(p1sm*p1sm*inv_c2) + T_PR(1.0) );
 
-            // Compute the minimal impact parameter
-            constexpr T_PR hbar_pi = static_cast<T_PR>(PhysConst::hbar*MathConst::pi);
-            const T_PR bmin = amrex::max(hbar_pi/p1sm, b0);
+            // Compute the minimum impact parameter from quantum (bmin = lambda_DB/(4*pi))
+            // Note that there is an error in Perez 2012 and in Lee and More 1984, where
+            // they incorrectly use h instead of hbar. See NRL formulary. Also see "An
+            // introduction to the physics of the Coulomb logarithm, with emphasis on
+            // quantum-mechanical effects", J. Plasma Phys. vol. 85 (2019). by J.A. Krommes
+            constexpr T_PR bmin_qm = static_cast<T_PR>(PhysConst::hbar*0.5/p1sm);
+
+            // Set the minimum impact parameter
+            const T_PR bmin = amrex::max(bmin_qm, b0);
 
             // Compute the Coulomb log lnLmd
             lnLmd = amrex::max( T_PR(2.0),
