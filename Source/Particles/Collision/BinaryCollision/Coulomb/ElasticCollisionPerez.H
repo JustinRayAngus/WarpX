@@ -25,6 +25,7 @@
  * @param[in] I1e,I2e is the stop index for I1,I2 (exclusive).
  * @param[in] I1,I2 the index arrays. They determine all elements that will be used.
  * @param[in,out] soa_1,soa_2 the struct of array for species 1/2
+ * @param[in] n1,n2 densities of species 1/2
  * @param[in] q1,q2 charge of species 1/2
  * @param[in] m1,m2 mass of species 1/2
  * @param[in] T1 temperature (Joule) of species 1
@@ -48,6 +49,7 @@ void ElasticCollisionPerez (
     T_index const* AMREX_RESTRICT I1,
     T_index const* AMREX_RESTRICT I2,
     SoaData_type soa_1, SoaData_type soa_2,
+    T_PR const  n1, T_PR const  n2,
     T_PR const  q1, T_PR const  q2,
     T_PR const  m1, T_PR const  m2,
     T_PR const  T1, T_PR const  T2,
@@ -82,19 +84,6 @@ void ElasticCollisionPerez (
         T2t = ComputeTemperature(I2s,I2e,I2,u2x,u2y,u2z,m2);
     }
     else { T2t = T2; }
-
-    // local density
-    T_PR n1  = T_PR(0.0);
-    T_PR n2  = T_PR(0.0);
-    for (T_index i1=I1s; i1<I1e; ++i1) { n1 += w1[ I1[i1] ]; }
-    for (T_index i2=I2s; i2<I2e; ++i2) { n2 += w2[ I2[i2] ]; }
-    // Intra-species: the density is in fact the sum of the density of
-    // each sub-group of particles
-    if (isSameSpecies) {
-        n1 = n1 + n2;
-        n2 = n1;
-    }
-    n1 = n1 / dV; n2 = n2 / dV;
 
     // compute Debye length lmdD
     T_PR lmdD;

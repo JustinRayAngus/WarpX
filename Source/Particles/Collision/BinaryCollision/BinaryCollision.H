@@ -373,6 +373,16 @@ public:
                     // Do not collide if there is only one particle in the cell
                     if ( cell_stop_1 - cell_start_1 <= 1 ) { return; }
 
+                    // compute local density
+                    n1  = 0.0;
+                    amrex::ParticleReal * const AMREX_RESTRICT w1 = soa_1.m_rdata[PIdx::w];
+                    for (index_type i1=cell_start_1; i1<cell_stop_1; ++i1) { n1 += w1[ indices_1[i1] ]; }
+#if defined WARPX_DIM_RZ
+                    const int ri = (i_cell - i_cell%nz) / nz;
+                    auto dV = MathConst::pi*(2.0_prt*ri+1.0_prt)*dr*dr*dz;
+#endif
+                    n1 /= dV;
+
                     // shuffle
                     ShuffleFisherYates(
                         indices_1, cell_start_1, cell_half_1, engine );
@@ -420,7 +430,7 @@ public:
                         cell_half_1, cell_stop_1,
                         indices_1, indices_1,
                         soa_1, soa_1, get_position_1, get_position_1,
-                        q1, q1, m1, m1, dt, dV, coll_idx,
+                        n1, n1, q1, q1, m1, m1, dt, dV, coll_idx,
                         cell_start_pair, p_mask, p_pair_indices_1, p_pair_indices_2,
                         p_pair_reaction_weight, engine);
                 }
@@ -581,6 +591,20 @@ public:
                     // ux_1[ indices_1[i] ], where i is between
                     // cell_start_1 (inclusive) and cell_start_2 (exclusive)
 
+                    // compute local densities
+                    n1 = 0.0;
+                    n2 = 0.0;
+                    amrex::ParticleReal * const AMREX_RESTRICT w1 = soa_1.m_rdata[PIdx::w];
+                    amrex::ParticleReal * const AMREX_RESTRICT w2 = soa_2.m_rdata[PIdx::w];
+                    for (index_type i1=cell_start_1; i1<cell_stop_1; ++i1) { n1 += w1[ indices_1[i1] ]; }
+                    for (index_type i2=cell_start_2; i2<cell_stop_2; ++i2) { n2 += w2[ indices_2[i2] ]; }
+#if defined WARPX_DIM_RZ
+                    const int ri = (i_cell - i_cell%nz) / nz;
+                    auto dV = MathConst::pi*(2.0_prt*ri+1.0_prt)*dr*dr*dz;
+#endif
+                    n1 /= dV;
+                    n2 /= dV;
+
                     // Do not collide if one species is missing in the cell
                     if ( cell_stop_1 - cell_start_1 < 1 ||
                          cell_stop_2 - cell_start_2 < 1 ) { return; }
@@ -637,7 +661,7 @@ public:
                         cell_start_1, cell_stop_1, cell_start_2, cell_stop_2,
                         indices_1, indices_2,
                         soa_1, soa_2, get_position_1, get_position_2,
-                        q1, q2, m1, m2, dt, dV, coll_idx,
+                        n1, n2, q1, q2, m1, m2, dt, dV, coll_idx,
                         cell_start_pair, p_mask, p_pair_indices_1, p_pair_indices_2,
                         p_pair_reaction_weight, engine);
                 }
@@ -668,6 +692,7 @@ private:
 
     bool m_isSameSpecies;
     bool m_have_product_species;
+    mutable amrex::ParticleReal n1, n2; // local densities
     amrex::Vector<std::string> m_product_species;
     // functor that performs collisions within a cell
     CollisionFunctor m_binary_collision_functor;
