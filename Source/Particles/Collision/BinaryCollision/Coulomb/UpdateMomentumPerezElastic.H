@@ -62,50 +62,28 @@ void UpdateMomentumPerezElastic (
     T_PR const p1x = u1x * m1;
     T_PR const p1y = u1y * m1;
     T_PR const p1z = u1z * m1;
-    T_PR const p2x = u2x * m2;
-    T_PR const p2y = u2y * m2;
-    T_PR const p2z = u2z * m2;
+    T_PR const ptotx = p1x + u2x * m2;
+    T_PR const ptoty = p1y + u2y * m2;
+    T_PR const ptotz = p1z + u2z * m2;
 
-    // Compute total Energy and momentum
-    T_PR const ptotx = p1x + p2x;
-    T_PR const ptoty = p1y + p2y;
-    T_PR const ptotz = p1z + p2z;
-    T_PR const ptots = ptotx*ptotx + ptoty*ptoty + ptotz*ptotz;
-    T_PR const Etot  = (g1 * m1 + g2 * m2); // Etot/c^2
+    // Compute center-of-mass (COM) velocity and gamma
+    T_PR const mass_g = (g1 * m1 + g2 * m2); // Etot/c^2
+    T_PR const vcmx   = ptotx / mass_g;
+    T_PR const vcmy   = ptoty / mass_g;
+    T_PR const vcmz   = ptotz / mass_g;
+    T_PR const vcmsq  = vcmx*vcmx + vcmy*vcmy + vcmz*vcmz;
+    T_PR const gcm    = T_PR(1.0) / std::sqrt(T_PR(1.0) - vcmsq*inv_c2);
 
-    // Compute center-of-mass (COM) gamma and proper velocity
-    T_PR const Ecm    = std::sqrt(Etot*Etot - ptots*inv_c2); // Ecm/c^2
-    T_PR const gcm    = Etot / Ecm;
-    T_PR const ucx    = ptotx / Ecm;
-    T_PR const ucy    = ptoty / Ecm;
-    T_PR const ucz    = ptotz / Ecm;
-    T_PR const ucms   = ucx*ucx + ucy*ucy + ucz*ucz;
+    // Compute gbetacm dot gbeta1 and gbeta2
+    T_PR const gbcDgb1 = gcm*(vcmx*u1x + vcmy*u1y + vcmz*u1z)*inv_c2;
+    T_PR const gbcDgb2 = gcm*(vcmx*u2x + vcmy*u2y + vcmz*u2z)*inv_c2;
 
-    // Compute gbetac dot gbeta1 and gbeta2
-    T_PR const gbcDgb1 = (ucx*u1x + ucy*u1y + ucz*u1z)*inv_c2;
-    T_PR const gbcDgb2 = (ucx*u2x + ucy*u2y + ucz*u2z)*inv_c2;
-
-    // Compute p1 star
-    T_PR p1sx;
-    T_PR p1sy;
-    T_PR p1sz;
-    if ( ucms > std::numeric_limits<T_PR>::min() )
-    {
-        /* lorentz_transform_factor = ( (gc-1.0)/vcms*vcDv1 - gc )*m1*g1;
-         * Rewrite to avoid loss of precision from subtracting similar
-         * numbers when gc is close to 1 */
-        T_PR const lorentz_transform_factor = (gbcDgb1/(T_PR(1.0) + gcm) - g1)*m1;
-        p1sx = p1x + ucx*lorentz_transform_factor;
-        p1sy = p1y + ucy*lorentz_transform_factor;
-        p1sz = p1z + ucz*lorentz_transform_factor;
-    }
-    else // If ucms = 0, don't do Lorentz-transform.
-    {
-        p1sx = p1x;
-        p1sy = p1y;
-        p1sz = p1z;
-    }
-    T_PR const p1sm = std::sqrt( p1sx*p1sx + p1sy*p1sy + p1sz*p1sz );
+    // Compute p1* (i.e., transform p1 from lab to COM frame)
+    T_PR const lorentz_transform_factor = gcm*(gbcDgb1/(T_PR(1.0) + gcm) - g1)*m1;
+    T_PR const p1stx = p1x + vcmx*lorentz_transform_factor;
+    T_PR const p1sty = p1y + vcmy*lorentz_transform_factor;
+    T_PR const p1stz = p1z + vcmz*lorentz_transform_factor;
+    T_PR const p1stm = std::sqrt( p1stx*p1stx + p1sty*p1sty + p1stz*p1stz );
 
     // Compute gamma star for particles 1 and 2
     T_PR const g1st = gcm*g1 - gbcDgb1;
@@ -113,18 +91,18 @@ void UpdateMomentumPerezElastic (
     
     // Compute variant relative velocity in cm frame
     T_PR const muRst = g1st*m1*g2st*m2/(g1st*m1 + g2st*m2);
-    T_PR const vrelst = p1sm/muRst;
+    T_PR const vrelst = p1stm/muRst;
     
     // Compute invariant relative velocity (frame independent)
-    T_PR const denom = T_PR(1.0) + p1sm*p1sm/(m1*g1st*m2*g2st)*inv_c2; // (1.0 - v1st*v2st/c^2)
+    T_PR const denom = T_PR(1.0) + p1stm*p1stm/(m1*g1st*m2*g2st)*inv_c2; // (1.0 - v1st*v2st/c^2)
     T_PR const vrelst_invar = vrelst/denom;
 
     // Compute s12
     T_PR s12 = 0;
-    if (p1sm > std::numeric_limits<T_PR>::min()) {
+    if (vrelst > std::numeric_limits<T_PR>::min()) {
 
         // s12 is non-zero (i.e. particles scatter) only if the relative
-        // motion between particles is not negligible (p1sm non-zero)
+        // motion between particles is not negligible
             
         // Writing b0 = b90 in a form that is directly analagous to the well-known
         // non-relativistic form. Note that b0 on Eq. 22 of Perez POP 19 (2012) is bmin = b0/2,
@@ -144,7 +122,7 @@ void UpdateMomentumPerezElastic (
             // they incorrectly use h instead of hbar. See NRL formulary. Also see "An
             // introduction to the physics of the Coulomb logarithm, with emphasis on
             // quantum-mechanical effects", J. Plasma Phys. vol. 85 (2019). by J.A. Krommes
-            const T_PR bmin_qm = static_cast<T_PR>(PhysConst::hbar*0.5/p1sm);
+            const T_PR bmin_qm = static_cast<T_PR>(PhysConst::hbar*0.5/p1stm);
 
             // Set the minimum impact parameter
             const T_PR bmin = amrex::max(bmin_qm, 0.5*b0);
@@ -201,62 +179,40 @@ void UpdateMomentumPerezElastic (
         T_PR const sinphis = std::sin(phis);
 
         // Compute post-collision momenta pfs in COM
-        T_PR p1fsx;
-        T_PR p1fsy;
-        T_PR p1fsz;
-        // p1sp is the p1s perpendicular
-        T_PR p1sp = std::sqrt( p1sx*p1sx + p1sy*p1sy );
-        if ( p1sp > std::numeric_limits<T_PR>::min() )
+        T_PR p1fstx;
+        T_PR p1fsty;
+        T_PR p1fstz;
+        T_PR const p1stp = std::sqrt( p1stx*p1stx + p1sty*p1sty );
+        if ( p1stp > std::numeric_limits<T_PR>::min() )
         {
-            p1fsx = ( p1sx*p1sz/p1sp ) * sinXs*cosphis +
-                    (-p1sy*p1sm/p1sp ) * sinXs*sinphis +
-                    ( p1sx           ) * cosXs;
-            p1fsy = ( p1sy*p1sz/p1sp ) * sinXs*cosphis +
-                    ( p1sx*p1sm/p1sp ) * sinXs*sinphis +
-                    ( p1sy           ) * cosXs;
-            p1fsz = (-p1sp           ) * sinXs*cosphis +
-                    ( T_PR(0.0)      ) * sinXs*sinphis +
-                    ( p1sz           ) * cosXs;
+            p1fstx = ( p1stx*p1stz/p1stp ) * sinXs*cosphis +
+                     (-p1sty*p1stm/p1stp ) * sinXs*sinphis +
+                     ( p1stx           ) * cosXs;
+            p1fsty = ( p1sty*p1stz/p1stp ) * sinXs*cosphis +
+                     ( p1stx*p1stm/p1stp ) * sinXs*sinphis +
+                     ( p1sty           ) * cosXs;
+            p1fstz = (-p1stp           ) * sinXs*cosphis +
+                     ( p1stz           ) * cosXs;
         }
         else
         {
-            // If p1sp is almost zero
-            p1fsx = p1sm * sinXs*cosphis;
-            p1fsy = p1sm * sinXs*sinphis;
-            p1fsz = p1sm * cosXs;
+            // If p1stp is almost zero
+            p1fstx = p1stm * sinXs*cosphis;
+            p1fsty = p1stm * sinXs*sinphis;
+            p1fstz = p1stm * cosXs;
         }
 
-        T_PR const p2fsx = -p1fsx;
-        T_PR const p2fsy = -p1fsy;
-        T_PR const p2fsz = -p1fsz;
+        // Transform p1fst from COM to lab frame
+        T_PR const ucDp1fs = gcm*(vcmx*p1fstx + vcmy*p1fsty + vcmz*p1fstz);
+        T_PR const factor1 = gcm*(ucDp1fs*inv_c2/(T_PR(1.0)+gcm) + m1*g1st);
+        T_PR const p1fx = p1fstx + vcmx * factor1;
+        T_PR const p1fy = p1fsty + vcmy * factor1;
+        T_PR const p1fz = p1fstz + vcmz * factor1;
 
-        // Transform from COM to lab frame
-        T_PR p1fx;    T_PR p2fx;
-        T_PR p1fy;    T_PR p2fy;
-        T_PR p1fz;    T_PR p2fz;
-        if ( ucms > std::numeric_limits<T_PR>::min() )
-        {
-            T_PR const ucDp1fs = ucx*p1fsx + ucy*p1fsy + ucz*p1fsz;
-            T_PR const ucDp2fs = ucx*p2fsx + ucy*p2fsy + ucz*p2fsz;
-            T_PR const factor = inv_c2/(gcm+T_PR(1.0));
-            T_PR const factor1 = factor*ucDp1fs + m1*g1st;
-            T_PR const factor2 = factor*ucDp2fs + m2*g2st;
-            p1fx = p1fsx + ucx * factor1;
-            p1fy = p1fsy + ucy * factor1;
-            p1fz = p1fsz + ucz * factor1;
-            p2fx = p2fsx + ucx * factor2;
-            p2fy = p2fsy + ucy * factor2;
-            p2fz = p2fsz + ucz * factor2;
-        }
-        else // If ucms = 0, don't do Lorentz-transform.
-        {
-            p1fx = p1fsx;
-            p1fy = p1fsy;
-            p1fz = p1fsz;
-            p2fx = p2fsx;
-            p2fy = p2fsy;
-            p2fz = p2fsz;
-        }
+        // Set final momentum of 2 using conservation of momentum
+        T_PR const p2fx = ptotx - p1fx;
+        T_PR const p2fy = ptoty - p1fy;
+        T_PR const p2fz = ptotz - p1fz;
 
         // Rejection method
         r = amrex::Random(engine);
