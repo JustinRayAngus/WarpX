@@ -88,11 +88,11 @@ void UpdateMomentumPerezElastic (
     // Compute gamma star for particles 1 and 2
     T_PR const g1st = gcm*g1 - gbcDgb1;
     T_PR const g2st = gcm*g2 - gbcDgb2;
-    
+
     // Compute variant relative velocity in cm frame
     T_PR const muRst = g1st*m1*g2st*m2/(g1st*m1 + g2st*m2);
     T_PR const vrelst = p1stm/muRst;
-    
+
     // Compute invariant relative velocity (frame independent)
     T_PR const denom = T_PR(1.0) + p1stm*p1stm/(m1*g1st*m2*g2st)*inv_c2; // (1.0 - v1st*v2st/c^2)
     T_PR const vrelst_invar = vrelst/denom;
