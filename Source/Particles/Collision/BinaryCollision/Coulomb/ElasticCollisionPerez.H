@@ -147,9 +147,9 @@ void ElasticCollisionPerez (
 
           // compute the effective density used for s12 in UpdateMomentumPerezElastic()
           T_PR n12;
-          const T_PR wpmax = std::max(w1[ I1[i1] ],w2[ I2[i2] ]);
-          if (isSameSpecies) { n12 = wpmax*(min_N+max_N-1)/dV; }
-          else { n12 = wpmax*min_N/dV; }
+          const T_PR wpmax = amrex::max(w1[ I1[i1] ],w2[ I2[i2] ]);
+          if (isSameSpecies) { n12 = wpmax*static_cast<T_PR>(min_N+max_N-1)/dV; }
+          else { n12 = wpmax*static_cast<T_PR>(min_N)/dV; }
 
           UpdateMomentumPerezElastic(
               u1x[ I1[i1] ], u1y[ I1[i1] ], u1z[ I1[i1] ],
