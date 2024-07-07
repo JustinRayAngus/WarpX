@@ -101,9 +101,6 @@ void UpdateMomentumPerezElastic (
     T_PR s12 = 0;
     if (vrelst > std::numeric_limits<T_PR>::min()) {
 
-        // s12 is non-zero (i.e. particles scatter) only if the relative
-        // motion between particles is not negligible
-            
         // Writing b0 = b90 in a form that is directly analagous to the well-known
         // non-relativistic form. Note that b0 on Eq. 22 of Perez POP 19 (2012) is bmin = b0/2,
         // Note: there is a typo in Eq 22 of Perez, the last square is incorrect!
@@ -178,7 +175,7 @@ void UpdateMomentumPerezElastic (
         T_PR const cosphis = std::cos(phis);
         T_PR const sinphis = std::sin(phis);
 
-        // Compute post-collision momenta pfs in COM
+        // Compute post-collision momenta pfst by rotating in COM
         T_PR p1fstx;
         T_PR p1fsty;
         T_PR p1fstz;
