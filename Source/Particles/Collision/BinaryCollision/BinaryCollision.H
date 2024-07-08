@@ -443,7 +443,7 @@ public:
                         cell_half_1, cell_stop_1,
                         indices_1, indices_1,
                         soa_1, soa_1, get_position_1, get_position_1,
-                        n1, n1, T1, T1,
+                        this->n1, this->n1, this->T1, this->T1,
                         q1, q1, m1, m1, dt, dV, coll_idx,
                         cell_start_pair, p_mask, p_pair_indices_1, p_pair_indices_2,
                         p_pair_reaction_weight, engine);
@@ -694,7 +694,7 @@ public:
                         cell_start_1, cell_stop_1, cell_start_2, cell_stop_2,
                         indices_1, indices_2,
                         soa_1, soa_2, get_position_1, get_position_2,
-                        n1, n2, T1, T2,
+                        this->n1, this->n2, this->T1, this->T2,
                         q1, q2, m1, m2, dt, dV, coll_idx,
                         cell_start_pair, p_mask, p_pair_indices_1, p_pair_indices_2,
                         p_pair_reaction_weight, engine);
