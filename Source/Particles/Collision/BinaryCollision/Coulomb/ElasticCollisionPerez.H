@@ -7,7 +7,6 @@
 #ifndef WARPX_PARTICLES_COLLISION_ELASTIC_COLLISION_PEREZ_H_
 #define WARPX_PARTICLES_COLLISION_ELASTIC_COLLISION_PEREZ_H_
 
-#include "ComputeTemperature.H"
 #include "UpdateMomentumPerezElastic.H"
 #include "Particles/WarpXParticleContainer.H"
 #include "Utils/WarpXConst.H"
@@ -29,8 +28,7 @@
  * @param[in] q1,q2 charge of species 1/2
  * @param[in] m1,m2 mass of species 1/2
  * @param[in] T1 temperature (Joule) of species 1
- *            and will be used if greater than zero,
- *            otherwise will be computed.
+ *            and will be used if L is less than zero,
  * @param[in] T2 temperature (Joule) of species 2, @see T1
  * @param[in] dt is the time step length between two collision calls.
  * @param[in] L is the Coulomb log and will be used if greater than zero,
@@ -50,9 +48,9 @@ void ElasticCollisionPerez (
     T_index const* AMREX_RESTRICT I2,
     SoaData_type soa_1, SoaData_type soa_2,
     T_PR const  n1, T_PR const  n2,
+    T_PR const  T1, T_PR const  T2,
     T_PR const  q1, T_PR const  q2,
     T_PR const  m1, T_PR const  m2,
-    T_PR const  T1, T_PR const  T2,
     T_R const  dt, T_PR const   L, T_R const dV,
     amrex::RandomEngine const& engine,
     bool const isSameSpecies, T_index coll_idx)
@@ -72,27 +70,11 @@ void ElasticCollisionPerez (
     T_PR * const AMREX_RESTRICT u2y = soa_2.m_rdata[PIdx::uy];
     T_PR * const AMREX_RESTRICT u2z = soa_2.m_rdata[PIdx::uz];
 
-    // get local T1t and T2t
-    T_PR T1t; T_PR T2t;
-    if ( T1 <= T_PR(0.0) && L <= T_PR(0.0) )
-    {
-        T1t = ComputeTemperature(I1s,I1e,I1,u1x,u1y,u1z,m1);
-    }
-    else { T1t = T1; }
-    if ( T2 <= T_PR(0.0) && L <= T_PR(0.0) )
-    {
-        T2t = ComputeTemperature(I2s,I2e,I2,u2x,u2y,u2z,m2);
-    }
-    else { T2t = T2; }
-
-    // compute Debye length lmdD
-    T_PR lmdD;
-    if ( T1t < T_PR(0.0) || T2t < T_PR(0.0) ) {
-        lmdD = T_PR(0.0);
-    }
-    else {
-        lmdD = T_PR(1.0)/std::sqrt( n1*q1*q1/(T1t*PhysConst::ep0) +
-                                    n2*q2*q2/(T2t*PhysConst::ep0) );
+    // compute Debye length lmdD (if not using a fixed L = Coulomb Log)
+    T_PR lmdD = T_PR(-1.0);
+    if ( L < T_PR(0.0) ) {
+        lmdD = T_PR(1.0)/std::sqrt( n1*q1*q1/(T1*PhysConst::ep0) +
+                                    n2*q2*q2/(T2*PhysConst::ep0) );
     }
 
     // compute atomic spacing
