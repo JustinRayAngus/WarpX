@@ -48,6 +48,7 @@ CollisionHandler::CollisionHandler(MultiParticleContainer const * const mypc)
                std::make_unique<BinaryCollision<PairWiseCoulombCollisionFunc>>(
                     collision_names[i], mypc
                 );
+            m_contains_coulomb_type = true;
         }
         else if (type == "background_mcc") {
             allcollisions[i] = std::make_unique<BackgroundMCCCollision>(collision_names[i]);
@@ -75,6 +76,26 @@ CollisionHandler::CollisionHandler(MultiParticleContainer const * const mypc)
 
 }
 
+void CollisionHandler::initCollisions ()
+{
+
+    if (m_contains_coulomb_type) { // Define lambda_debye MultiFab
+        const WarpX& warpx = WarpX::GetInstance();
+        const int num_levels = warpx.maxLevel() + 1;
+        const int ncomp = 1;
+        m_lambda_debye.resize(num_levels); // size is number of levels
+        for (int lev = 0; lev < num_levels; ++lev) {
+            const amrex::BoxArray ba = warpx.boxArray(lev);
+            const amrex::DistributionMapping dm = warpx.DistributionMap(lev);
+            m_lambda_debye[lev] = std::make_unique<amrex::MultiFab>( ba, dm, ncomp,
+                                                                    amrex::IntVect::TheZeroVector() );
+            m_lambda_debye[lev]->setVal(0.0);
+        }
+
+    }
+
+}
+
 /** Perform all collisions
  *
  * @param cur_time Current time
@@ -84,6 +105,20 @@ CollisionHandler::CollisionHandler(MultiParticleContainer const * const mypc)
  */
 void CollisionHandler::doCollisions ( amrex::Real cur_time, amrex::Real dt, MultiParticleContainer* mypc)
 {
+    // Compute the plasma Debye length for Coulomb collisions
+    // LDe^{-2} = sum_{species} LDe_s^{-2}, LDe_s^{-2} = ns*qs^2/(kTs*ep0)
+    if (m_contains_coulomb_type) {
+        const auto nSpecies = mypc->nSpecies();
+        for (int lev = 0; lev < m_lambda_debye.size(); ++lev) {
+            m_lambda_debye[lev]->setVal(0.0);
+        }
+        for (int sp = 0; sp<nSpecies; sp++) {
+            auto& species = mypc->GetParticleContainer(sp);
+            const amrex::ParticleReal charge = species.getCharge();
+            if (charge==0.0) { continue; }
+            // Here is where I need to compute species Debye length
+        }
+    }
 
     for (auto& collision : allcollisions) {
         int const ndt = collision->get_ndt();

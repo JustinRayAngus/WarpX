@@ -464,6 +464,8 @@ WarpX::InitData ()
         reduced_diags->InitData();
     }
 
+    mypc->initCollisions();
+
     ComputeMaxStep();
 
     ComputePMLFactors();

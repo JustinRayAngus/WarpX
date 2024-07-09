@@ -173,6 +173,7 @@ public:
                             const amrex::MultiFab& Ex, const amrex::MultiFab& Ey, const amrex::MultiFab& Ez,
                             const amrex::MultiFab& Bx, const amrex::MultiFab& By, const amrex::MultiFab& Bz);
 
+    void initCollisions ( );
     void doCollisions (amrex::Real cur_time, amrex::Real dt);
 
     /**
