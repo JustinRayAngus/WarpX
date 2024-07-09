@@ -444,8 +444,8 @@ public:
                     // Get the local density and temperature for this cell
                     amrex::ParticleReal n1 = 0.0;
                     amrex::ParticleReal T1 = 0.0;
-                    if (binary_collision_functor.m_computeSpeciesDensities) { n1 = n1_vec[i_cell]; }
-                    if (binary_collision_functor.m_computeSpeciesTemperatures) { T1 = T1_vec[i_cell]; }
+                    if (binary_collision_functor.m_computeSpeciesDensities) { n1 = n1_in_each_cell[i_cell]; }
+                    if (binary_collision_functor.m_computeSpeciesTemperatures) { T1 = T1_in_each_cell[i_cell]; }
                     //amrex::Print(0) << "JRA: i_cell = " << i_cell << ": n1 = " << n1 << ", T1 = " << T1 << std::endl;
 
                     // Call the function in order to perform collisions
@@ -712,12 +712,12 @@ public:
                     amrex::ParticleReal n1 = 0.0, n2 = 0.0;
                     amrex::ParticleReal T1 = 0.0, T2 = 0.0;
                     if (binary_collision_functor.m_computeSpeciesDensities) {
-                        n1 = n1_vec[i_cell];
-                        n2 = n2_vec[i_cell];
+                        n1 = n1_in_each_cell[i_cell];
+                        n2 = n2_in_each_cell[i_cell];
                     }
                     if (binary_collision_functor.m_computeSpeciesTemperatures) {
-                        T1 = T1_vec[i_cell];
-                        T2 = T2_vec[i_cell];
+                        T1 = T1_in_each_cell[i_cell];
+                        T2 = T2_in_each_cell[i_cell];
                     }
 
                     // Call the function in order to perform collisions
