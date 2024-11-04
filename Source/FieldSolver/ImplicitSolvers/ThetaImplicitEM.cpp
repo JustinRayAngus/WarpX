@@ -107,7 +107,7 @@ void ThetaImplicitEM::OneStep ( const amrex::Real  a_time,
     // Solve nonlinear system for Eg at t_{n+theta}
     // Particles will be advanced to t_{n+1/2}
     m_E.Copy(m_Eold); // initial guess for Eg^{n+theta}
-    m_nlsolver->Solve( m_E, m_Eold, theta_time, m_dt );
+    m_nlsolver->Solve( m_E, m_Eold, theta_time, m_theta*m_dt );
 
     // Update WarpX owned Efield_fp and Bfield_fp to t_{n+theta}
     UpdateWarpXFields( m_E, theta_time );

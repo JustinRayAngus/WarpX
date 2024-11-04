@@ -86,8 +86,6 @@ public:
                               int              a_nl_iter,
                               bool             a_from_jacobian ) = 0;
 
-    [[nodiscard]] virtual amrex::Real theta () const { return 1.0; }
-
     [[nodiscard]] int numAMRLevels () const { return m_num_amr_levels; }
 
     [[nodiscard]] const amrex::Geometry& GetGeometry (int) const;
@@ -113,7 +111,7 @@ protected:
     /**
      * \brief Time step
      */
-    mutable amrex::Real m_dt = DBL_MAX;
+    mutable amrex::Real m_dt = 0.0;
 
     /**
      * \brief Nonlinear solver type and object
