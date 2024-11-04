@@ -83,7 +83,6 @@ public:
     virtual void ComputeRHS ( WarpXSolverVec&  a_RHS,
                         const WarpXSolverVec&  a_E,
                               amrex::Real      a_time,
-                              amrex::Real      a_dt,
                               int              a_nl_iter,
                               bool             a_from_jacobian ) = 0;
 
@@ -110,6 +109,11 @@ protected:
      * \brief Number of AMR levels
      */
     int m_num_amr_levels = 1;
+
+    /**
+     * \brief Time step
+     */
+    mutable amrex::Real m_dt = DBL_MAX;
 
     /**
      * \brief Nonlinear solver type and object
