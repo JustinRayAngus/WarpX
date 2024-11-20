@@ -13,6 +13,7 @@
 #include "FieldEnergy.H"
 #include "FieldMaximum.H"
 #include "FieldMomentum.H"
+#include "FieldPoyntingFlux.H"
 #include "FieldProbe.H"
 #include "FieldReduction.H"
 #include "LoadBalanceCosts.H"
@@ -66,6 +67,7 @@ MultiReducedDiags::MultiReducedDiags ()
             {"FieldEnergy",           [](CS s){return std::make_unique<FieldEnergy>(s);}},
             {"FieldMaximum",          [](CS s){return std::make_unique<FieldMaximum>(s);}},
             {"FieldMomentum",         [](CS s){return std::make_unique<FieldMomentum>(s);}},
+            {"FieldPoyntingFlux",     [](CS s){return std::make_unique<FieldPoyntingFlux>(s);}},
             {"FieldProbe",            [](CS s){return std::make_unique<FieldProbe>(s);}},
             {"FieldReduction",        [](CS s){return std::make_unique<FieldReduction>(s);}},
             {"LoadBalanceCosts",      [](CS s){return std::make_unique<LoadBalanceCosts>(s);}},
