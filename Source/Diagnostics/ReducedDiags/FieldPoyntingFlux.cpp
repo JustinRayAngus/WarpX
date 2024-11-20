@@ -135,7 +135,7 @@ void FieldPoyntingFlux::ComputeDiags (int step)
     }
 
     for (amrex::OrientationIter face; face; ++face) {
-        amrex::Box boundary = amrex::bdryNode(domain_box, face());
+        amrex::Box const boundary = amrex::bdryNode(domain_box, face());
 
         // Get cell area
         const amrex::Real *dx = warpx.Geom(lev).CellSize();
@@ -189,7 +189,7 @@ void FieldPoyntingFlux::ComputeDiags (int step)
         }
 
         auto r = reduce_data.value();
-        int ii = int(face())*3;
+        int const ii = int(face())*3;
         m_data[ii+0] = amrex::get<0>(r)/PhysConst::mu0*dA;
         m_data[ii+1] = amrex::get<1>(r)/PhysConst::mu0*dA;
         m_data[ii+2] = amrex::get<2>(r)/PhysConst::mu0*dA;
