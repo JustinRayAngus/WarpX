@@ -61,7 +61,7 @@ void SemiImplicitEM::OneStep ( amrex::Real  a_time,
     // Set the member time step
     m_dt = a_dt;
 
-    // Fields have Eg^{n}, Bg^{n-1/2}
+    // Fields have Eg^{n}, Bg^{n}
     // Particles have up^{n} and xp^{n}.
 
     // Save up and xp at the start of the time step
@@ -93,7 +93,6 @@ void SemiImplicitEM::OneStep ( amrex::Real  a_time,
     m_WarpX->SetElectricFieldAndApplyBCs( m_E );
 
     // Advance WarpX owned Bfield_fp from t_{n+1/2} to t_{n+1}
-    //m_WarpX->EvolveB(0.5_rt*m_dt, DtType::Full);
     m_WarpX->EvolveB(0.5_rt*m_dt, DtType::SecondHalf);
     m_WarpX->FillBoundaryB(m_WarpX->getngEB(), true);
 
