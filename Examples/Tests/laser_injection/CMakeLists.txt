@@ -32,6 +32,16 @@ add_warpx_test(
 )
 
 add_warpx_test(
+    test_1d_laser_injection_implicit  # name
+    1  # dims
+    2  # nprocs
+    inputs_test_1d_laser_injection_implicit  # inputs
+    analysis_1d.py  # analysis
+    diags/diag1000240  # output
+    OFF  # dependency
+)
+
+add_warpx_test(
     test_2d_laser_injection_implicit  # name
     2  # dims
     2  # nprocs
