@@ -70,9 +70,9 @@ void SemiImplicitEM::OneStep ( amrex::Real  a_time,
     // Save Eg at the start of the time step
     m_Eold.Copy( FieldType::Efield_fp );
 
-    // Advance WarpX owned Bfield_fp to t_{n+1/2}
-    m_WarpX->EvolveB(m_dt, DtType::Full);
-    m_WarpX->ApplyMagneticFieldBCs();
+    // Advance WarpX owned Bfield_fp from t_{n} to t_{n+1/2}
+    m_WarpX->EvolveB(0.5_rt*m_dt, DtType::FirstHalf);
+    m_WarpX->FillBoundaryB(m_WarpX->getngEB(), true);
 
     const amrex::Real half_time = a_time + 0.5_rt*m_dt;
 
@@ -91,6 +91,11 @@ void SemiImplicitEM::OneStep ( amrex::Real  a_time,
     // Eg^{n+1} = 2.0*Eg^{n+1/2} - Eg^n
     m_E.linComb( 2._rt, m_E, -1._rt, m_Eold );
     m_WarpX->SetElectricFieldAndApplyBCs( m_E );
+
+    // Advance WarpX owned Bfield_fp from t_{n+1/2} to t_{n+1}
+    //m_WarpX->EvolveB(0.5_rt*m_dt, DtType::Full);
+    m_WarpX->EvolveB(0.5_rt*m_dt, DtType::SecondHalf);
+    m_WarpX->FillBoundaryB(m_WarpX->getngEB(), true);
 
 }
 
