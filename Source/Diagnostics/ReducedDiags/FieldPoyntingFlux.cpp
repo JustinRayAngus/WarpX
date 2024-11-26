@@ -73,14 +73,27 @@ FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
             ofs << "[" << c++ << "]time(s)";
 
             std::vector<std::string> sides = {"lo", "hi"};
-            std::vector<std::string> coords = {"x", "y", "z"};
+
+#if defined(WARPX_DIM_3D)
+            std::vector<std::string> vector_coords = {"x", "y", "z"};
+            std::vector<std::string> space_coords = {"x", "y", "z"};
+#elif defined(WARPX_DIM_XZ)
+            std::vector<std::string> vector_coords = {"x", "y", "z"};
+            std::vector<std::string> space_coords = {"x", "z"};
+#elif defined(WARPX_DIM_1D_Z)
+            std::vector<std::string> vector_coords = {"x", "y", "z"};
+            std::vector<std::string> space_coords = {"z"};
+#elif defined(WARPX_DIM_RZ)
+            std::vector<std::string> vector_coords = {"r", "t", "z"};
+            std::vector<std::string> space_coords = {"r", "z"};
+#endif
 
             // Only on level 0
             for (int iside = 0; iside < 2; iside++) {
                 for (int ic = 0; ic < AMREX_SPACEDIM; ic++) {
                     for (int iv = 0; iv < 3; iv++) {
                         ofs << m_sep;
-                        ofs << "[" << c++ << "]flux_" + coords[iv] + "_" + sides[iside] + "_" + coords[ic] +"(W)";
+                        ofs << "[" << c++ << "]flux_" + vector_coords[iv] + "_" + sides[iside] + "_" + space_coords[ic] +"(W)";
             }}}
 
             ofs << "\n";
