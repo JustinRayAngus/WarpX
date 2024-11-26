@@ -49,6 +49,10 @@ public:
      *  @param[in] step current iteration time */
     void ComputeDiags (int step);
 
+    /** Loop over all ReducedDiags and call their ComputeDiagsMidStep
+     *  @param[in] step current iteration time */
+    void ComputeDiagsMidStep (int step);
+
     /** Loop over all ReducedDiags and call their WriteToFile
      *  @param[in] step current iteration time */
     void WriteToFile (int step);

@@ -86,6 +86,13 @@ void ReducedDiags::LoadBalance ()
     // load balancing operations
 }
 
+void ReducedDiags::ComputeDiagsMidStep (int /*step*/)
+{
+    // Defines an empty function ComputeDiagsMidStep() to be overwritten if needed.
+    // Function used to calculate the diagnostic at the mid step time leve
+    // (instead of at the end of the step).
+}
+
 void ReducedDiags::BackwardCompatibility () const
 {
     const amrex::ParmParse pp_rd_name(m_rd_name);

@@ -104,6 +104,25 @@ FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
 
 void FieldPoyntingFlux::ComputeDiags (int step)
 {
+    // This will be called at the end of the time step. Only calculate the
+    // flux if it had not already been calculated mid step.
+    amrex::Print() << "ComputeDiags\n";
+    if (!use_mid_step_value) {
+        ComputePoyntingFlux(step);
+        amrex::Print() << " calling ComputePoyntingFlux\n";
+    }
+}
+
+void FieldPoyntingFlux::ComputeDiagsMidStep (int step)
+{
+    // If this is called, always use the value calculated here.
+    amrex::Print() << "ComputeDiagsMidStep\n";
+    use_mid_step_value = true;
+    ComputePoyntingFlux(step);
+}
+
+void FieldPoyntingFlux::ComputePoyntingFlux (int step)
+{
     using ablastr::fields::Direction;
 
     // Check if the diags should be done

@@ -126,6 +126,20 @@ void MultiReducedDiags::ComputeDiags (int step)
 }
 // end void MultiReducedDiags::ComputeDiags
 
+// call functions to compute diags at the mid step time level
+void MultiReducedDiags::ComputeDiagsMidStep (int step)
+{
+    WARPX_PROFILE("MultiReducedDiags::ComputeDiagsMidStep()");
+
+    // loop over all reduced diags
+    for (int i_rd = 0; i_rd < static_cast<int>(m_rd_names.size()); ++i_rd)
+    {
+        m_multi_rd[i_rd] -> ComputeDiagsMidStep(step);
+    }
+    // end loop over all reduced diags
+}
+// end void MultiReducedDiags::ComputeDiagsMidStep
+
 // function to write data
 void MultiReducedDiags::WriteToFile (int step)
 {

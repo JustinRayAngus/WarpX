@@ -84,6 +84,13 @@ public:
     virtual void ComputeDiags (int step) = 0;
 
     /**
+     * function to compute diags at the mid step time level
+     *
+     * @param[in] step current time step
+     */
+    virtual void ComputeDiagsMidStep (int step);
+
+    /**
      * write to file function
      *
      * @param[in] step current time step

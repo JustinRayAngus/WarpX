@@ -24,7 +24,23 @@ public:
      *
      * \param[in] rd_name reduced diags names
      */
-    FieldPoyntingFlux(const std::string& rd_name);
+    FieldPoyntingFlux (const std::string& rd_name);
+
+    /**
+     * \brief Call the routine to compute the Poynting flux if needed
+     *
+     * \param[in] step current time step
+     */
+    void ComputeDiags (int step) final;
+
+    /**
+     * \brief Call the routine to compute the Poynting flux at the mid step time level
+     *
+     * \param[in] step current time step
+     */
+    void ComputeDiagsMidStep (int step) final;
+
+private:
 
     /**
      * \brief This function computes the electromagnetic Poynting flux,
@@ -33,7 +49,10 @@ public:
      *
      * \param[in] step current time step
      */
-    void ComputeDiags(int step) final;
+    void ComputePoyntingFlux (int step);
+
+    bool use_mid_step_value = false;
+
 };
 
 #endif
