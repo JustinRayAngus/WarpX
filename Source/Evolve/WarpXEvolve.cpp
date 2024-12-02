@@ -436,6 +436,13 @@ WarpX::OneStep_nosub (Real cur_time)
         EvolveG(0.5_rt * dt[0], DtType::SecondHalf);
         EvolveB(0.5_rt * dt[0], DtType::SecondHalf); // We now have B^{n+1}
 
+        // Temporary hack so that the B guard cells are set as needed for
+        // the Poynting flux diagnostic.
+        // Maybe this should be done here anyway to make sure that everything
+        // is fully up to date at the end of the time step?
+        // This could be useful for the Python interface
+        FillBoundaryB(guard_cells.ng_FieldSolver, WarpX::sync_nodal_points);
+
         if (do_pml) {
             DampPML();
             FillBoundaryE(guard_cells.ng_MovingWindow, WarpX::sync_nodal_points);
