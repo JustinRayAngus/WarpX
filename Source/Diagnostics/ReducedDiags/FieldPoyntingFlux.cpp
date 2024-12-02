@@ -38,8 +38,7 @@
 #include <algorithm>
 #include <vector>
 
-using namespace amrex;
-using warpx::fields::FieldType;
+using namespace amrex::literals;
 
 FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
     : ReducedDiags{rd_name}
@@ -123,6 +122,7 @@ void FieldPoyntingFlux::ComputeDiagsMidStep (int step)
 
 void FieldPoyntingFlux::ComputePoyntingFlux (int step)
 {
+    using warpx::fields::FieldType;
     using ablastr::fields::Direction;
 
     // Check if the diags should be done
@@ -171,7 +171,7 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
 
         // Get cell area
         const amrex::Real *dx = warpx.Geom(lev).CellSize();
-        std::array<Real, AMREX_SPACEDIM> dxtemp = {AMREX_D_DECL(dx[0], dx[1], dx[2])};
+        std::array<amrex::Real, AMREX_SPACEDIM> dxtemp = {AMREX_D_DECL(dx[0], dx[1], dx[2])};
         dxtemp[face().coordDir()] = 1._rt;
         const amrex::Real dA = AMREX_D_TERM(dxtemp[0], *dxtemp[1], *dxtemp[2]);
 
@@ -179,15 +179,15 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
         amrex::GpuArray<int,3> cc{0,0,0};
         cc[face().coordDir()] = 1;
 
-        amrex::ReduceOps<ReduceOpSum, ReduceOpSum, ReduceOpSum> reduce_ops;
-        amrex::ReduceData<Real, Real, Real> reduce_data(reduce_ops);
+        amrex::ReduceOps<amrex::ReduceOpSum, amrex::ReduceOpSum, amrex::ReduceOpSum> reduce_ops;
+        amrex::ReduceData<amrex::Real, amrex::Real, amrex::Real> reduce_data(reduce_ops);
 
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
 #endif
         // Loop over boxes, interpolate E,B data to cell face centers
         // and compute sum over cells of (E x B) components
-        for (amrex::MFIter mfi(Ex, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        for (amrex::MFIter mfi(Ex, amrex::TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             const amrex::Array4<const amrex::Real> & Ex_arr = Ex[mfi].array();
             const amrex::Array4<const amrex::Real> & Ey_arr = Ey[mfi].array();
@@ -204,7 +204,7 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
 
             // Compute E x B
             reduce_ops.eval(box, reduce_data,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<Real, Real, Real>
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real, amrex::Real, amrex::Real>
                 {
                     const amrex::Real Ex_cc = ablastr::coarsen::sample::Interp(Ex_arr, Ex_stag, cc, cr, i, j, k, comp);
                     const amrex::Real Ey_cc = ablastr::coarsen::sample::Interp(Ey_arr, Ey_stag, cc, cr, i, j, k, comp);

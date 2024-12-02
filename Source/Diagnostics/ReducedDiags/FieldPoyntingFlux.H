@@ -40,8 +40,6 @@ public:
      */
     void ComputeDiagsMidStep (int step) final;
 
-private:
-
     /**
      * \brief This function computes the electromagnetic Poynting flux,
      * obtained by integrating the electromagnetic Poynting flux density g = eps0 * (E x B)
@@ -50,6 +48,8 @@ private:
      * \param[in] step current time step
      */
     void ComputePoyntingFlux (int step);
+
+private:
 
     bool use_mid_step_value = false;
 
