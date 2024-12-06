@@ -167,17 +167,30 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
     }
 
     for (amrex::OrientationIter face; face; ++face) {
+
+        int const face_dir = face().coordDir();
+
+        if (face().isHigh() && WarpX::field_boundary_hi[face_dir] == FieldBoundaryType::Periodic) {
+            // For upper periodic boundaries, copy the lower value instead of regenerating it.
+            int const iu = int(face())*3;
+            int const il = int(face().flip())*3;
+            m_data[iu+0] = m_data[il+0];
+            m_data[iu+1] = m_data[il+1];
+            m_data[iu+2] = m_data[il+2];
+            continue;
+        }
+
         amrex::Box const boundary = amrex::bdryNode(domain_box, face());
 
         // Get cell area
         const amrex::Real *dx = warpx.Geom(lev).CellSize();
         std::array<amrex::Real, AMREX_SPACEDIM> dxtemp = {AMREX_D_DECL(dx[0], dx[1], dx[2])};
-        dxtemp[face().coordDir()] = 1._rt;
+        dxtemp[face_dir] = 1._rt;
         const amrex::Real dA = AMREX_D_TERM(dxtemp[0], *dxtemp[1], *dxtemp[2]);
 
         // Node-centered in the face direction, Cell-centered in other directions
         amrex::GpuArray<int,3> cc{0,0,0};
-        cc[face().coordDir()] = 1;
+        cc[face_dir] = 1;
 
         amrex::ReduceOps<amrex::ReduceOpSum, amrex::ReduceOpSum, amrex::ReduceOpSum> reduce_ops;
         amrex::ReduceData<amrex::Real, amrex::Real, amrex::Real> reduce_data(reduce_ops);
@@ -197,7 +210,7 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
             const amrex::Array4<const amrex::Real> & Bz_arr = Bz[mfi].array();
 
             amrex::Box box = enclosedCells(mfi.nodaltilebox());
-            box.surroundingNodes(face().coordDir());
+            box.surroundingNodes(face_dir);
 
             // Find the intersection with the boundary
             box &= boundary;
