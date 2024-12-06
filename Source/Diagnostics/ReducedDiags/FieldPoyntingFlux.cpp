@@ -43,18 +43,12 @@ using namespace amrex::literals;
 FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
     : ReducedDiags{rd_name}
 {
-    // RZ coordinate is not working
-#if (defined WARPX_DIM_RZ)
-        WARPX_ABORT_WITH_MESSAGE(
-            "FieldPoyntingFlux reduced diagnostics not implemented in RZ geometry");
-#endif
-
     // Resize data array
     // lo and hi is 2
-    // vector components is 3
     // space dims is AMREX_SPACEDIM
+    // instantaneous and integrated is 2
     // The order will be (Sx, Sy, Sz) for low faces, then high faces
-    m_data.resize(2*3*AMREX_SPACEDIM, 0.0_rt);
+    m_data.resize(2*AMREX_SPACEDIM*2, 0.0_rt);
 
     if (amrex::ParallelDescriptor::IOProcessor())
     {
@@ -74,26 +68,26 @@ FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
             std::vector<std::string> sides = {"lo", "hi"};
 
 #if defined(WARPX_DIM_3D)
-            std::vector<std::string> vector_coords = {"x", "y", "z"};
             std::vector<std::string> space_coords = {"x", "y", "z"};
 #elif defined(WARPX_DIM_XZ)
-            std::vector<std::string> vector_coords = {"x", "y", "z"};
             std::vector<std::string> space_coords = {"x", "z"};
 #elif defined(WARPX_DIM_1D_Z)
-            std::vector<std::string> vector_coords = {"x", "y", "z"};
             std::vector<std::string> space_coords = {"z"};
 #elif defined(WARPX_DIM_RZ)
-            std::vector<std::string> vector_coords = {"r", "t", "z"};
             std::vector<std::string> space_coords = {"r", "z"};
 #endif
 
             // Only on level 0
             for (int iside = 0; iside < 2; iside++) {
                 for (int ic = 0; ic < AMREX_SPACEDIM; ic++) {
-                    for (int iv = 0; iv < 3; iv++) {
-                        ofs << m_sep;
-                        ofs << "[" << c++ << "]flux_" + vector_coords[iv] + "_" + sides[iside] + "_" + space_coords[ic] +"(W)";
-            }}}
+                    ofs << m_sep;
+                    ofs << "[" << c++ << "]outward_power_" + sides[iside] + "_" + space_coords[ic] +"(W)";
+            }}
+            for (int iside = 0; iside < 2; iside++) {
+                for (int ic = 0; ic < AMREX_SPACEDIM; ic++) {
+                    ofs << m_sep;
+                    ofs << "[" << c++ << "]integrated_energy_loss_" + sides[iside] + "_" + space_coords[ic] +"(J)";
+            }}
 
             ofs << "\n";
             ofs.close();
@@ -129,6 +123,13 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
 
     // Get a reference to WarpX instance
     auto & warpx = WarpX::GetInstance();
+
+    // RZ coordinate only working with one mode
+#if defined(WARPX_DIM_RZ)
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(warpx.n_rz_azimuthal_modes == 1,
+        "FieldPoyntingFlux reduced diagnostics only implemented in RZ geometry for one mode");
+#endif
+
     amrex::Box domain_box = warpx.Geom(lev).Domain();
     domain_box.surroundingNodes();
 
@@ -142,6 +143,7 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
 
     // Coarsening ratio (no coarsening)
     amrex::GpuArray<int,3> const cr{1,1,1};
+
     // Reduction component (fourth component in Array4)
     constexpr int comp = 0;
 
@@ -169,11 +171,10 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
 
         if (face().isHigh() && WarpX::field_boundary_hi[face_dir] == FieldBoundaryType::Periodic) {
             // For upper periodic boundaries, copy the lower value instead of regenerating it.
-            int const iu = int(face())*3;
-            int const il = int(face().flip())*3;
-            m_data[iu+0] = m_data[il+0];
-            m_data[iu+1] = m_data[il+1];
-            m_data[iu+2] = m_data[il+2];
+            int const iu = int(face());
+            int const il = int(face().flip());
+            m_data[iu] = -m_data[il];
+            m_data[iu + 2*AMREX_SPACEDIM] = -m_data[il + 2*AMREX_SPACEDIM];
             continue;
         }
 
@@ -189,8 +190,21 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
         amrex::GpuArray<int,3> cc{0,0,0};
         cc[face_dir] = 1;
 
-        amrex::ReduceOps<amrex::ReduceOpSum, amrex::ReduceOpSum, amrex::ReduceOpSum> reduce_ops;
-        amrex::ReduceData<amrex::Real, amrex::Real, amrex::Real> reduce_data(reduce_ops);
+        // Only calculate the ExB term that is normal to the surface.
+        // normal_dir is the normal direction relative to the WarpX coordinates
+#if (defined WARPX_DIM_XZ) || (defined WARPX_DIM_RZ)
+        // For 2D : it is either 0, or 2
+        int const normal_dir = 2*face_dir;
+#elif (defined WARPX_DIM_1D_Z)
+        // For 1D : it is always 2
+        int const normal_dir = 2;
+#else
+        // For 3D : it is the same as the face direction
+        int const normal_dir = face_dir;
+#endif
+
+        amrex::ReduceOps<amrex::ReduceOpSum> reduce_ops;
+        amrex::ReduceData<amrex::Real> reduce_data(reduce_ops);
 
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
@@ -212,29 +226,65 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
             // Find the intersection with the boundary
             box &= boundary;
 
+#if defined(WARPX_DIM_RZ)
+            // Lower corner of box physical domain
+            amrex::XDim3 const xyzmin = WarpX::LowerCorner(box, lev, 0._rt);
+            amrex::Dim3 const lo = amrex::lbound(box);
+            amrex::Real const dr = warpx.Geom(lev).CellSize(lev);
+            amrex::Real const rmin = xyzmin.x;
+            int const irmin = lo.x;
+#endif
+
+            auto area_factor = [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                amrex::ignore_unused(i,j,k);
+#if defined WARPX_DIM_RZ
+                amrex::Real r;
+                if (normal_dir == 0) {
+                    r = rmin + (i - irmin)*dr;
+                } else {
+                    r = rmin + (i + 0.5_rt - irmin)*dr;
+                }
+                return 2.*MathConst::pi*r;
+#else
+                return 1._rt;
+#endif
+            };
+
             // Compute E x B
             reduce_ops.eval(box, reduce_data,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real, amrex::Real, amrex::Real>
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real>
                 {
-                    amrex::Real const Ex_cc = ablastr::coarsen::sample::Interp(Ex_arr, Ex_stag, cc, cr, i, j, k, comp);
-                    amrex::Real const Ey_cc = ablastr::coarsen::sample::Interp(Ey_arr, Ey_stag, cc, cr, i, j, k, comp);
-                    amrex::Real const Ez_cc = ablastr::coarsen::sample::Interp(Ez_arr, Ez_stag, cc, cr, i, j, k, comp);
+                    amrex::Real Ex_cc = 0._rt, Ey_cc = 0._rt, Ez_cc = 0._rt;
+                    amrex::Real Bx_cc = 0._rt, By_cc = 0._rt, Bz_cc = 0._rt;
 
-                    amrex::Real const Bx_cc = ablastr::coarsen::sample::Interp(Bx_arr, Bx_stag, cc, cr, i, j, k, comp);
-                    amrex::Real const By_cc = ablastr::coarsen::sample::Interp(By_arr, By_stag, cc, cr, i, j, k, comp);
-                    amrex::Real const Bz_cc = ablastr::coarsen::sample::Interp(Bz_arr, Bz_stag, cc, cr, i, j, k, comp);
+                    if (normal_dir == 1 || normal_dir == 2) {
+                        Ex_cc = ablastr::coarsen::sample::Interp(Ex_arr, Ex_stag, cc, cr, i, j, k, comp);
+                        Bx_cc = ablastr::coarsen::sample::Interp(Bx_arr, Bx_stag, cc, cr, i, j, k, comp);
+                    }
 
-                    return {Ey_cc * Bz_cc - Ez_cc * By_cc,
-                            Ez_cc * Bx_cc - Ex_cc * Bz_cc,
-                            Ex_cc * By_cc - Ey_cc * Bx_cc};
+                    if (normal_dir == 0 || normal_dir == 2) {
+                        Ey_cc = ablastr::coarsen::sample::Interp(Ey_arr, Ey_stag, cc, cr, i, j, k, comp);
+                        By_cc = ablastr::coarsen::sample::Interp(By_arr, By_stag, cc, cr, i, j, k, comp);
+                    }
+                    if (normal_dir == 0 || normal_dir == 1) {
+                        Ez_cc = ablastr::coarsen::sample::Interp(Ez_arr, Ez_stag, cc, cr, i, j, k, comp);
+                        Bz_cc = ablastr::coarsen::sample::Interp(Bz_arr, Bz_stag, cc, cr, i, j, k, comp);
+                    }
+
+                    amrex::Real const af = area_factor(i,j,k);
+                    if      (normal_dir == 0) { return af*(Ey_cc * Bz_cc - Ez_cc * By_cc); }
+                    else if (normal_dir == 1) { return af*(Ez_cc * Bx_cc - Ex_cc * Bz_cc); }
+                    else                      { return af*(Ex_cc * By_cc - Ey_cc * Bx_cc); }
                 });
         }
 
+        int const sign = (face().isLow() ? -1 : 1);
         auto r = reduce_data.value();
-        int const ii = int(face())*3;
-        m_data[ii+0] = amrex::get<0>(r)/PhysConst::mu0*dA;
-        m_data[ii+1] = amrex::get<1>(r)/PhysConst::mu0*dA;
-        m_data[ii+2] = amrex::get<2>(r)/PhysConst::mu0*dA;
+        int const ii = int(face());
+        m_data[ii] = sign*amrex::get<0>(r)/PhysConst::mu0*dA;
+
+        amrex::Real const dt = warpx.getdt(lev);
+        m_data[ii + 2*AMREX_SPACEDIM] += m_data[ii]*dt;
 
     }
 
