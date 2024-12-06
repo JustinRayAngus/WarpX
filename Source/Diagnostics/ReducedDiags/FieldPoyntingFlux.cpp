@@ -105,17 +105,14 @@ void FieldPoyntingFlux::ComputeDiags (int step)
 {
     // This will be called at the end of the time step. Only calculate the
     // flux if it had not already been calculated mid step.
-    amrex::Print() << "ComputeDiags\n";
     if (!use_mid_step_value) {
         ComputePoyntingFlux(step);
-        amrex::Print() << " calling ComputePoyntingFlux\n";
     }
 }
 
 void FieldPoyntingFlux::ComputeDiagsMidStep (int step)
 {
     // If this is called, always use the value calculated here.
-    amrex::Print() << "ComputeDiagsMidStep\n";
     use_mid_step_value = true;
     ComputePoyntingFlux(step);
 }
@@ -136,15 +133,15 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
     domain_box.surroundingNodes();
 
     // Get MultiFab data at given refinement level
-    const amrex::MultiFab & Ex = *warpx.m_fields.get(FieldType::Efield_aux, Direction{0}, lev);
-    const amrex::MultiFab & Ey = *warpx.m_fields.get(FieldType::Efield_aux, Direction{1}, lev);
-    const amrex::MultiFab & Ez = *warpx.m_fields.get(FieldType::Efield_aux, Direction{2}, lev);
-    const amrex::MultiFab & Bx = *warpx.m_fields.get(FieldType::Bfield_aux, Direction{0}, lev);
-    const amrex::MultiFab & By = *warpx.m_fields.get(FieldType::Bfield_aux, Direction{1}, lev);
-    const amrex::MultiFab & Bz = *warpx.m_fields.get(FieldType::Bfield_aux, Direction{2}, lev);
+    amrex::MultiFab const & Ex = *warpx.m_fields.get(FieldType::Efield_fp, Direction{0}, lev);
+    amrex::MultiFab const & Ey = *warpx.m_fields.get(FieldType::Efield_fp, Direction{1}, lev);
+    amrex::MultiFab const & Ez = *warpx.m_fields.get(FieldType::Efield_fp, Direction{2}, lev);
+    amrex::MultiFab const & Bx = *warpx.m_fields.get(FieldType::Bfield_fp, Direction{0}, lev);
+    amrex::MultiFab const & By = *warpx.m_fields.get(FieldType::Bfield_fp, Direction{1}, lev);
+    amrex::MultiFab const & Bz = *warpx.m_fields.get(FieldType::Bfield_fp, Direction{2}, lev);
 
     // Coarsening ratio (no coarsening)
-    const amrex::GpuArray<int,3> cr{1,1,1};
+    amrex::GpuArray<int,3> const cr{1,1,1};
     // Reduction component (fourth component in Array4)
     constexpr int comp = 0;
 
@@ -183,10 +180,10 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
         amrex::Box const boundary = amrex::bdryNode(domain_box, face());
 
         // Get cell area
-        const amrex::Real *dx = warpx.Geom(lev).CellSize();
+        amrex::Real const *dx = warpx.Geom(lev).CellSize();
         std::array<amrex::Real, AMREX_SPACEDIM> dxtemp = {AMREX_D_DECL(dx[0], dx[1], dx[2])};
         dxtemp[face_dir] = 1._rt;
-        const amrex::Real dA = AMREX_D_TERM(dxtemp[0], *dxtemp[1], *dxtemp[2]);
+        amrex::Real const dA = AMREX_D_TERM(dxtemp[0], *dxtemp[1], *dxtemp[2]);
 
         // Node-centered in the face direction, Cell-centered in other directions
         amrex::GpuArray<int,3> cc{0,0,0};
@@ -202,12 +199,12 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
         // and compute sum over cells of (E x B) components
         for (amrex::MFIter mfi(Ex, amrex::TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-            const amrex::Array4<const amrex::Real> & Ex_arr = Ex[mfi].array();
-            const amrex::Array4<const amrex::Real> & Ey_arr = Ey[mfi].array();
-            const amrex::Array4<const amrex::Real> & Ez_arr = Ez[mfi].array();
-            const amrex::Array4<const amrex::Real> & Bx_arr = Bx[mfi].array();
-            const amrex::Array4<const amrex::Real> & By_arr = By[mfi].array();
-            const amrex::Array4<const amrex::Real> & Bz_arr = Bz[mfi].array();
+            amrex::Array4<const amrex::Real> const & Ex_arr = Ex[mfi].array();
+            amrex::Array4<const amrex::Real> const & Ey_arr = Ey[mfi].array();
+            amrex::Array4<const amrex::Real> const & Ez_arr = Ez[mfi].array();
+            amrex::Array4<const amrex::Real> const & Bx_arr = Bx[mfi].array();
+            amrex::Array4<const amrex::Real> const & By_arr = By[mfi].array();
+            amrex::Array4<const amrex::Real> const & Bz_arr = Bz[mfi].array();
 
             amrex::Box box = enclosedCells(mfi.nodaltilebox());
             box.surroundingNodes(face_dir);
@@ -219,13 +216,13 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
             reduce_ops.eval(box, reduce_data,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real, amrex::Real, amrex::Real>
                 {
-                    const amrex::Real Ex_cc = ablastr::coarsen::sample::Interp(Ex_arr, Ex_stag, cc, cr, i, j, k, comp);
-                    const amrex::Real Ey_cc = ablastr::coarsen::sample::Interp(Ey_arr, Ey_stag, cc, cr, i, j, k, comp);
-                    const amrex::Real Ez_cc = ablastr::coarsen::sample::Interp(Ez_arr, Ez_stag, cc, cr, i, j, k, comp);
+                    amrex::Real const Ex_cc = ablastr::coarsen::sample::Interp(Ex_arr, Ex_stag, cc, cr, i, j, k, comp);
+                    amrex::Real const Ey_cc = ablastr::coarsen::sample::Interp(Ey_arr, Ey_stag, cc, cr, i, j, k, comp);
+                    amrex::Real const Ez_cc = ablastr::coarsen::sample::Interp(Ez_arr, Ez_stag, cc, cr, i, j, k, comp);
 
-                    const amrex::Real Bx_cc = ablastr::coarsen::sample::Interp(Bx_arr, Bx_stag, cc, cr, i, j, k, comp);
-                    const amrex::Real By_cc = ablastr::coarsen::sample::Interp(By_arr, By_stag, cc, cr, i, j, k, comp);
-                    const amrex::Real Bz_cc = ablastr::coarsen::sample::Interp(Bz_arr, Bz_stag, cc, cr, i, j, k, comp);
+                    amrex::Real const Bx_cc = ablastr::coarsen::sample::Interp(Bx_arr, Bx_stag, cc, cr, i, j, k, comp);
+                    amrex::Real const By_cc = ablastr::coarsen::sample::Interp(By_arr, By_stag, cc, cr, i, j, k, comp);
+                    amrex::Real const Bz_cc = ablastr::coarsen::sample::Interp(Bz_arr, Bz_stag, cc, cr, i, j, k, comp);
 
                     return {Ey_cc * Bz_cc - Ez_cc * By_cc,
                             Ez_cc * Bx_cc - Ex_cc * Bz_cc,
