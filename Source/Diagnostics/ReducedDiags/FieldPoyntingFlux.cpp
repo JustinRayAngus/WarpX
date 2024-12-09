@@ -100,7 +100,7 @@ void FieldPoyntingFlux::ComputeDiags (int step)
     // This will be called at the end of the time step. Only calculate the
     // flux if it had not already been calculated mid step.
     if (!use_mid_step_value) {
-        ComputePoyntingFlux(step);
+        ComputePoyntingFlux();
     }
 }
 
@@ -108,10 +108,10 @@ void FieldPoyntingFlux::ComputeDiagsMidStep (int step)
 {
     // If this is called, always use the value calculated here.
     use_mid_step_value = true;
-    ComputePoyntingFlux(step);
+    ComputePoyntingFlux();
 }
 
-void FieldPoyntingFlux::ComputePoyntingFlux (int step)
+void FieldPoyntingFlux::ComputePoyntingFlux ()
 {
     using warpx::fields::FieldType;
     using ablastr::fields::Direction;

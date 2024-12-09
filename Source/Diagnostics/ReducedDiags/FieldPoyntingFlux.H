@@ -47,7 +47,7 @@ public:
      *
      * \param[in] step current time step
      */
-    void ComputePoyntingFlux (int step);
+    void ComputePoyntingFlux ();
 
     void WriteCheckpointData (std::string const & dir);
 
