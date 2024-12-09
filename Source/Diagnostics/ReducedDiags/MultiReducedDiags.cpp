@@ -158,3 +158,26 @@ void MultiReducedDiags::WriteToFile (int step)
     // end loop over all reduced diags
 }
 // end void MultiReducedDiags::WriteToFile
+
+void MultiReducedDiags::WriteCheckpointData (std::string const & dir)
+{
+    // Only the I/O rank does
+    if ( !ParallelDescriptor::IOProcessor() ) { return; }
+
+    // loop over all reduced diags
+    for (int i_rd = 0; i_rd < static_cast<int>(m_rd_names.size()); ++i_rd)
+    {
+        m_multi_rd[i_rd]->WriteCheckpointData(dir);
+    }
+    // end loop over all reduced diags
+}
+
+void MultiReducedDiags::ReadCheckpointData (std::string const & dir)
+{
+    // loop over all reduced diags
+    for (int i_rd = 0; i_rd < static_cast<int>(m_rd_names.size()); ++i_rd)
+    {
+        m_multi_rd[i_rd]->ReadCheckpointData(dir);
+    }
+    // end loop over all reduced diags
+}

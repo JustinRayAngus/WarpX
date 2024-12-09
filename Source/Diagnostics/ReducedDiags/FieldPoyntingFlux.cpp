@@ -291,3 +291,36 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
     amrex::ParallelDescriptor::ReduceRealSum(m_data.data(), static_cast<int>(m_data.size()));
 
 }
+
+void
+FieldPoyntingFlux::WriteCheckpointData (std::string const & dir)
+{
+    // Write out the current values of the time integrated data
+    std::ofstream chkfile{dir + "/FieldPoyntingFlux_data.txt", std::ofstream::out};
+    if (!chkfile.good()) {
+        WARPX_ABORT_WITH_MESSAGE("FieldPoyntingFlux::WriteCheckpointData: could not open file for writing checkpoint data");
+    }
+
+    for (int i=0; i < 2*AMREX_SPACEDIM; i++) {
+        chkfile << m_data[2*AMREX_SPACEDIM + i] << "\n";
+    }
+}
+
+void
+FieldPoyntingFlux::ReadCheckpointData (std::string const & dir)
+{
+    // Read in the current values of the time integrated data
+    std::ifstream chkfile{dir + "/FieldPoyntingFlux_data.txt", std::ifstream::in};
+    if (!chkfile.good()) {
+        WARPX_ABORT_WITH_MESSAGE("FieldPoyntingFlux::ReadCheckpointData: could not open file for reading checkpoint data");
+    }
+
+    for (int i=0; i < 2*AMREX_SPACEDIM; i++) {
+        amrex::Real data;
+        if (chkfile >> data) {
+            m_data[2*AMREX_SPACEDIM + i] = data;
+        } else {
+            WARPX_ABORT_WITH_MESSAGE("FieldPoyntingFlux::ReadCheckpointData: could not read in time integrated data");
+        }
+    }
+}

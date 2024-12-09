@@ -98,6 +98,20 @@ public:
     virtual void WriteToFile (int step) const;
 
     /**
+     * \brief Write out checkpoint related data
+     *
+     * \param[in] dir Directory where checkpoint data is written
+     */
+    virtual void WriteCheckpointData (std::string const & dir);
+
+    /**
+     * \brief Read in checkpoint related data
+     *
+     * \param[in] dir Directory where checkpoint data was written
+     */
+    virtual void ReadCheckpointData (std::string const & dir);
+
+    /**
      * This function queries deprecated input parameters and aborts
      * the run if one of them is specified.
      */

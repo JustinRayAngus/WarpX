@@ -99,6 +99,20 @@ void ReducedDiags::ComputeDiagsMidStep (int /*step*/)
     // (instead of at the end of the step).
 }
 
+void ReducedDiags::WriteCheckpointData (std::string const & /*dir*/)
+{
+    // Defines an empty function WriteCheckpointData() to be overwritten if needed.
+    // Function used to write out and data needed by the diagnostic in
+    // the checkpoint.
+}
+
+void ReducedDiags::ReadCheckpointData (std::string const & /*dir*/)
+{
+    // Defines an empty function ReadCheckpointData() to be overwritten if needed.
+    // Function used to read in any data that was written out in the checkpoint
+    // when doing a restart.
+}
+
 void ReducedDiags::BackwardCompatibility () const
 {
     const amrex::ParmParse pp_rd_name(m_rd_name);

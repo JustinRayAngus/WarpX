@@ -49,6 +49,10 @@ public:
      */
     void ComputePoyntingFlux (int step);
 
+    void WriteCheckpointData (std::string const & dir);
+
+    void ReadCheckpointData (std::string const & dir);
+
 private:
 
     bool use_mid_step_value = false;
