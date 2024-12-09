@@ -301,6 +301,8 @@ FieldPoyntingFlux::WriteCheckpointData (std::string const & dir)
         WARPX_ABORT_WITH_MESSAGE("FieldPoyntingFlux::WriteCheckpointData: could not open file for writing checkpoint data");
     }
 
+    chkfile.precision(17);
+
     for (int i=0; i < 2*AMREX_SPACEDIM; i++) {
         chkfile << m_data[2*AMREX_SPACEDIM + i] << "\n";
     }
