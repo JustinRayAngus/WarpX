@@ -116,8 +116,8 @@ void FieldPoyntingFlux::ComputePoyntingFlux (int step)
     using warpx::fields::FieldType;
     using ablastr::fields::Direction;
 
-    // Check if the diags should be done
-    if (!m_intervals.contains(step+1)) { return; }
+    // Note that this is calculated every step to get the
+    // full resolution on the integrated data
 
     int const lev = 0;
 
