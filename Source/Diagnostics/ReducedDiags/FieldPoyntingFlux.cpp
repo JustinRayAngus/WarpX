@@ -47,7 +47,8 @@ FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
     // lo and hi is 2
     // space dims is AMREX_SPACEDIM
     // instantaneous and integrated is 2
-    // The order will be (Sx, Sy, Sz) for low faces, then high faces
+    // The order will be outward flux for low faces, then high faces,
+    // energy loss for low faces, then high faces
     m_data.resize(2*AMREX_SPACEDIM*2, 0.0_rt);
 
     if (amrex::ParallelDescriptor::IOProcessor())
@@ -244,7 +245,7 @@ void FieldPoyntingFlux::ComputePoyntingFlux ()
                 } else {
                     r = rmin + (i + 0.5_rt - irmin)*dr;
                 }
-                return 2.*MathConst::pi*r;
+                return 2._rt*MathConst::pi*r;
 #else
                 return 1._rt;
 #endif
