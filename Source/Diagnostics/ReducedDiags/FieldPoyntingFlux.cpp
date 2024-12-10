@@ -95,7 +95,7 @@ FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
     }
 }
 
-void FieldPoyntingFlux::ComputeDiags (int step)
+void FieldPoyntingFlux::ComputeDiags (int /*step*/)
 {
     // This will be called at the end of the time step. Only calculate the
     // flux if it had not already been calculated mid step.
@@ -104,7 +104,7 @@ void FieldPoyntingFlux::ComputeDiags (int step)
     }
 }
 
-void FieldPoyntingFlux::ComputeDiagsMidStep (int step)
+void FieldPoyntingFlux::ComputeDiagsMidStep (int /*step*/)
 {
     // If this is called, always use the value calculated here.
     use_mid_step_value = true;
