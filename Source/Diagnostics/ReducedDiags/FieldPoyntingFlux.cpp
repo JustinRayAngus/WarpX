@@ -225,7 +225,9 @@ void FieldPoyntingFlux::ComputePoyntingFlux ()
             box.surroundingNodes(face_dir);
 
             // Find the intersection with the boundary
-            box &= boundary;
+            // boundary needs to have the same type as box
+            amrex::Box const boundary_matched = amrex::convert(boundary, box.ixType());
+            box &= boundary_matched;
 
 #if defined(WARPX_DIM_RZ)
             // Lower corner of box physical domain
