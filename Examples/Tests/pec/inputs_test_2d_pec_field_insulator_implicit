@@ -69,4 +69,3 @@ poyntingflux.type = FieldPoyntingFlux
 poyntingflux.intervals = 1
 fieldenergy.type = FieldEnergy
 fieldenergy.intervals = 1
-

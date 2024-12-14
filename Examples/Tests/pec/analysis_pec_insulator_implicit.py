@@ -33,28 +33,28 @@ fn = sys.argv[1]
 
 EE = np.loadtxt(f"{fn}/../reducedfiles/fieldenergy.txt", skiprows=1)
 SS = np.loadtxt(f"{fn}/../reducedfiles/poyntingflux.txt", skiprows=1)
-SSsum = SS[:,2:6].sum(1)
-EEloss = SS[:,7:].sum(1)
+SSsum = SS[:, 2:6].sum(1)
+EEloss = SS[:, 7:].sum(1)
 
-dt = EE[1,1]
+dt = EE[1, 1]
 
 fig, ax = plt.subplots()
-ax.plot(EE[:,0], EE[:,2], label="field energy")
-ax.plot(SS[:,0], -EEloss, label="-flux*dt")
+ax.plot(EE[:, 0], EE[:, 2], label="field energy")
+ax.plot(SS[:, 0], -EEloss, label="-flux*dt")
 ax.legend()
 ax.set_xlabel("time (s)")
 ax.set_ylabel("energy (J)")
 fig.savefig("energy_history.png")
 
 fig, ax = plt.subplots()
-ax.plot(EE[:,0], (EE[:,2] + EEloss)/EE[:,2].max())
+ax.plot(EE[:, 0], (EE[:, 2] + EEloss) / EE[:, 2].max())
 ax.set_xlabel("time (s)")
 ax.set_ylabel("energy difference/max energy (1)")
 fig.savefig("energy_difference.png")
 
-tolerance_rel = 1.e-13
+tolerance_rel = 1.0e-13
 
-energy_difference_fraction = np.abs((EE[:,2] + EEloss)/EE[:,2].max()).max()
+energy_difference_fraction = np.abs((EE[:, 2] + EEloss) / EE[:, 2].max()).max()
 print(f"energy accounting error = {energy_difference_fraction}")
 print(f"tolerance_rel = {tolerance_rel}")
 
