@@ -40,3 +40,23 @@ add_warpx_test(
     diags/diag1000010  # output
     OFF  # dependency
 )
+
+add_warpx_test(
+    test_2d_pec_field_insulator_implicit  # name
+    2  # dims
+    2  # nprocs
+    inputs_test_2d_pec_field_insulator_implicit  # inputs
+    analysis_pec_insulator_implicit.py  # analysis
+    diags/diag1000020  # output
+    OFF  # dependency
+)
+
+add_warpx_test(
+    test_2d_pec_field_insulator_implicit_restart  # name
+    2  # dims
+    2  # nprocs
+    inputs_test_2d_pec_field_insulator_implicit_restart  # inputs
+    analysis_pec_insulator_implicit.py  # analysis
+    diags/diag1000020  # output
+    OFF  # dependency
+)
