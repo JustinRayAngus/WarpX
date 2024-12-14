@@ -286,12 +286,14 @@ void FieldPoyntingFlux::ComputePoyntingFlux ()
         int const ii = int(face());
         m_data[ii] = sign*amrex::get<0>(r)/PhysConst::mu0*dA;
 
-        amrex::Real const dt = warpx.getdt(lev);
-        m_data[ii + 2*AMREX_SPACEDIM] += m_data[ii]*dt;
-
     }
 
-    amrex::ParallelDescriptor::ReduceRealSum(m_data.data(), static_cast<int>(m_data.size()));
+    amrex::ParallelDescriptor::ReduceRealSum(m_data.data(), 2*AMREX_SPACEDIM);
+
+    amrex::Real const dt = warpx.getdt(lev);
+    for (int ii=0 ; ii < 2*AMREX_SPACEDIM ; ii++) {
+        m_data[ii + 2*AMREX_SPACEDIM] += m_data[ii]*dt;
+    }
 
 }
 
