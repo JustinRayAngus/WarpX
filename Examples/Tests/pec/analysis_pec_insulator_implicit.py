@@ -16,7 +16,6 @@
 # should be the same as the amount of energy pushed in from the boundary.
 # This is checked using the FieldEnergy and FieldPoyntingFlux reduced
 # diagnostics.
-import os
 import sys
 
 import matplotlib
@@ -24,9 +23,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-
-sys.path.insert(1, "../../../../warpx/Regression/Checksum/")
-from checksumAPI import evaluate_checksum
 
 # this will be the name of the plot file
 fn = sys.argv[1]
@@ -59,9 +55,3 @@ print(f"energy accounting error = {energy_difference_fraction}")
 print(f"tolerance_rel = {tolerance_rel}")
 
 assert energy_difference_fraction < tolerance_rel
-
-# compare checksums
-evaluate_checksum(
-    test_name=os.path.split(os.getcwd())[1],
-    output_file=sys.argv[1],
-)
