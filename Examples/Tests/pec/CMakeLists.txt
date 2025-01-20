@@ -58,5 +58,5 @@ add_warpx_test(
     inputs_test_2d_pec_field_insulator_implicit_restart  # inputs
     "analysis_pec_insulator_implicit.py diags/diag1000020"  # analysis
     "analysis_default_regression.py --path diags/diag1000020"  # checksum
-    OFF  # dependency
+    test_2d_pec_field_insulator_implicit  # dependency
 )
