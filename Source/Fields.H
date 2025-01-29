@@ -80,6 +80,7 @@ namespace warpx::fields
         Efield_avg_cp,
         Bfield_avg_cp,
         B_old, /**< Stores the value of B at the beginning of the timestep, for the implicit solver */
+        sigma_PC, // Stores mass matrix elements for the implicit solver PC
         ECTRhofield,
         Venl
     );
@@ -120,6 +121,7 @@ namespace warpx::fields
         FieldType::Efield_avg_cp,
         FieldType::Bfield_avg_cp,
         FieldType::B_old,
+        FieldType::sigma_PC,
         FieldType::ECTRhofield,
         FieldType::Venl
     };
