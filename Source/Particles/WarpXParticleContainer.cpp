@@ -859,7 +859,7 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
                                         const amrex::FArrayBox * Bx, const amrex::FArrayBox * By, const amrex::FArrayBox * Bz,
                                         long const offset, long const np_to_deposit,
                                         int const thread_num, const int lev, int const depos_lev,
-                                        amrex::Real const dt, amrex::Real const relative_time, PushType push_type)
+                                        amrex::Real const dt)
 {
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE((depos_lev==(lev-1)) ||
                                      (depos_lev==(lev  )),
@@ -993,6 +993,10 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
 
     WARPX_PROFILE_VAR_START(blp_deposit);
 
+    auto& uxp_n = pti.GetAttribs(particle_comps["ux_n"]);
+    auto& uyp_n = pti.GetAttribs(particle_comps["uy_n"]);
+    auto& uzp_n = pti.GetAttribs(particle_comps["uz_n"]);
+
     // Not doing shared memory deposition, call normal kernels
     if (WarpX::current_deposition_algo == CurrentDepositionAlgo::Villasenor) {
 #if (AMREX_SPACEDIM >= 2)
@@ -1009,9 +1013,6 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
 #endif
         auto& zp_n = pti.GetAttribs(particle_comps["z_n"]);
         const ParticleReal* zp_n_data = zp_n.dataPtr() + offset;
-        auto& uxp_n = pti.GetAttribs(particle_comps["ux_n"]);
-        auto& uyp_n = pti.GetAttribs(particle_comps["uy_n"]);
-        auto& uzp_n = pti.GetAttribs(particle_comps["uz_n"]);
         if (WarpX::nox == 1){
             doVillasenorDepositionShapeNImplicit<1>(
                 xp_n_data, yp_n_data, zp_n_data,
@@ -1032,9 +1033,6 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
             WARPX_ABORT_WITH_MESSAGE("mass matrices only used for shape = 1 and 2.");
         }
     } else { // Direct deposition
-        auto& uxp_n = pti.GetAttribs(particle_comps["ux_n"]);
-        auto& uyp_n = pti.GetAttribs(particle_comps["uy_n"]);
-        auto& uzp_n = pti.GetAttribs(particle_comps["uz_n"]);
         if        (WarpX::nox == 1){
             doDepositionShapeNImplicit<1>(
                 GetPosition, wp.dataPtr() + offset,
