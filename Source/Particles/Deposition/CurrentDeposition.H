@@ -11,6 +11,7 @@
 #include "Particles/Deposition/SharedDepositionUtils.H"
 #include "ablastr/parallelization/KernelTimer.H"
 #include "Particles/Pusher/GetAndSetPosition.H"
+#include "Particles/Gather/FieldGather.H"
 #include "Particles/ShapeFactors.H"
 #include "Utils/TextMsg.H"
 #include "Utils/WarpXAlgorithmSelection.H"
@@ -468,7 +469,8 @@ void doJandSigmaDepositionShapeNImplicit(const GetParticlePosition<PIdx>& GetPos
                                 const amrex::XDim3 & dinv,
                                 const amrex::XDim3 & xyzmin,
                                 const amrex::Dim3 lo,
-                                const amrex::Real q,
+                                const amrex::Real qp,
+                                const amrex::Real mp,
                                 [[maybe_unused]]const int n_rz_azimuthal_modes)
 {
     using namespace amrex::literals;
@@ -489,6 +491,15 @@ void doJandSigmaDepositionShapeNImplicit(const GetParticlePosition<PIdx>& GetPos
             amrex::ParticleReal xp_nph, yp_nph, zp_nph;
             GetPosition(ip, xp_nph, yp_nph, zp_nph);
 
+            // compute magnetic field on particle
+            amrex::ParticleReal Bxp;
+            amrex::ParticleReal Byp;
+            amrex::ParticleReal Bzp;
+            doGatherBShapeN<1>( xp_nph, yp_nph, zp_nph,
+                                Bxp, Byp, Bzp,
+                                Bx_arr, By_arr, Bz_arr,
+                                dinv, xyzmin, lo );
+
             constexpr amrex::ParticleReal inv_c2 = 1._prt/(PhysConst::c*PhysConst::c);
 
             // Compute inverse Lorentz factor, the average of gamma at time levels n and n+1
@@ -504,7 +515,7 @@ void doJandSigmaDepositionShapeNImplicit(const GetParticlePosition<PIdx>& GetPos
             const amrex::Real vy  = uyp[ip]*gaminv;
             const amrex::Real vz  = uzp[ip]*gaminv;
 
-            amrex::Real wq  = q*wp[ip];
+            amrex::Real wq  = qp*wp[ip];
 
             const amrex::Real relative_time = 0._rt;
             doDepositionShapeNKernel<depos_order>(xp_nph, yp_nph, zp_nph, wq, vx, vy, vz, jx_arr, jy_arr, jz_arr,

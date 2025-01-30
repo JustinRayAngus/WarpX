@@ -912,7 +912,8 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
 
     const amrex::XDim3 dinv = WarpX::InvCellSize(std::max(depos_lev,0));
 
-    const amrex::ParticleReal q = this->charge;
+    const amrex::ParticleReal qp = this->charge;
+    const amrex::ParticleReal mp = this->mass;
 
     WARPX_PROFILE_VAR_NS("WarpXParticleContainer::DepositCurrent::Sorting", blp_sort);
     WARPX_PROFILE_VAR_NS("WarpXParticleContainer::DepositCurrent::FindMaxTilesize",
@@ -1046,7 +1047,7 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
                 GetPosition, wp.dataPtr() + offset,
                 uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
                 uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset, ion_lev,
-                jx_arr, jy_arr, jz_arr, np_to_deposit, dt, dinv, xyzmin, lo, q,
+                jx_arr, jy_arr, jz_arr, np_to_deposit, dt, dinv, xyzmin, lo, qp,
                 WarpX::n_rz_azimuthal_modes);
         } else if (WarpX::nox == 2){
             doVillasenorDepositionShapeNImplicit<2>(
@@ -1054,7 +1055,7 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
                 GetPosition, wp.dataPtr() + offset,
                 uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
                 uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset, ion_lev,
-                jx_arr, jy_arr, jz_arr, np_to_deposit, dt, dinv, xyzmin, lo, q,
+                jx_arr, jy_arr, jz_arr, np_to_deposit, dt, dinv, xyzmin, lo, qp,
                 WarpX::n_rz_azimuthal_modes);
         } else {
             WARPX_ABORT_WITH_MESSAGE("mass matrices only used for shape = 1 and 2.");
@@ -1067,7 +1068,7 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
                 uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
                 jx_fab, jy_fab, jz_fab, Sx_arr, Sy_arr, Sz_arr,
                 Bx_arr, By_arr, Bz_arr, np_to_deposit, dinv,
-                xyzmin, lo, q, WarpX::n_rz_azimuthal_modes);
+                xyzmin, lo, qp, mp, WarpX::n_rz_azimuthal_modes);
         } else if (WarpX::nox == 2){
             doJandSigmaDepositionShapeNImplicit<2>(
                 GetPosition, wp.dataPtr() + offset,
@@ -1075,7 +1076,7 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices (WarpXParIter& pti,
                 uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
                 jx_fab, jy_fab, jz_fab, Sx_arr, Sy_arr, Sz_arr,
                 Bx_arr, By_arr, Bz_arr, np_to_deposit, dinv,
-                xyzmin, lo, q, WarpX::n_rz_azimuthal_modes);
+                xyzmin, lo, qp, mp, WarpX::n_rz_azimuthal_modes);
         } else {
             WARPX_ABORT_WITH_MESSAGE("mass matrices only used for shape = 1 and 2.");
         }
