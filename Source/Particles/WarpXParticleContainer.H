@@ -585,6 +585,11 @@ protected:
     amrex::Vector<amrex::FArrayBox> local_jy;
     amrex::Vector<amrex::FArrayBox> local_jz;
 
+    // local containers for mass matrix deposit used by implicit solvers
+    amrex::Vector<amrex::FArrayBox> local_Sx;
+    amrex::Vector<amrex::FArrayBox> local_Sy;
+    amrex::Vector<amrex::FArrayBox> local_Sz;
+
 public:
     using PairIndex = std::pair<int, int>;
     using TmpParticleTile = std::array<amrex::Gpu::DeviceVector<amrex::ParticleReal>,
