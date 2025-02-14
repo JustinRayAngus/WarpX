@@ -388,7 +388,9 @@ namespace
                 iv_mirror[idim] = mirrorfac[idim][iside] - ijk_vec[idim];
 
                 // Note that this includes the cells on the boundary
-                field(ijk_vec,n) += psign[idim][iside] * field(iv_mirror,n);
+                if (fabbox.contains(iv_mirror)) {
+                   field(ijk_vec,n) += psign[idim][iside] * field(iv_mirror,n);
+                }
 
             }
         }
