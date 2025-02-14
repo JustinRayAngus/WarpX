@@ -387,13 +387,9 @@ namespace
                 amrex::IntVect iv_mirror = ijk_vec;
                 iv_mirror[idim] = mirrorfac[idim][iside] - ijk_vec[idim];
 
-                // Update the cell if the mirror guard cell exists
-                if (ijk_vec == iv_mirror && psign[idim][iside] == -1) {
-                    field(ijk_vec,n) = 0._rt;
-                } else if (fabbox.contains(iv_mirror)) {
-                    // Note that this includes the cells on the boundary for PMC
-                    field(ijk_vec,n) += psign[idim][iside] * field(iv_mirror,n);
-                }
+                // Note that this includes the cells on the boundary
+                field(ijk_vec,n) += psign[idim][iside] * field(iv_mirror,n);
+
             }
         }
         // 2) The guard cells are updated with the appropriate image
