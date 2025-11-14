@@ -110,6 +110,18 @@ public:
         return nullptr;
     }
 
+    /**
+     * \brief Return the IntVect number of components for the mass matrices used in
+     *        the preconditioner for field direction field_dir
+     */
+    amrex::IntVect GetMassMatricesPCNcomp (const int field_dir) const
+    {
+        if (field_dir == 0) { return m_ncomp_pc_xx; }
+        else if (field_dir == 1) { return m_ncomp_pc_yy; }
+        else if (field_dir == 2) { return m_ncomp_pc_zz; }
+        else { return amrex::IntVect{-1}; }
+    }
+
     // This parameter is used for the time-step fraction in the PC for implicit
     // treatment of light waves in the curl-curl MLMG solver.
     // This function should return zero if light waves are not treated implicitly

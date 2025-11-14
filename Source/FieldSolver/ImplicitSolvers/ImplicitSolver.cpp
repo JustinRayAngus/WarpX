@@ -487,7 +487,9 @@ void ImplicitSolver::parseNonlinearSolverParams ( const amrex::ParmParse&  pp )
         }
         if (m_use_mass_matrices_pc) {
             m_mass_matrices_pc_width = 0;
+#if AMREX_SPACEDIM != 3
             pp.query("mass_matrices_pc_width", m_mass_matrices_pc_width);
+#endif
         }
 #if defined(WARPX_DIM_RCYLINDER)
         WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
@@ -848,7 +850,8 @@ void ImplicitSolver::SyncMassMatricesPCAndApplyBCs ()
         amrex::MultiFab* MM_yy = m_WarpX->m_fields.get(FieldType::MassMatrices_Y, Direction{1}, lev);
         amrex::MultiFab* MM_zz = m_WarpX->m_fields.get(FieldType::MassMatrices_Z, Direction{2}, lev);
         ablastr::fields::VectorField MM_PC = m_WarpX->m_fields.get_alldirs(FieldType::MassMatrices_PC, lev);
-#if AMREX_SPACEDIM == 1
+#if (AMREX_SPACEDIM == 1) || (AMREX_SPACEDIM == 3)
+        // Only works for SPACEDIM = 3 because we limit width = 0 for now in 3D
         const int init_comp_xx = diag_comp_xx - MM_PC_xx_width[0];
         const int init_comp_yy = diag_comp_yy - MM_PC_yy_width[0];
         const int init_comp_zz = diag_comp_zz - MM_PC_zz_width[0];
