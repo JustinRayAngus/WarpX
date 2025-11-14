@@ -835,14 +835,49 @@ void ImplicitSolver::SyncMassMatricesPCAndApplyBCs ()
     const int diag_comp_xx = (AMREX_D_TERM(m_ncomp_xx[0],*m_ncomp_xx[1],*m_ncomp_xx[2])-1)/2;
     const int diag_comp_yy = (AMREX_D_TERM(m_ncomp_yy[0],*m_ncomp_yy[1],*m_ncomp_yy[2])-1)/2;
     const int diag_comp_zz = (AMREX_D_TERM(m_ncomp_zz[0],*m_ncomp_zz[1],*m_ncomp_zz[2])-1)/2;
+    amrex::IntVect MM_PC_xx_width;
+    amrex::IntVect MM_PC_yy_width;
+    amrex::IntVect MM_PC_zz_width;
+    for (int dir=0; dir<AMREX_SPACEDIM; dir++) {
+        MM_PC_xx_width[dir] = (m_ncomp_pc_xx[dir] - 1)/2;
+        MM_PC_yy_width[dir] = (m_ncomp_pc_yy[dir] - 1)/2;
+        MM_PC_zz_width[dir] = (m_ncomp_pc_zz[dir] - 1)/2;
+    }
     for (int lev = 0; lev < m_num_amr_levels; ++lev) {
         amrex::MultiFab* MM_xx = m_WarpX->m_fields.get(FieldType::MassMatrices_X, Direction{0}, lev);
         amrex::MultiFab* MM_yy = m_WarpX->m_fields.get(FieldType::MassMatrices_Y, Direction{1}, lev);
         amrex::MultiFab* MM_zz = m_WarpX->m_fields.get(FieldType::MassMatrices_Z, Direction{2}, lev);
         ablastr::fields::VectorField MM_PC = m_WarpX->m_fields.get_alldirs(FieldType::MassMatrices_PC, lev);
-        amrex::MultiFab::Add(*MM_PC[0], *MM_xx, diag_comp_xx, 0, 1, MM_xx->nGrowVect());
-        amrex::MultiFab::Add(*MM_PC[1], *MM_yy, diag_comp_yy, 0, 1, MM_yy->nGrowVect());
-        amrex::MultiFab::Add(*MM_PC[2], *MM_zz, diag_comp_zz, 0, 1, MM_zz->nGrowVect());
+#if AMREX_SPACEDIM == 1
+        const int init_comp_xx = diag_comp_xx - MM_PC_xx_width[0];
+        const int init_comp_yy = diag_comp_yy - MM_PC_yy_width[0];
+        const int init_comp_zz = diag_comp_zz - MM_PC_zz_width[0];
+        amrex::MultiFab::Add(*MM_PC[0], *MM_xx, init_comp_xx, 0, MM_PC[0]->nComp(), MM_xx->nGrowVect());
+        amrex::MultiFab::Add(*MM_PC[1], *MM_yy, init_comp_yy, 0, MM_PC[1]->nComp(), MM_yy->nGrowVect());
+        amrex::MultiFab::Add(*MM_PC[2], *MM_zz, init_comp_zz, 0, MM_PC[2]->nComp(), MM_zz->nGrowVect());
+#elif AMREX_SPACEDIM == 2
+        const int diag_comp_pc_xx = (MM_PC[0]->nComp() - 1)/2;
+        for (int comp1 = 0; comp1 < m_ncomp_pc_xx[1]; comp1++) {
+            const int jj0 = comp1 - MM_PC_xx_width[1]; // -2 -1, 0, 1, 2
+            const int mm_comp_start = diag_comp_xx - MM_PC_xx_width[0] + m_ncomp_xx[0]*jj0;
+            const int mm_pc_comp_start = diag_comp_pc_xx - MM_PC_xx_width[0] + m_ncomp_pc_xx[0]*jj0;
+            amrex::MultiFab::Add(*MM_PC[0], *MM_xx, mm_comp_start, mm_pc_comp_start, m_ncomp_pc_xx[0], MM_xx->nGrowVect());
+        }
+        const int diag_comp_pc_yy = (MM_PC[1]->nComp() - 1)/2;
+        for (int comp1 = 0; comp1 < m_ncomp_pc_yy[1]; comp1++) {
+            const int jj0 = comp1 - MM_PC_yy_width[1]; // -2 -1, 0, 1, 2
+            const int mm_comp_start = diag_comp_yy - MM_PC_yy_width[0] + m_ncomp_yy[0]*jj0;
+            const int mm_pc_comp_start = diag_comp_pc_yy - MM_PC_yy_width[0] + m_ncomp_pc_yy[0]*jj0;
+            amrex::MultiFab::Add(*MM_PC[1], *MM_yy, mm_comp_start, mm_pc_comp_start, m_ncomp_pc_yy[0], MM_yy->nGrowVect());
+        }
+        const int diag_comp_pc_zz = (MM_PC[2]->nComp() - 1)/2;
+        for (int comp1 = 0; comp1 < m_ncomp_pc_zz[1]; comp1++) {
+            const int jj0 = comp1 - MM_PC_zz_width[1]; // -2 -1, 0, 1, 2
+            const int mm_comp_start = diag_comp_zz - MM_PC_zz_width[0] + m_ncomp_zz[0]*jj0;
+            const int mm_pc_comp_start = diag_comp_pc_zz - MM_PC_zz_width[0] + m_ncomp_pc_zz[0]*jj0;
+            amrex::MultiFab::Add(*MM_PC[2], *MM_zz, mm_comp_start, mm_pc_comp_start, m_ncomp_pc_zz[0], MM_zz->nGrowVect());
+        }
+#endif
     }
 
     // Do addOp Exchange on MassMatrices_PC
@@ -871,15 +906,22 @@ void ImplicitSolver::SetMassMatricesForPC ( const amrex::Real a_theta_dt )
     // Note: This should be done after Sync/communication has been called
 
     const amrex::Real pc_factor = PhysConst::c * PhysConst::c * PhysConst::mu0 * a_theta_dt;
-    const PreconditionerType pc_type = m_nlsolver->GetPreconditionerType();
-    const int diag_comp = 0;
     for (int lev = 0; lev < m_num_amr_levels; ++lev) {
-        for (int dir = 0 ; dir < 3 ; dir++) {
-            amrex::MultiFab* MM_PC = m_WarpX->m_fields.get(FieldType::MassMatrices_PC, Direction{dir}, lev);
-            MM_PC->mult(pc_factor, 0, MM_PC->nComp());
-            if (pc_type == PreconditionerType::pc_curl_curl_mlmg) {
-                MM_PC->plus(1.0_rt, diag_comp, 1, 0);
-            }
+        amrex::MultiFab* MMxx_PC = m_WarpX->m_fields.get(FieldType::MassMatrices_PC, Direction{0}, lev);
+        amrex::MultiFab* MMyy_PC = m_WarpX->m_fields.get(FieldType::MassMatrices_PC, Direction{1}, lev);
+        amrex::MultiFab* MMzz_PC = m_WarpX->m_fields.get(FieldType::MassMatrices_PC, Direction{2}, lev);
+        MMxx_PC->mult(pc_factor, 0, MMxx_PC->nComp());
+        MMyy_PC->mult(pc_factor, 0, MMyy_PC->nComp());
+        MMzz_PC->mult(pc_factor, 0, MMzz_PC->nComp());
+        const PreconditionerType pc_type = m_nlsolver->GetPreconditionerType();
+        if (pc_type == PreconditionerType::pc_curl_curl_mlmg) {
+            // Need to add 1 to the diagonal terms for the curl_curl pc
+            const int diag_comp_Mxx = (MMxx_PC->nComp()-1)/2;
+            const int diag_comp_Myy = (MMyy_PC->nComp()-1)/2;
+            const int diag_comp_Mzz = (MMzz_PC->nComp()-1)/2;
+            MMxx_PC->plus(1.0_rt, diag_comp_Mxx, 1, 0);
+            MMyy_PC->plus(1.0_rt, diag_comp_Myy, 1, 0);
+            MMzz_PC->plus(1.0_rt, diag_comp_Mzz, 1, 0);
         }
     }
 
