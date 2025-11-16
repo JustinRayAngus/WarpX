@@ -384,6 +384,8 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
         Gpu::Buffer<int> nnz_actual_d({nnz_max});
         auto* nnz_actual_ptr = nnz_actual_d.data();
 
+        const amrex::Array<bool,3>& blank_Efield = m_ops->GetBlankElectricField();
+
         for (int dir = 0; dir < 3; dir++) {
 
             const amrex::MultiFab* BC_mask_Edir = m_ops->GetCurl2BCmask(lev,dir);
@@ -446,6 +448,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                             if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
                         }
 
+                        if (!blank_Efield[dir]) {
 #if defined(WARPX_DIM_1D_Z)
                         if (dir != 2) {
                             {
@@ -484,7 +487,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                                 val += 2.0_rt*alpha * dxi[1]*dxi[1] * BC_mask_Edir_arr(i,j,k,0);
                             } else if (dir == 2) {
                                 val += 2.0_rt*alpha * dxi[0]*dxi[0] * BC_mask_Edir_arr(i,j,k,0);
-                            } else {
+                            } else if (dir == 1) {
                                 val += 2.0_rt*alpha * ( dxi[0]*dxi[0] * BC_mask_Edir_arr(i,j,k,0)
                                                       + dxi[1]*dxi[1] * BC_mask_Edir_arr(i,j,k,2) );
                             }
@@ -516,7 +519,8 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                             // The following four blocks are for
                             // dir = 0: d/dx(dEz/dz) at Ex(i,j) with Ex centered in x and nodal in z
                             // dir = 2: d/dz(dEx/dx) at Ez(i,j) with Ez centered in z and nodal in x
-                            {
+                            if (!blank_Efield[tdir]) {
+                                {
                                 int cidx_g_rhs = (dir == 0 ? dof_tdir_arr(i,j-1,k,1) : dof_tdir_arr(i-1,j,k,1));
                                 amrex::Real val = alpha * dxi[0] * dxi[1] * BC_mask_Edir_arr(i,j,k,2);
                                 auto flag = MatrixPCUtils::insertOrAdd( cidx_g_rhs, val,
@@ -524,8 +528,8 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                                                                         &a_ij_ptr[ridx_l*nnz_max],
                                                                         nnz_max, icol );
                                 if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
-                            }
-                            {
+                                }
+                                {
                                 int cidx_g_rhs = dof_tdir_arr(i,j,k,1);
                                 amrex::Real val = -alpha * dxi[0] * dxi[1] * BC_mask_Edir_arr(i,j,k,2);
                                 auto flag = MatrixPCUtils::insertOrAdd( cidx_g_rhs, val,
@@ -533,8 +537,8 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                                                                         &a_ij_ptr[ridx_l*nnz_max],
                                                                         nnz_max, icol );
                                 if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
-                            }
-                            {
+                                }
+                                {
                                 int cidx_g_rhs = (dir == 0 ? dof_tdir_arr(i+1,j-1,k,1) : dof_tdir_arr(i-1,j+1,k,1));
                                 amrex::Real val = -alpha * dxi[0] * dxi[1] * BC_mask_Edir_arr(i,j,k,2);
                                 auto flag = MatrixPCUtils::insertOrAdd( cidx_g_rhs, val,
@@ -542,8 +546,8 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                                                                         &a_ij_ptr[ridx_l*nnz_max],
                                                                         nnz_max, icol );
                                 if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
-                            }
-                            {
+                                }
+                                {
                                 int cidx_g_rhs = (dir == 0 ? dof_tdir_arr(i+1,j,k,1) : dof_tdir_arr(i,j+1,k,1));
                                 amrex::Real val = alpha * dxi[0] * dxi[1] * BC_mask_Edir_arr(i,j,k,2);
                                 auto flag = MatrixPCUtils::insertOrAdd( cidx_g_rhs, val,
@@ -551,8 +555,9 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                                                                         &a_ij_ptr[ridx_l*nnz_max],
                                                                         nnz_max, icol );
                                 if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
+                                }
                             }
-                        } else {
+                        } else if (dir==1) {
                             for (int jdir = 0; jdir <= 2; jdir+=2) {
                                 {
                                     int cidx_g_rhs = (jdir == 0 ? dof_arr(i-1,j,k,1) : dof_arr(i,j-1,k,1));
@@ -603,6 +608,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                         for (int ctr_dir = -1; ctr_dir <= 0; ctr_dir++) {
                             for (int ctr_tdir = -1; ctr_tdir <= 0; ctr_tdir++) {
                                 for (int tdir = 1; tdir <= 2; tdir++) {
+                                    if (blank_Efield[dvec[tdir]]) { continue; }
                                     auto iv = ic; iv[dvec[0]] += (ctr_dir+1); iv[dvec[tdir]] += ctr_tdir;
                                     auto sign = std::copysign(1,ctr_dir) * std::copysign(1,ctr_tdir);
                                     int cidx_g_rhs = dof_arrays[tdir](iv,1);
@@ -617,12 +623,13 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                             }
                         }
 #endif
+                        }
                         num_nz_ptr[ridx_l] = icol;
                     });
                 }
 
                 // Add the mass matrix piece
-                if (m_include_mass_matrices) {
+                if (m_include_mass_matrices && !blank_Efield[dir]) {
 
                     auto sigma_ii_arr = (*m_bcoefs)[lev][dir]->const_array(mfi);
                     const amrex::IntVect MM_ncomps = m_ops->GetMassMatricesPCNcomp(dir);

@@ -129,6 +129,10 @@ public:
 
     void ComputeJfromMassMatrices (const bool  a_J_from_MM_only);
 
+    const amrex::Array<bool,3>& GetBlankElectricField () const {
+        return m_blank_electric_field;
+    }
+
 protected:
 
     /**
@@ -147,6 +151,11 @@ protected:
      * \brief Time step
      */
     mutable amrex::Real m_dt = 0.0;
+
+    /**
+     * \brief Flags to turn off evolving select components of the electric field
+     */
+    amrex::Array<bool,3> m_blank_electric_field{false,false,false};
 
     /**
      * \brief Time-biasing parameter for fields used on RHS to advance system.
