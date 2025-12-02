@@ -389,6 +389,7 @@ void WarpX::OneStep (
 
     // implicit solver
     if (m_implicit_solver) {
+
         // advance fields and particles by one time step
         m_implicit_solver->OneStep(a_cur_time, a_dt, a_step);
     }
