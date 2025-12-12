@@ -1496,19 +1496,19 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
  */
 template <int depos_order>
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void VillasenorDepositionShapeNKernel ([[maybe_unused]]amrex::ParticleReal const xp_old,
-                                       [[maybe_unused]]amrex::ParticleReal const yp_old,
-                                       [[maybe_unused]]amrex::ParticleReal const zp_old,
-                                       [[maybe_unused]]amrex::ParticleReal const xp_new,
-                                       [[maybe_unused]]amrex::ParticleReal const yp_new,
-                                       [[maybe_unused]]amrex::ParticleReal const zp_new,
+void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal const xp_old,
+                                       [[maybe_unused]] amrex::ParticleReal const yp_old,
+                                       [[maybe_unused]] amrex::ParticleReal const zp_old,
+                                       [[maybe_unused]] amrex::ParticleReal const xp_new,
+                                       [[maybe_unused]] amrex::ParticleReal const yp_new,
+                                       [[maybe_unused]] amrex::ParticleReal const zp_new,
                                        amrex::ParticleReal const wq,
-                                       [[maybe_unused]]amrex::ParticleReal const uxp_mid,
-                                       [[maybe_unused]]amrex::ParticleReal const uyp_mid,
-                                       [[maybe_unused]]amrex::ParticleReal const uzp_mid,
-                                       [[maybe_unused]]amrex::ParticleReal const gaminv,
+                                       [[maybe_unused]] amrex::ParticleReal const uxp_mid,
+                                       [[maybe_unused]] amrex::ParticleReal const uyp_mid,
+                                       [[maybe_unused]] amrex::ParticleReal const uzp_mid,
+                                       [[maybe_unused]] amrex::ParticleReal const gaminv,
                                        amrex::Array4<amrex::Real>const & Jx_arr,
-                                       amrex::Array4<amrex::Real>const & Jy_arr,
+                                       [[maybe_unused]] amrex::Array4<amrex::Real>const & Jy_arr,
                                        amrex::Array4<amrex::Real>const & Jz_arr,
                                        amrex::Real const dt,
                                        amrex::XDim3 const & dinv,
@@ -1522,7 +1522,7 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]]amrex::ParticleReal const
 
     using namespace amrex::literals;
 
-#if (AMREX_SPACEDIM > 1)
+#if (AMREX_SPACEDIM > 1) && !defined(WARPX_EM_TEY)
     amrex::Real constexpr one_third = 1.0_rt / 3.0_rt;
     amrex::Real constexpr one_sixth = 1.0_rt / 6.0_rt;
 #endif
@@ -1574,7 +1574,9 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]]amrex::ParticleReal const
     double x_new = (xp_new - xyzmin.x)*dinv.x;
     double const x_old = (xp_old - xyzmin.x)*dinv.x;
     amrex::Real const vx = (xp_new - xp_old)/dt;
+#if !defined(WARPX_EM_TEY)
     amrex::Real const vy = uyp_mid*gaminv;
+#endif
 #elif defined(WARPX_DIM_1D_Z)
     amrex::Real const vx = uxp_mid*gaminv;
     amrex::Real const vy = uyp_mid*gaminv;
@@ -1627,7 +1629,9 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]]amrex::ParticleReal const
 
     // Define velocity kernals to deposit
     amrex::Real const wqx = wq*vx*invvol;
+#if !defined(WARPX_EM_TEY)
     amrex::Real const wqy = wq*vy*invvol;
+#endif
     amrex::Real const wqz = wq*vz*invvol;
 
     // 1) Determine the number of segments.
@@ -1946,6 +1950,7 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]]amrex::ParticleReal const
             }
         }
 
+#if !defined(WARPX_EM_TEY)
         // deposit out-of-plane Jy for this segment
         const auto seg_factor_y = std::min(seg_factor_x,seg_factor_z);
         amrex::Real this_Jy;
@@ -1969,6 +1974,7 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]]amrex::ParticleReal const
 #endif
             }
         }
+#endif
 
         // deposit Jz for this segment
         amrex::Real this_Jz;
