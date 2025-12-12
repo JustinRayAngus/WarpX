@@ -899,6 +899,9 @@ void ImplicitSolver::SyncMassMatricesPCAndApplyBCs ()
     // are not included in the mass matrices.
 
     const int diag_comp_xx = (AMREX_D_TERM(m_ncomp_xx[0],*m_ncomp_xx[1],*m_ncomp_xx[2])-1)/2;
+#if !defined(WARPX_EM_TEY)
+    const int diag_comp_yy = (AMREX_D_TERM(m_ncomp_yy[0],*m_ncomp_yy[1],*m_ncomp_yy[2])-1)/2;
+#endif
     const int diag_comp_zz = (AMREX_D_TERM(m_ncomp_zz[0],*m_ncomp_zz[1],*m_ncomp_zz[2])-1)/2;
     int MM_PC_ncomp_xx[3] = {1, 1, 1};
     int MM_PC_ncomp_zz[3] = {1, 1, 1};
