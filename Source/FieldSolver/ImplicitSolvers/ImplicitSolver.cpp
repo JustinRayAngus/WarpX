@@ -983,6 +983,8 @@ void ImplicitSolver::SetMassMatricesForPC ( const amrex::Real a_theta_dt )
 
 void ImplicitSolver::FinishMassMatrices ()
 {
+    BL_PROFILE("ImplicitSolver::FinishMassMatrices()");
+
     // The MM deposit routine takes advantage of symmetry for the diagonal mass
     // matrices to only deposit roughly half of the values. The remainder are
     // computed via copy here in this routine.
