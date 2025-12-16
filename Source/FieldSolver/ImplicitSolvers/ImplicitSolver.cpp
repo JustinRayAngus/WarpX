@@ -817,7 +817,6 @@ void ImplicitSolver::PreLinearSolve ()
         }
 
     }
-
 }
 
 void ImplicitSolver::PreRHSOp ( const amrex::Real  a_cur_time,
