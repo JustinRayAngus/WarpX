@@ -818,12 +818,15 @@ void ImplicitSolver::PreLinearSolve ( const amrex::Real  a_cur_time,
 
         m_WarpX->DepositMassMatrices(&options);
 
-        FinishMassMatrices();
-        if (m_use_mass_matrices_jacobian) { SaveE(); }
+        if (m_use_mass_matrices_jacobian) {
+            FinishMassMatrices();
+            SaveE();
+        }
+
         if (m_use_mass_matrices_pc) {
-           SyncMassMatricesPCAndApplyBCs();
-           const amrex::Real theta_dt = m_theta*m_dt;
-           SetMassMatricesForPC( theta_dt );
+            SyncMassMatricesPCAndApplyBCs();
+            const amrex::Real theta_dt = m_theta*m_dt;
+            SetMassMatricesForPC( theta_dt );
         }
 
     }
