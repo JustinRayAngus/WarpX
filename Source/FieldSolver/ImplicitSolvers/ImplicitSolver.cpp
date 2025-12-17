@@ -808,15 +808,9 @@ void ImplicitSolver::PreLinearSolve ( const amrex::Real  a_cur_time,
 
     amrex::ignore_unused(a_cur_time,a_nl_iter);
 
-    if (m_use_mass_matrices) { // Called from non-linear stage of JFNK and using mass matrices
+    if (m_use_mass_matrices) {
 
-        ImplicitOptions options;
-        options.linear_stage_of_jfnk = false;
-        options.use_mass_matrices_jacobian = m_use_mass_matrices_jacobian;
-        options.use_mass_matrices_pc = m_use_mass_matrices_pc;
-        options.evolve_suborbit_particles_only = false;
-
-        m_WarpX->DepositMassMatrices(&options);
+        m_WarpX->DepositMassMatrices();
 
         if (m_use_mass_matrices_jacobian) {
             FinishMassMatrices();

@@ -240,10 +240,9 @@ public:
      */
     virtual void DepositMassMatrices (ablastr::fields::MultiFabRegister& fields,
                                       int lev,
-                                      amrex::Real dt,
-                                      ImplicitOptions const * implicit_options)
+                                      amrex::Real dt)
     {
-        amrex::ignore_unused(fields,lev,dt,implicit_options);
+        amrex::ignore_unused(fields,lev,dt);
     }
 
     virtual void PostRestart () = 0;

@@ -807,8 +807,7 @@ PhysicalParticleContainer::Evolve (ablastr::fields::MultiFabRegister& fields,
 
 void
 PhysicalParticleContainer::DepositMassMatrices (ablastr::fields::MultiFabRegister& fields,
-                                                int lev, Real dt,
-                                                ImplicitOptions const * implicit_options)
+                                                int lev, Real dt)
 {
     using ablastr::fields::Direction;
     using warpx::fields::FieldType;
