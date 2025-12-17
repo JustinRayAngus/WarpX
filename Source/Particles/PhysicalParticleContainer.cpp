@@ -685,8 +685,7 @@ PhysicalParticleContainer::Evolve (ablastr::fields::MultiFabRegister& fields,
                         pti.GetiAttribs("ionizationLevel").dataPtr():nullptr;
 
                     // Deposit inside domains
-                    if (implicit_options && implicit_options->deposit_mass_matrices) {
-                        // Note that J for particles included in MM are deposited to current_fp_MM
+                    if (implicit_options) {
                         amrex::MultiFab * jx = fields.get(FieldType::current_fp_MM, Direction{0}, lev);
                         amrex::MultiFab * jy = fields.get(FieldType::current_fp_MM, Direction{1}, lev);
                         amrex::MultiFab * jz = fields.get(FieldType::current_fp_MM, Direction{2}, lev);

@@ -486,11 +486,15 @@ MultiParticleContainer::Evolve (ablastr::fields::MultiFabRegister& fields,
         if (fields.has(FieldType::current_buf, Direction{2}, lev)) { fields.get(FieldType::current_buf, Direction{2}, lev)->setVal(0.0); }
         if (fields.has(FieldType::rho_fp, lev)) { fields.get(FieldType::rho_fp, lev)->setVal(0.0); }
         if (fields.has(FieldType::rho_buf, lev)) { fields.get(FieldType::rho_buf, lev)->setVal(0.0); }
-        if (implicit_options && implicit_options->deposit_mass_matrices) {
-            fields.get(FieldType::current_fp_MM, Direction{0}, lev)->setVal(0.0);
-            fields.get(FieldType::current_fp_MM, Direction{1}, lev)->setVal(0.0);
-            fields.get(FieldType::current_fp_MM, Direction{2}, lev)->setVal(0.0);
-            if (implicit_options->use_mass_matrices_pc) {
+        if (implicit_options) {
+            if (!implicit_options->use_mass_matrices_jacobian || !implicit_options->linear_stage_of_jfnk) {
+                // Always deposit non-suborbit particles to current_fp_MM.
+                // Even if not using the mass matrices.
+                fields.get(FieldType::current_fp_MM, Direction{0}, lev)->setVal(0.0);
+                fields.get(FieldType::current_fp_MM, Direction{1}, lev)->setVal(0.0);
+                fields.get(FieldType::current_fp_MM, Direction{2}, lev)->setVal(0.0);
+            }
+            if (implicit_options->use_mass_matrices_pc && !implicit_options->linear_stage_of_jfnk) {
                 fields.get(FieldType::MassMatrices_PC, Direction{0}, lev)->setVal(0.0);
                 fields.get(FieldType::MassMatrices_PC, Direction{1}, lev)->setVal(0.0);
                 fields.get(FieldType::MassMatrices_PC, Direction{2}, lev)->setVal(0.0);
