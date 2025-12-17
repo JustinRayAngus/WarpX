@@ -92,7 +92,7 @@ void setMassMatricesKernels ( const amrex::ParticleReal qs,
  * \brief Kernel for the direct deposition of J and S (mass matrices) for thread thread_num
  * \tparam depos_order             deposition order
  * \tparam full_mass_matrices      Whether to deposit the full mass matrices
- * \tparam deposit_J   whether to deposit J
+ * \tparam deposit_J               Whether to deposit the current density
  * \param xp, yp, zp               The particle positions.
  * \param wqx,wqy,wqz              The particle velocity multiplied by the charge / volume
  * \param fpxx,fpxy,fpxz           Mass matrix kernels for Jx
@@ -648,7 +648,7 @@ void doDirectJandSigmaDeposition ( const GetParticlePosition<PIdx>& GetPosition,
  * \brief Kernel for the Villasenor deposition of J and S (mass matrices) for thread thread_num
  * \tparam depos_order             Deposition order
  * \tparam full_mass_matrices      Whether to deposit the full mass matrices
- *                                 (can only be true for depos_order = 2)
+ * \tparam deposit_J               Whether to deposit the current density
  * \param xp_old,yp_old,zp_old     Old particle positions (nominally at start of step)
  * \param xp_new,yp_new,zp_new     New particle positions (nominally at end of step)
  * \param wq_invvol                Particle charge / volume
@@ -1723,6 +1723,8 @@ void doVillasenorJandSigmaDeposition ( [[maybe_unused]] const amrex::ParticleRea
 
     const amrex::Real invvol = dinv.x*dinv.y*dinv.z;
 
+    const bool deposit_J = true;
+
     // Loop over particles and deposit into Jx_arr, Jy_arr and Jz_arr
     amrex::ParallelFor(
         np_to_deposit,
@@ -1777,7 +1779,7 @@ void doVillasenorJandSigmaDeposition ( [[maybe_unused]] const amrex::ParticleRea
             amrex::ParticleReal const yp_np1 = 2._prt*yp_nph - yp_n;
             amrex::ParticleReal const zp_np1 = 2._prt*zp_nph - zp_n;
 
-            doVillasenorJandSigmaDepositionKernel<depos_order,full_mass_matrices,true>(
+            doVillasenorJandSigmaDepositionKernel<depos_order,full_mass_matrices,deposit_J>(
                                                                 xp_n, yp_n, zp_n,
                                                                 xp_np1, yp_np1, zp_np1,
                                                                 wq_invvol,
@@ -1867,6 +1869,8 @@ void doVillasenorSigmaDeposition ( [[maybe_unused]] const amrex::ParticleReal* x
 
     const amrex::Real invvol = dinv.x*dinv.y*dinv.z;
 
+    const bool deposit_J = false;
+
     // Loop over particles and deposit into Jx_arr, Jy_arr and Jz_arr
     amrex::ParallelFor(
         np_to_deposit,
@@ -1923,7 +1927,7 @@ void doVillasenorSigmaDeposition ( [[maybe_unused]] const amrex::ParticleReal* x
             amrex::ParticleReal const yp_np1 = 2._prt*yp_nph - yp_n;
             amrex::ParticleReal const zp_np1 = 2._prt*zp_nph - zp_n;
 
-            doVillasenorJandSigmaDepositionKernel<depos_order,full_mass_matrices,false>(
+            doVillasenorJandSigmaDepositionKernel<depos_order,full_mass_matrices,deposit_J>(
                                                                 xp_n, yp_n, zp_n,
                                                                 xp_np1, yp_np1, zp_np1,
                                                                 wq_invvol,
