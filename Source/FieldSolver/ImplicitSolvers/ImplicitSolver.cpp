@@ -809,6 +809,15 @@ void ImplicitSolver::PreLinearSolve ( const amrex::Real  a_cur_time,
     amrex::ignore_unused(a_cur_time,a_nl_iter);
 
     if (m_use_mass_matrices) { // Called from non-linear stage of JFNK and using mass matrices
+
+        ImplicitOptions options;
+        options.linear_stage_of_jfnk = false;
+        options.use_mass_matrices_pc = m_use_mass_matrices_pc;
+        options.deposit_mass_matrices = true;
+        options.evolve_suborbit_particles_only = false;
+
+        m_WarpX->DepositMassMatrices(&options);
+
         FinishMassMatrices();
         if (m_use_mass_matrices_jacobian) { SaveE(); }
         if (m_use_mass_matrices_pc) {
@@ -816,6 +825,7 @@ void ImplicitSolver::PreLinearSolve ( const amrex::Real  a_cur_time,
            const amrex::Real theta_dt = m_theta*m_dt;
            SetMassMatricesForPC( theta_dt );
         }
+
     }
 }
 

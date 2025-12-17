@@ -235,6 +235,17 @@ public:
                          MomentumPushType momentum_push_type=MomentumPushType::Full,
                          ImplicitOptions const * implicit_options = nullptr) = 0;
 
+    /**
+     * \brief virtual function to deposit mass matrices for charged particles
+     */
+    virtual void DepositMassMatrices (ablastr::fields::MultiFabRegister& fields,
+                                      int lev,
+                                      amrex::Real dt,
+                                      ImplicitOptions const * implicit_options)
+    {
+        amrex::ignore_unused(fields,lev,dt,implicit_options);
+    }
+
     virtual void PostRestart () = 0;
 
     virtual void AllocData ();
@@ -384,6 +395,7 @@ public:
                                          amrex::MultiFab* jx,
                                          amrex::MultiFab* jy,
                                          amrex::MultiFab* jz,
+                                   const bool deposit_mass_matrices_only,
                                          amrex::MultiFab* Sxx,
                                          amrex::MultiFab* Sxy,
                                          amrex::MultiFab* Sxz,

@@ -514,6 +514,29 @@ MultiParticleContainer::Evolve (ablastr::fields::MultiFabRegister& fields,
 }
 
 void
+MultiParticleContainer::DepositMassMatrices (ablastr::fields::MultiFabRegister& fields,
+                                             int lev, amrex::Real dt,
+                                             ImplicitOptions const * implicit_options)
+{
+    using ablastr::fields::Direction;
+
+    fields.get(FieldType::MassMatrices_X, Direction{0}, lev)->setVal(0.0);
+    fields.get(FieldType::MassMatrices_X, Direction{1}, lev)->setVal(0.0);
+    fields.get(FieldType::MassMatrices_X, Direction{2}, lev)->setVal(0.0);
+#if !defined(WARPX_EM_TEY)
+    fields.get(FieldType::MassMatrices_Y, Direction{0}, lev)->setVal(0.0);
+    fields.get(FieldType::MassMatrices_Y, Direction{1}, lev)->setVal(0.0);
+    fields.get(FieldType::MassMatrices_Y, Direction{2}, lev)->setVal(0.0);
+#endif
+    fields.get(FieldType::MassMatrices_Z, Direction{0}, lev)->setVal(0.0);
+    fields.get(FieldType::MassMatrices_Z, Direction{1}, lev)->setVal(0.0);
+    fields.get(FieldType::MassMatrices_Z, Direction{2}, lev)->setVal(0.0);
+    for (auto& pc : allcontainers) {
+        pc->DepositMassMatrices(fields, lev, dt, implicit_options);
+    }
+}
+
+void
 MultiParticleContainer::PushX (Real dt)
 {
     for (auto& pc : allcontainers) {
