@@ -1826,6 +1826,7 @@ void doVillasenorSigmaDeposition ( [[maybe_unused]] const amrex::ParticleReal* x
                                    [[maybe_unused]] const amrex::ParticleReal* yp_n_data,
                                    [[maybe_unused]] const amrex::ParticleReal* zp_n_data,
                                    const GetParticlePosition<PIdx>& GetPosition,
+                                   const int* nsuborbits,
                                    const amrex::ParticleReal* wp,
                                    const amrex::ParticleReal* uxp_n,
                                    const amrex::ParticleReal* uyp_n,
@@ -1871,8 +1872,10 @@ void doVillasenorSigmaDeposition ( [[maybe_unused]] const amrex::ParticleReal* x
         np_to_deposit,
         [=] AMREX_GPU_DEVICE (long const ip) {
 
+            // Skip particles with suborbits zero weight.
+            if (nsuborbits && nsuborbits[ip] > 1) { return; }
+
             // Skip particles with zero weight.
-            // This should only be the case for particles that will be suborbited.
             if (wp[ip] == 0.) { return; }
 
             amrex::ParticleReal xp_nph, yp_nph, zp_nph;
