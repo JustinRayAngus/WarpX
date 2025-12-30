@@ -992,7 +992,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
         // suborbits converge. For the linear stage, the number of suborbits are not
         // permitted to change because this can cause non-convergence of GMRES.
         bool doing_deposition = linear_stage_of_jfnk ? true : false;
-        bool any_suborbit_out_of_bounds = false;
+        //bool any_suborbit_out_of_bounds = false;
         int isuborbit = 0;
         while (isuborbit < nsuborbits[ip]) {
 
@@ -1013,7 +1013,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                 this_suborbit_out_of_bounds = ParticleUtils::is_out_of_bounds(xp_n, yp_n, zp_n, dinv, xyzmin,
                                                                               domain_double, do_cropping);
             }
-            any_suborbit_out_of_bounds |= this_suborbit_out_of_bounds;
+            //any_suborbit_out_of_bounds |= this_suborbit_out_of_bounds;
 
             amrex::ParticleReal step_norm = 1._prt;
             // Try advancing the particle one suborbit step
@@ -1044,7 +1044,8 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
                 const amrex::ParticleReal gaminv = GetImplicitGammaInverse(uxp_n, uyp_n, uzp_n, ux[ip], uy[ip], uz[ip]);
 
-                if (deposit_mass_matrices && !any_suborbit_out_of_bounds) {
+                //if (deposit_mass_matrices && !any_suborbit_out_of_bounds) {
+                if (deposit_mass_matrices) {
                     // MM approximation below is not valid when a suborbit is out of bounds.
                     // Using it can lead to diverged GMRES and/or non-converged Newton.
                     // If there are only two suborbits with the second one out of bounds, then
