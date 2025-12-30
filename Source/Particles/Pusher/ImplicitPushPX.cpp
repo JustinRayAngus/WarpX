@@ -776,6 +776,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
     auto const & field_boundary_lo = warpx.GetFieldBoundaryLo();
     auto const & field_boundary_hi = warpx.GetFieldBoundaryHi();
 
+    bool any_cropping = false;
     amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> do_cropping;
     amrex::GpuArray<amrex::GpuArray<double,2>, AMREX_SPACEDIM> domain_double;
     for (int idim=0; idim < AMREX_SPACEDIM; ++idim) {
@@ -787,7 +788,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                                 (box.bigEnd(idim) >= domain_box.bigEnd(idim) &&
                                  (field_boundary_hi[idim] == FieldBoundaryType::PEC
                                || field_boundary_hi[idim] == FieldBoundaryType::PECInsulator));
-
+        any_cropping |= (do_cropping[idim][0] || do_cropping[idim][1]);
         domain_double[idim][0] = static_cast<double>(domain_box.smallEnd(idim) - box.smallEnd(idim));
         domain_double[idim][1] = static_cast<double>(domain_box.bigEnd(idim) - box.smallEnd(idim));
     }
@@ -991,6 +992,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
         // suborbits converge. For the linear stage, the number of suborbits are not
         // permitted to change because this can cause non-convergence of GMRES.
         bool doing_deposition = linear_stage_of_jfnk ? true : false;
+        bool any_suborbit_out_of_bounds = false;
         int isuborbit = 0;
         while (isuborbit < nsuborbits[ip]) {
 
@@ -1004,8 +1006,16 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
             amrex::ParticleReal Bxp = 0.0_prt;
             amrex::ParticleReal Byp = 0.0_prt;
             amrex::ParticleReal Bzp = 0.0_prt;
-            amrex::ParticleReal step_norm = 1._prt;
 
+            // Check if initial suborbit position is past an absorbing boundary.
+            bool this_suborbit_out_of_bounds = false;
+            if (any_cropping) {
+                this_suborbit_out_of_bounds = ParticleUtils::is_out_of_bounds(xp_n, yp_n, zp_n, dinv, xyzmin,
+                                                                              domain_double, do_cropping);
+            }
+            any_suborbit_out_of_bounds |= this_suborbit_out_of_bounds;
+
+            amrex::ParticleReal step_norm = 1._prt;
             // Try advancing the particle one suborbit step
             bool convergence = PushXPSingleStep<exteb_control, qed_control>(ip, dt_suborbit, setPosition,
                                  this_suborbit_out_of_bounds,
@@ -1034,7 +1044,13 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
                 const amrex::ParticleReal gaminv = GetImplicitGammaInverse(uxp_n, uyp_n, uzp_n, ux[ip], uy[ip], uz[ip]);
 
-                if (deposit_mass_matrices) {
+                if (deposit_mass_matrices && !any_suborbit_out_of_bounds) {
+                    // MM approximation below is not valid when a suborbit is out of bounds.
+                    // Using it can lead to diverged GMRES and/or non-converged Newton.
+                    // If there are only two suborbits with the second one out of bounds, then
+                    // using nsuborbits[ip] ==> nsuborbits[ip] - 1 = 1 below is correct?
+                    // Not sure what to do for nsuborbits[ip] > 2. So, for now we skip MM
+                    // for particles with any orbit out of bounds.
                     const amrex::Real wq_invvol = wq*invvol/nsuborbits[ip];
                     const amrex::Real rhop = 2.0_rt*wq_invvol*gaminv; // approximation when neglecting MM coupling terms
 
