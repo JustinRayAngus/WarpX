@@ -998,11 +998,6 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
             amrex::Real const dt_suborbit = dt/nsuborbits[ip];
 
-            // Check if initial suborbit position is past an absorbing boundary.
-            bool this_suborbit_out_of_bounds = ParticleUtils::is_out_of_bounds(xp_n, yp_n, zp_n,
-                                                                               dinv, xyzmin,
-                                                                               domain_double, do_cropping);
-
             amrex::ParticleReal Bxp = 0.0_prt;
             amrex::ParticleReal Byp = 0.0_prt;
             amrex::ParticleReal Bzp = 0.0_prt;
@@ -1045,13 +1040,8 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                 const amrex::ParticleReal gaminv = GetImplicitGammaInverse(uxp_n, uyp_n, uzp_n, ux[ip], uy[ip], uz[ip]);
 
                 //if (deposit_mass_matrices && !any_suborbit_out_of_bounds) {
+                //    Is MM approximation below valid when a suborbit is out of bounds?
                 if (deposit_mass_matrices) {
-                    // MM approximation below is not valid when a suborbit is out of bounds.
-                    // Using it can lead to diverged GMRES and/or non-converged Newton.
-                    // If there are only two suborbits with the second one out of bounds, then
-                    // using nsuborbits[ip] ==> nsuborbits[ip] - 1 = 1 below is correct?
-                    // Not sure what to do for nsuborbits[ip] > 2. So, for now we skip MM
-                    // for particles with any orbit out of bounds.
                     const amrex::Real wq_invvol = wq*invvol/nsuborbits[ip];
                     const amrex::Real rhop = 2.0_rt*wq_invvol*gaminv; // approximation when neglecting MM coupling terms
 
