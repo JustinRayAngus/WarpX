@@ -379,14 +379,14 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
             const amrex::Real weight_Jy = sx_jy[ix]*sz_jy[iz];
 #endif
             const amrex::Real weight_Jz = sx_jz[ix]*sz_jz[iz];
+
             if constexpr (deposit_J) {
                 amrex::Gpu::Atomic::AddNoRet(&jx_arr(lo.x+j_jx+ix, lo.y+l_jx+iz, 0, 0), weight_Jx*wqx);
 #if !defined(WARPX_EM_TEY)
                 amrex::Gpu::Atomic::AddNoRet(&jy_arr(lo.x+j_jy+ix, lo.y+l_jy+iz, 0, 0), weight_Jy*wqy);
 #endif
-            amrex::Gpu::Atomic::AddNoRet(
-                &jz_arr(lo.x+j_jz+ix, lo.y+l_jz+iz, 0, 0),
-                weight_Jz*wqz);
+                amrex::Gpu::Atomic::AddNoRet(&jz_arr(lo.x+j_jz+ix, lo.y+l_jz+iz, 0, 0), weight_Jz*wqz);
+            }
 
             //  Deposit mass matrices
             if constexpr (full_mass_matrices) {

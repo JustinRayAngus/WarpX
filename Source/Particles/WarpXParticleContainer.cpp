@@ -1203,9 +1203,6 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices ( WarpXParIter& pti, const
         const ParticleReal* zp_n_data = nullptr;
 #endif
 
-        bool full_mass_matrices = false;
-        if (Szz_nComp>1) { full_mass_matrices = true; }
-
         int* nsuborbits = (HasiAttrib("nsuborbits") ? pti.GetiAttribs("nsuborbits").dataPtr() : nullptr);
 
         if (WarpX::nox == 1 && full_mass_matrices) {
@@ -1308,49 +1305,89 @@ WarpXParticleContainer::DepositCurrentAndMassMatrices ( WarpXParIter& pti, const
 
     } else { // Direct deposition
 
-        if        (WarpX::nox == 1) {
-            doDirectJandSigmaDeposition<1,false>(
+        if        (WarpX::nox == 1 && full_mass_matrices) {
+            doDirectJandSigmaDeposition<1,true,false>(
                     GetPosition, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
                     uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
                     jx_fab, jy_fab, jz_fab,
-                    Sxx_nComp, Syy_nComp, Szz_nComp,
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, lo, qs, mass);
-        } else if (WarpX::nox == 2) {
-            doDirectJandSigmaDeposition<2,false>(
+        } else if  (WarpX::nox == 1 && !full_mass_matrices) {
+            doDirectJandSigmaDeposition<1,false,false>(
                     GetPosition, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
                     uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
                     jx_fab, jy_fab, jz_fab,
-                    Sxx_nComp, Syy_nComp, Szz_nComp,
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, lo, qs, mass);
-        } else if (WarpX::nox == 3) {
-            doDirectJandSigmaDeposition<3,false>(
+        } else if (WarpX::nox == 2 && full_mass_matrices) {
+            doDirectJandSigmaDeposition<2,true,false>(
                     GetPosition, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
                     uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
                     jx_fab, jy_fab, jz_fab,
-                    Sxx_nComp, Syy_nComp, Szz_nComp,
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, lo, qs, mass);
-        } else if (WarpX::nox == 4) {
-            doDirectJandSigmaDeposition<4,false>(
+        } else if (WarpX::nox == 2 && !full_mass_matrices) {
+            doDirectJandSigmaDeposition<2,false,false>(
                     GetPosition, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
                     uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
                     jx_fab, jy_fab, jz_fab,
-                    Sxx_nComp, Syy_nComp, Szz_nComp,
+                    Sxx_arr, Sxy_arr, Sxz_arr,
+                    Syx_arr, Syy_arr, Syz_arr,
+                    Szx_arr, Szy_arr, Szz_arr,
+                    Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
+                    np_to_deposit, dt, dinv, xyzmin, lo, qs, mass);
+        } else if (WarpX::nox == 3 && full_mass_matrices) {
+            doDirectJandSigmaDeposition<3,true,false>(
+                    GetPosition, wp.dataPtr() + offset,
+                    uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
+                    uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
+                    jx_fab, jy_fab, jz_fab,
+                    Sxx_arr, Sxy_arr, Sxz_arr,
+                    Syx_arr, Syy_arr, Syz_arr,
+                    Szx_arr, Szy_arr, Szz_arr,
+                    Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
+                    np_to_deposit, dt, dinv, xyzmin, lo, qs, mass);
+        } else if (WarpX::nox == 3 && !full_mass_matrices) {
+            doDirectJandSigmaDeposition<3,false,false>(
+                    GetPosition, wp.dataPtr() + offset,
+                    uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
+                    uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
+                    jx_fab, jy_fab, jz_fab,
+                    Sxx_arr, Sxy_arr, Sxz_arr,
+                    Syx_arr, Syy_arr, Syz_arr,
+                    Szx_arr, Szy_arr, Szz_arr,
+                    Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
+                    np_to_deposit, dt, dinv, xyzmin, lo, qs, mass);
+        } else if (WarpX::nox == 4 && full_mass_matrices) {
+            doDirectJandSigmaDeposition<4,true,false>(
+                    GetPosition, wp.dataPtr() + offset,
+                    uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
+                    uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
+                    jx_fab, jy_fab, jz_fab,
+                    Sxx_arr, Sxy_arr, Sxz_arr,
+                    Syx_arr, Syy_arr, Syz_arr,
+                    Szx_arr, Szy_arr, Szz_arr,
+                    Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
+                    np_to_deposit, dt, dinv, xyzmin, lo, qs, mass);
+        } else if (WarpX::nox == 4 && !full_mass_matrices) {
+            doDirectJandSigmaDeposition<4,false,false>(
+                    GetPosition, wp.dataPtr() + offset,
+                    uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
+                    uxp.dataPtr() + offset, uyp.dataPtr() + offset, uzp.dataPtr() + offset,
+                    jx_fab, jy_fab, jz_fab,
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
