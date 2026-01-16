@@ -911,11 +911,13 @@ void ImplicitSolver::SyncMassMatricesPCAndApplyBCs ()
 #if (AMREX_SPACEDIM == 1) || (AMREX_SPACEDIM == 3)
         // Only works for SPACEDIM = 3 because we limit width = 0 for now in 3D
         const int init_comp_xx = diag_comp_xx - MM_PC_xx_width[0];
-        const int init_comp_yy = diag_comp_yy - MM_PC_yy_width[0];
         const int init_comp_zz = diag_comp_zz - MM_PC_zz_width[0];
         amrex::MultiFab::Add(*MM_PC[0], *MM_xx, init_comp_xx, 0, MM_PC[0]->nComp(), MM_xx->nGrowVect());
-        amrex::MultiFab::Add(*MM_PC[1], *MM_yy, init_comp_yy, 0, MM_PC[1]->nComp(), MM_yy->nGrowVect());
         amrex::MultiFab::Add(*MM_PC[2], *MM_zz, init_comp_zz, 0, MM_PC[2]->nComp(), MM_zz->nGrowVect());
+#if !defined(WARPX_EM_TEY)
+        const int init_comp_yy = diag_comp_yy - MM_PC_yy_width[0];
+        amrex::MultiFab::Add(*MM_PC[1], *MM_yy, init_comp_yy, 0, MM_PC[1]->nComp(), MM_yy->nGrowVect());
+#endif
 #elif AMREX_SPACEDIM == 2
         const int diag_comp_pc_xx = (MM_PC[0]->nComp() - 1)/2;
         for (int comp1 = 0; comp1 < m_ncomp_pc_xx[1]; comp1++) {
