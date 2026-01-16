@@ -1560,6 +1560,9 @@ void doVillasenorJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::Parti
 
     if constexpr (full_mass_matrices) {
 
+    const int width_zz = depos_order - 1 + max_crossings;
+    const int width_yy = depos_order + max_crossings;
+
     // Loop over segments and deposit full mass matrices
     for (int ns=0; ns<num_segments; ns++) {
 
@@ -1573,7 +1576,7 @@ void doVillasenorJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::Parti
                 for (int kE=0; kE<=depos_order; kE++) {
                     const amrex::Real weight_E = weight_node[ms][kE];
                     const int comp_yy = depos_order - k + kE + SegShift;
-                    if (kE <= k) { // reduced deposit for diagonal MMs
+                    if (comp_yy <= width_yy) { // reduced deposit for diagonal MMs
                         amrex::Gpu::Atomic::AddNoRet(&Sxx_arr(k_J, 0, comp_yy), fpxx*weight_J*weight_E);
                         amrex::Gpu::Atomic::AddNoRet(&Syy_arr(k_J, 0, comp_yy), fpyy*weight_J*weight_E);
                     }
@@ -1597,9 +1600,10 @@ void doVillasenorJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::Parti
             const amrex::Real weight_J = weight_cell[ns][k];
             for (int ms=0; ms<num_segments; ms++) {
                 const int SegShift = max_crossings + SegNum[ms] - SegNum[ns];
-                for (int kE=0; kE<=k; kE++) { // reduced deposit for diagonal MM
-                    const amrex::Real weight_E = weight_cell[ms][kE];
+                for (int kE=0; kE<=depos_order-1; kE++) {
                     const int comp_zz = depos_order-1 - k + kE + SegShift;
+                    if (comp_zz > width_zz) { break; } // reduced deposit for diagonal MM
+                    const amrex::Real weight_E = weight_cell[ms][kE];
                     amrex::Gpu::Atomic::AddNoRet(&Szz_arr(k_J, 0, comp_zz), fpzz*weight_J*weight_E);
                 }
                 for (int kE=0; kE<=depos_order; kE++) {
