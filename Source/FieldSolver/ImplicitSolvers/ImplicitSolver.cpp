@@ -1003,13 +1003,18 @@ void ImplicitSolver::FinishMassMatrices ()
     using ablastr::fields::Direction;
     using warpx::fields::FieldType;
 
+#if AMREX_SPACEDIM == 2
     const int ncomp_tot_xx = AMREX_D_TERM(m_ncomp_xx[0],*m_ncomp_xx[1],*m_ncomp_xx[2]);
     const int ncomp_tot_zz = AMREX_D_TERM(m_ncomp_zz[0],*m_ncomp_zz[1],*m_ncomp_zz[2]);
-    amrex::IntVect Sxx_width, Szz_width;
 #if !defined(WARPX_EM_TEY)
     const int ncomp_tot_yy = AMREX_D_TERM(m_ncomp_yy[0],*m_ncomp_yy[1],*m_ncomp_yy[2]);
+#endif
+#endif
+
+#if !defined(WARPX_EM_TEY)
     amrex::IntVect Syy_width;
 #endif
+    amrex::IntVect Sxx_width, Szz_width;
     for (int dir=0; dir<AMREX_SPACEDIM; dir++) {
         Sxx_width[dir] = (m_ncomp_xx[dir] - 1)/2;
 #if !defined(WARPX_EM_TEY)
@@ -1018,10 +1023,12 @@ void ImplicitSolver::FinishMassMatrices ()
         Szz_width[dir] = (m_ncomp_zz[dir] - 1)/2;
     }
 
+#if AMREX_SPACEDIM == 2
     const amrex::IntVect ncomp_xx = m_ncomp_xx;
     const amrex::IntVect ncomp_zz = m_ncomp_zz;
 #if !defined(WARPX_EM_TEY)
     const amrex::IntVect ncomp_yy = m_ncomp_yy;
+#endif
 #endif
 
     for (int lev = 0; lev < m_num_amr_levels; ++lev) {
@@ -1059,6 +1066,8 @@ void ImplicitSolver::FinishMassMatrices ()
 #if AMREX_SPACEDIM == 1
                 const int idx[3] = {i, j, k};
                 const int width = std::min(Sxx_width[0],Sbx.bigEnd(0)-idx[0]);
+                // Symmetry for diagonal MM: Sxx(i,d + n) = Sxx(i+n,d - n),
+                // where d = width is the diagonal component
                 for (int n = 1; n <= width; n++) {
                     const int dst_comp = Sxx_width[0] + n;
                     const int src_comp = Sxx_width[0] - n;
@@ -1088,6 +1097,8 @@ void ImplicitSolver::FinishMassMatrices ()
 #if AMREX_SPACEDIM == 1
                 const int idx[3] = {i, j, k};
                 const int width = std::min(Syy_width[0],Sby.bigEnd(0)-idx[0]);
+                // Symmetry for diagonal MM: Syy(i,d + n) = Syy(i+n,d - n),
+                // where d = width is the diagonal component
                 for (int n = 1; n <= width; n++) {
                     const int dst_comp = Syy_width[0] + n;
                     const int src_comp = Syy_width[0] - n;
@@ -1117,6 +1128,8 @@ void ImplicitSolver::FinishMassMatrices ()
 #if AMREX_SPACEDIM == 1
                 const int idx[3] = {i, j, k};
                 const int width_zz = std::min(Szz_width[0],Sbz.bigEnd(0)-idx[0]);
+                // Symmetry for diagonal MM: Szz(i,d + n) = Szz(i+n,d - n),
+                // where d = width is the diagonal component
                 for (int n = 1; n <= width_zz; n++) {
                     const int dst_comp = Szz_width[0] + n;
                     const int src_comp = Szz_width[0] - n;
