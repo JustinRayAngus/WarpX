@@ -32,6 +32,8 @@
  * \param ms              Species mass
  * \param dt              Simulation time step
  * \param rhop            qs*wp*invvol*2.0/(gamma_n + gamma_np1)
+ * \param xp_old,yp_old,zp_old  Old particle positions (nominally at start of step)
+ * \param xp_new,yp_new,zp_new  New particle positions (nominally at end of step)
  * \param uxp,uyp,uzp     Proper velocity of particle (time-centered)
  * \param Bxp,Byp,Bzp     Magnetic field vector components on particle
  * \param fpxx,fpxy,fpxz  Mass matrices kernels corresponding to dJx
@@ -39,41 +41,76 @@
  * \param fpzx,fpzy,fpzz  Mass matrices kernels corresponding to dJz
  */
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void setMassMatricesKernels ( const amrex::ParticleReal qs,
-                              const amrex::ParticleReal ms,
-                              const amrex::ParticleReal dt,
-                              const amrex::ParticleReal rhop,
-                              const amrex::ParticleReal uxp,
-                              const amrex::ParticleReal uyp,
-                              const amrex::ParticleReal uzp,
-                              const amrex::ParticleReal Bxp,
-                              const amrex::ParticleReal Byp,
-                              const amrex::ParticleReal Bzp,
-                              amrex::ParticleReal& fpxx,
-                              amrex::ParticleReal& fpxy,
-                              amrex::ParticleReal& fpxz,
-                              amrex::ParticleReal& fpyx,
-                              amrex::ParticleReal& fpyy,
-                              amrex::ParticleReal& fpyz,
-                              amrex::ParticleReal& fpzx,
-                              amrex::ParticleReal& fpzy,
-                              amrex::ParticleReal& fpzz )
+void setMassMatricesKernels (const amrex::ParticleReal qs,
+                             const amrex::ParticleReal ms,
+                             const amrex::ParticleReal dt,
+                             const amrex::ParticleReal rhop,
+                             [[maybe_unused]] const amrex::ParticleReal xp_old,
+                             [[maybe_unused]] const amrex::ParticleReal yp_old,
+                             [[maybe_unused]] const amrex::ParticleReal zp_old,
+                             [[maybe_unused]] const amrex::ParticleReal xp_new,
+                             [[maybe_unused]] const amrex::ParticleReal yp_new,
+                             [[maybe_unused]] const amrex::ParticleReal zp_new,
+                             const amrex::ParticleReal uxp,
+                             const amrex::ParticleReal uyp,
+                             const amrex::ParticleReal uzp,
+                             const amrex::ParticleReal Bxp,
+                             const amrex::ParticleReal Byp,
+                             const amrex::ParticleReal Bzp,
+                             amrex::ParticleReal& fpxx,
+                             amrex::ParticleReal& fpxy,
+                             amrex::ParticleReal& fpxz,
+                             amrex::ParticleReal& fpyx,
+                             amrex::ParticleReal& fpyy,
+                             amrex::ParticleReal& fpyz,
+                             amrex::ParticleReal& fpzx,
+                             amrex::ParticleReal& fpzy,
+                             amrex::ParticleReal& fpzz)
 {
     using namespace amrex::literals;
 
     constexpr amrex::ParticleReal inv_c2 = 1._prt/(PhysConst::c*PhysConst::c);
 
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+    amrex::Real const xp_mid = (xp_new + xp_old)*0.5_rt;
+    amrex::Real const yp_mid = (yp_new + yp_old)*0.5_rt;
+    amrex::Real const rp_new = std::sqrt(xp_new*xp_new + yp_new*yp_new);
+    amrex::Real const rp_old = std::sqrt(xp_old*xp_old + yp_old*yp_old);
+    amrex::Real const rp_mid = (rp_new + rp_old)/2._rt;
+    amrex::Real const costheta_mid = (rp_mid > 0._rt ? xp_mid/rp_mid : 1._rt);
+    amrex::Real const sintheta_mid = (rp_mid > 0._rt ? yp_mid/rp_mid : 0._rt);
+    const amrex::Real Cp0 = costheta_mid*costheta_mid + sintheta_mid*sintheta_mid;
+#endif
+
     // Convert B on particle to normalized cyclotron units with dt/2.0
     const amrex::ParticleReal gamma_bar = std::sqrt(1._prt + (uxp*uxp + uyp*uyp + uzp*uzp)*inv_c2);
+    if (gamma_bar > 1.01) { amrex::AllPrint() << " JRA: gamma_bar = " << gamma_bar << std::endl; }
     const amrex::ParticleReal alpha = qs/ms*0.5_prt*dt/gamma_bar;
     const amrex::ParticleReal bxp = alpha*Bxp;
     const amrex::ParticleReal byp = alpha*Byp;
     const amrex::ParticleReal bzp = alpha*Bzp;
 
     // Compute Mass Matrix kernels (non-relativistic for now)
-    amrex::ParticleReal bpsq = bxp*bxp + byp*byp + bzp*bzp;
-    amrex::ParticleReal arogp = alpha*rhop/(1.0_prt + bpsq);
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+    const amrex::ParticleReal bpsq = Cp0*(bxp*bxp + byp*byp) + bzp*bzp;
+#else
+    const amrex::ParticleReal bpsq = bxp*bxp + byp*byp + bzp*bzp;
+#endif
+    const amrex::ParticleReal arogp = alpha*rhop/(1.0_prt + bpsq);
 
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+    fpxx = Cp0*arogp*(Cp0*bxp*bxp + 1.0_rt);
+    fpxy = Cp0*arogp*(Cp0*bxp*byp + bzp);
+    fpxz = Cp0*arogp*(bxp*bzp - byp);
+
+    fpyx = Cp0*arogp*(Cp0*byp*bxp - bzp);
+    fpyy = Cp0*arogp*(Cp0*byp*byp + 1.0_rt);
+    fpyz = Cp0*arogp*(byp*bzp + bxp);
+
+    fpzx = Cp0*arogp*(bzp*bxp + byp);
+    fpzy = Cp0*arogp*(bzp*byp - bxp);
+    fpzz = arogp*(bzp*bzp + 1.0_rt);
+#else
     fpxx = arogp*(bxp*bxp + 1.0_rt);
     fpxy = arogp*(bxp*byp + bzp);
     fpxz = arogp*(bxp*bzp - byp);
@@ -85,6 +122,7 @@ void setMassMatricesKernels ( const amrex::ParticleReal qs,
     fpzx = arogp*(bzp*bxp + byp);
     fpzy = arogp*(bzp*byp - bxp);
     fpzz = arogp*(bzp*bzp + 1.0_rt);
+#endif
 
 }
 
@@ -112,9 +150,10 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleReal xp,
                                          [[maybe_unused]] const amrex::ParticleReal yp,
                                          [[maybe_unused]] const amrex::ParticleReal zp,
-                                         const amrex::ParticleReal wqx,
-                                         [[maybe_unused]] const amrex::ParticleReal wqy,
-                                         const amrex::ParticleReal wqz,
+                                         const amrex::Real wq_invvol,
+                                         const amrex::ParticleReal vx,
+                                         [[maybe_unused]] const amrex::ParticleReal vy,
+                                         const amrex::ParticleReal vz,
                                          const amrex::ParticleReal fpxx,
                                          [[maybe_unused]] const amrex::ParticleReal fpxy,
                                          [[maybe_unused]] const amrex::ParticleReal fpxz,
@@ -151,13 +190,44 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
     // MassMatrices index shift parameter
     amrex::IntVect shift = amrex::IntVect::TheZeroVector();
 
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+    // In RZ and RCYLINDER, wqx is actually wqr, and wqy is wqtheta
+    // Convert to cylindrical at the mid point
+    const amrex::Real rpmid = std::sqrt(xp*xp + yp*yp);
+    const amrex::Real costheta = (rpmid > 0._rt ? xp/rpmid : 1._rt);
+    const amrex::Real sintheta = (rpmid > 0._rt ? yp/rpmid : 0._rt);
+    const amrex::Real wqx = wq_invvol*(+vx*costheta + vy*sintheta);
+    const amrex::Real wqy = wq_invvol*(-vx*sintheta + vy*costheta);
+    const amrex::Real wqz = wq_invvol*vz;
+#elif defined(WARPX_DIM_RSPHERE)
+    // Convert to cylindrical at the mid point
+    const amrex::Real rpxymid = std::sqrt(xp*xp + yp*yp);
+    const amrex::Real rpmid = std::sqrt(xp*xp + yp*yp + zp*zp);
+    const amrex::Real costheta = (rpxymid > 0._rt ? xp/rpxymid : 1._rt);
+    const amrex::Real sintheta = (rpxymid > 0._rt ? yp/rpxymid : 0._rt);
+    const amrex::Real cosphi = (rpmid > 0._rt ? rpxymid/rpmid : 1._rt);
+    const amrex::Real sinphi = (rpmid > 0._rt ? zpmid/rpmid : 0._rt);
+    // convert from Cartesian to spherical
+    const amrex::Real wqx = wq_invvol*(+vx*costheta*cosphi + vy*sintheta*cosphi + vz*sinphi);
+    const amrex::Real wqy = wq_invvol*(-vx*sintheta + vy*costheta);
+    const amrex::Real wqz = wq_invvol*(-vx*costheta*sinphi - vy*sintheta*sinphi + vz*cosphi);
+#else
+    const amrex::Real wqx = wq_invvol*vx;
+    const amrex::Real wqy = wq_invvol*vy;
+    const amrex::Real wqz = wq_invvol*vz;
+#endif
+
     // --- Compute shape factors
     Compute_shape_factor< depos_order > const compute_shape_factor;
 #if !defined(WARPX_DIM_1D_Z)
     // x direction
     // Get particle position after 1/2 push back in position
     // Keep these double to avoid bug in single precision
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+    const double xmid = (rpmid - xyzmin.x)*dinv.x;
+#else
     const double xmid = (xp - xyzmin.x)*dinv.x;
+#endif
 
     // j_j[xyz] leftmost grid point in x that the particle touches for the centering of each current
     // sx_j[xyz] shape factor along x for the centering of each current
@@ -346,7 +416,7 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
         }
     }
 #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
-    for (int ix=0; ix<=depos_order; ix++){
+    for (int ix = 0; ix <= depos_order; ix++){
         if constexpr (deposit_J) {
             amrex::Gpu::Atomic::AddNoRet(&jx_arr(lo.x+j_jx+ix, 0, 0, 0), sx_jx[ix]*wqx);
             amrex::Gpu::Atomic::AddNoRet(&jy_arr(lo.x+j_jy+ix, 0, 0, 0), sx_jy[ix]*wqy);
@@ -354,11 +424,10 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
         }
         // Deposit mass matrices
         if constexpr (full_mass_matrices) {
-            for (int aa=0; aa<=depos_order; aa++) {
+            for (int aa = 0; aa <= depos_order; aa++) {
 
                 int col_base = depos_order + aa - ix;
                 int Nc;
-
                 // Reduced deposit for diagonal mass matrices
                 if (aa <= ix) {
                     Nc = col_base;
@@ -368,9 +437,9 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
                 }
 
                 // Deposit off-diagonal mass matrices for X-current
-                Nc = col_base + shift[0]*offset_xy[0];
+                Nc = col_base + 1 - shift[0]*offset_xy[0];
                 amrex::Gpu::Atomic::AddNoRet(&Sxy_arr(lo.x+j_jx+ix, 0, 0, Nc), sx_jx[ix]*sx_jy[aa]*fpxy);
-                Nc = col_base + shift[0]*offset_xz[0];
+                Nc = col_base + 1 - shift[0]*offset_xz[0];
                 amrex::Gpu::Atomic::AddNoRet(&Sxz_arr(lo.x+j_jx+ix, 0, 0, Nc), sx_jx[ix]*sx_jz[aa]*fpxz);
 
                 // Deposit off-diagonal mass matrices for Y-current
@@ -380,17 +449,17 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
                 amrex::Gpu::Atomic::AddNoRet(&Syz_arr(lo.x+j_jy+ix, 0, 0, Nc), sx_jy[ix]*sx_jz[aa]*fpyz);
 
                 // Deposit off-diagonal mass matrices for Z-current
-                Nc = col_base + 1 - shift[0]*offset_xz[0];
+                Nc = col_base + shift[0]*offset_xz[0];
                 amrex::Gpu::Atomic::AddNoRet(&Szx_arr(lo.x+j_jz+ix, 0, 0, Nc), sx_jz[ix]*sx_jx[aa]*fpzx);
-                Nc = col_base + 1 - shift[0]*offset_yz[0];
+                Nc = col_base + shift[0]*offset_yz[0];
                 amrex::Gpu::Atomic::AddNoRet(&Szy_arr(lo.x+j_jz+ix, 0, 0, Nc), sx_jz[ix]*sx_jy[aa]*fpzy);
 
             }
         }
         else { // Deposit mass matrices for diagonal PC only
-            amrex::Gpu::Atomic::AddNoRet(&Sxx_arr(lo.x+j_jx+ix, 0, 0, 0), sx_jx[ix]*fpxx);
-            amrex::Gpu::Atomic::AddNoRet(&Syy_arr(lo.x+j_jy+ix, 0, 0, 0), sx_jy[ix]*fpyy);
-            amrex::Gpu::Atomic::AddNoRet(&Szz_arr(lo.x+j_jz+ix, 0, 0, 0), sx_jz[ix]*fpzz);
+            amrex::Gpu::Atomic::AddNoRet(&Sxx_arr(lo.x + j_jx + ix, 0, 0, 0), sx_jx[ix]*fpxx);
+            amrex::Gpu::Atomic::AddNoRet(&Syy_arr(lo.x + j_jy + ix, 0, 0, 0), sx_jy[ix]*fpyy);
+            amrex::Gpu::Atomic::AddNoRet(&Szz_arr(lo.x + j_jz + ix, 0, 0, 0), sx_jz[ix]*fpzz);
         }
     }
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
@@ -558,6 +627,7 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
  * \tparam depos_order             deposition order
  * \tparam full_mass_matrices      Whether to deposit the full mass matrices
  * \tparam deposit_J               Whether to deposit J
+ * \param xp_n_data,yp_n_data,zp_n_data Pointer to arrays of particle position at time level n.
  * \param GetPosition              A functor for returning the particle position.
  * \param nsuborbits               Pointer to the number of suborbits for this particle.
  * \param wp                       Pointer to array of particle weights.
@@ -578,7 +648,10 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
  * \param ms                       Species mass.
  */
 template <int depos_order, bool full_mass_matrices>
-void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
+void doDirectSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp_n_data,
+                              [[maybe_unused]] const amrex::ParticleReal* yp_n_data,
+                              [[maybe_unused]] const amrex::ParticleReal* zp_n_data,
+                              const GetParticlePosition<PIdx>& GetPosition,
                               [[maybe_unused]] const int* nsuborbits,
                               const amrex::ParticleReal* wp,
                               const amrex::ParticleReal* uxp_n,
@@ -644,21 +717,33 @@ void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
                                                                        uxp_nph[ip], uyp_nph[ip], uzp_nph[ip]);
 
             // Compute current density kernels to deposit
-            const amrex::Real rhop = qs*wp[ip]*invvol*gaminv;
-            const amrex::Real wqx  = rhop*uxp_nph[ip];
-            const amrex::Real wqy  = rhop*uyp_nph[ip];
-            const amrex::Real wqz  = rhop*uzp_nph[ip];
+            const amrex::Real wq_invvol = qs*wp[ip]*invvol;
+            const amrex::Real rhop = wq_invvol*gaminv;
+            const amrex::Real vx = uxp_nph[ip]*gaminv;
+            const amrex::Real vy = uyp_nph[ip]*gaminv;
+            const amrex::Real vz = uzp_nph[ip]*gaminv;
+
+            amrex::ParticleReal const xp_n = (xp_n_data ? xp_n_data[ip] : 0._prt);
+            amrex::ParticleReal const yp_n = (yp_n_data ? yp_n_data[ip] : 0._prt);
+            amrex::ParticleReal const zp_n = (zp_n_data ? zp_n_data[ip] : 0._prt);
+
+            // Compute position at time n + 1
+            amrex::ParticleReal const xp_np1 = 2._prt*xp_nph - xp_n;
+            amrex::ParticleReal const yp_np1 = 2._prt*yp_nph - yp_n;
+            amrex::ParticleReal const zp_np1 = 2._prt*zp_nph - zp_n;
 
             // Set the Mass Matrices kernels
             amrex::ParticleReal fpxx, fpxy, fpxz;
             amrex::ParticleReal fpyx, fpyy, fpyz;
             amrex::ParticleReal fpzx, fpzy, fpzz;
-            setMassMatricesKernels( qs, ms, dt, rhop,
-                                    uxp_nph[ip], uyp_nph[ip], uzp_nph[ip],
-                                    Bxp, Byp, Bzp,
-                                    fpxx, fpxy, fpxz,
-                                    fpyx, fpyy, fpyz,
-                                    fpzx, fpzy, fpzz );
+            setMassMatricesKernels(qs, ms, dt, rhop,
+                                   xp_n, yp_n, zp_n,
+                                   xp_np1, yp_np1, zp_np1,
+                                   uxp_nph[ip], uyp_nph[ip], uzp_nph[ip],
+                                   Bxp, Byp, Bzp,
+                                   fpxx, fpxy, fpxz,
+                                   fpyx, fpyy, fpyz,
+                                   fpzx, fpzy, fpzz);
 
             // Pass dummy arrays for Jx, Jy, Jz (which will not be used)
             amrex::Array4<amrex::Real> const dummy_Jx{};
@@ -667,7 +752,7 @@ void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
 
             doDirectJandSigmaDepositionKernel<depos_order,full_mass_matrices,/*deposit_J=*/false>(
                                                             xp_nph, yp_nph, zp_nph,
-                                                            wqx, wqy, wqz,
+                                                            wq_invvol, vx, vy, vz,
                                                             fpxx, fpxy, fpxz,
                                                             fpyx, fpyy, fpyz,
                                                             fpzx, fpzy, fpzz,
@@ -1889,17 +1974,6 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
             const amrex::Real wq_invvol = qs*wp[ip]*invvol;
             const amrex::Real rhop = wq_invvol*gaminv;
 
-            // Set the Mass Matrices kernels
-            amrex::ParticleReal fpxx, fpxy, fpxz;
-            amrex::ParticleReal fpyx, fpyy, fpyz;
-            amrex::ParticleReal fpzx, fpzy, fpzz;
-            setMassMatricesKernels( qs, ms, dt, rhop,
-                                    uxp_nph[ip], uyp_nph[ip], uzp_nph[ip],
-                                    Bxp, Byp, Bzp,
-                                    fpxx, fpxy, fpxz,
-                                    fpyx, fpyy, fpyz,
-                                    fpzx, fpzy, fpzz );
-
             amrex::ParticleReal const xp_n = (xp_n_data ? xp_n_data[ip] : 0._prt);
             amrex::ParticleReal const yp_n = (yp_n_data ? yp_n_data[ip] : 0._prt);
             amrex::ParticleReal const zp_n = (zp_n_data ? zp_n_data[ip] : 0._prt);
@@ -1908,6 +1982,19 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
             amrex::ParticleReal const xp_np1 = 2._prt*xp_nph - xp_n;
             amrex::ParticleReal const yp_np1 = 2._prt*yp_nph - yp_n;
             amrex::ParticleReal const zp_np1 = 2._prt*zp_nph - zp_n;
+
+            // Set the Mass Matrices kernels
+            amrex::ParticleReal fpxx, fpxy, fpxz;
+            amrex::ParticleReal fpyx, fpyy, fpyz;
+            amrex::ParticleReal fpzx, fpzy, fpzz;
+            setMassMatricesKernels(qs, ms, dt, rhop,
+                                   xp_n, yp_n, zp_n,
+                                   xp_np1, yp_np1, zp_np1,
+                                   uxp_nph[ip], uyp_nph[ip], uzp_nph[ip],
+                                   Bxp, Byp, Bzp,
+                                   fpxx, fpxy, fpxz,
+                                   fpyx, fpyy, fpyz,
+                                   fpzx, fpzy, fpzz);
 
             // Pass dummy arrays for Jx, Jy, Jz (which will not be used)
             amrex::Array4<amrex::Real> const dummy_Jx{};

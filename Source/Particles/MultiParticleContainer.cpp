@@ -599,6 +599,7 @@ MultiParticleContainer::DepositCurrent (
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     for (int lev = 0; lev < J.size(); ++lev)
     {
+        amrex::Print() << "JRA: Here? " << std::endl;
         WarpX::GetInstance().ApplyInverseVolumeScalingToCurrentDensity(
             J[lev][0], J[lev][1], J[lev][2], lev);
     }
