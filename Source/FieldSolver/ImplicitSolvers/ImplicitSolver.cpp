@@ -514,11 +514,6 @@ void ImplicitSolver::parseNonlinearSolverParams ( const amrex::ParmParse&  pp )
             pp.query("mass_matrices_pc_width", m_mass_matrices_pc_width);
 #endif
         }
-#if defined(WARPX_DIM_RCYLINDER)
-        WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
-            !m_use_mass_matrices,
-            "Using mass matrices is not setup for DIM = RCYLINDER!");
-#endif
 #if defined(WARPX_DIM_RSPHERE)
         WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
             !m_use_mass_matrices,
@@ -995,6 +990,9 @@ void ImplicitSolver::SetMassMatricesForPC ( const amrex::Real a_theta_dt )
         MMyy_PC->mult(pc_factor, 0, MMyy_PC->nComp());
 #endif
         MMzz_PC->mult(pc_factor, 0, MMzz_PC->nComp());
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+        //m_WarpX->ApplyInverseVolumeScalingToCurrentDensity(MMxx_PC, MMyy_PC, MMzz_PC, lev);
+#endif
         const PreconditionerType pc_type = m_nlsolver->GetPreconditionerType();
         if (pc_type == PreconditionerType::pc_curl_curl_mlmg) {
             // Need to add 1 to the diagonal terms for the curl_curl pc
