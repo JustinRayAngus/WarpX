@@ -454,15 +454,8 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
                     maskEz_arr(i,j,k,2*bdry_dir  ) = val0_Ez;
                     maskEz_arr(i,j,k,2*bdry_dir+1) = val1_Ez;
 #endif
-#if defined(WARPX_DIM_RCYLINDER)
-                    maskEz_arr(i,j,k,2*bdry_dir  ) = val0;
-                    maskEz_arr(i,j,k,2*bdry_dir+1) = val1;
-                    maskEy_arr(i,j,k,2*bdry_dir  ) = val0_Et;
-                    maskEy_arr(i,j,k,2*bdry_dir+1) = val1_Et;
-#else
                     maskEy_arr(i,j,k,2*bdry_dir  ) = val0;
                     maskEy_arr(i,j,k,2*bdry_dir+1) = val1;
-#endif
                 });
 
             } // end loop over boundary sides
