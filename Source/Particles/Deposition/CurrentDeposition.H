@@ -1207,19 +1207,21 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
             amrex::Real const xp_new = xp_np1;
             amrex::Real const yp_new = yp_np1;
-            amrex::Real const xp_mid = xp_nph;
-            amrex::Real const yp_mid = yp_nph;
             amrex::Real const xp_old = xp_n[ip];
             amrex::Real const yp_old = yp_n[ip];
             amrex::Real const rp_new = std::sqrt(xp_new*xp_new + yp_new*yp_new);
             amrex::Real const rp_old = std::sqrt(xp_old*xp_old + yp_old*yp_old);
+#if !defined(WARPX_EM_TEY)
+            amrex::Real const xp_mid = xp_nph;
+            amrex::Real const yp_mid = yp_nph;
             amrex::Real const rp_mid = (rp_new + rp_old)/2._rt;
             const amrex::Real costheta_mid = (rp_mid > 0._rt ? xp_mid/rp_mid : 1._rt);
             const amrex::Real sintheta_mid = (rp_mid > 0._rt ? yp_mid/rp_mid : 0._rt);
+#endif
             // Keep these double to avoid bug in single precision
             double x_new = (rp_new - xyzmin.x)*dinv.x;
             double const x_old = (rp_old - xyzmin.x)*dinv.x;
-#if defined(WARPX_DIM_RZ)
+#if defined(WARPX_DIM_RZ) && !defined(WARPX_EM_TEY)
             const amrex::Real costheta_new = (rp_new > 0._rt ? xp_new/rp_new : 1._rt);
             const amrex::Real sintheta_new = (rp_new > 0._rt ? yp_new/rp_new : 0._rt);
             const amrex::Real costheta_old = (rp_old > 0._rt ? xp_old/rp_old : 1._rt);
@@ -1269,7 +1271,7 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
             double const z_old = (zp_n[ip] - xyzmin.z)*dinv.z;
 #endif
 
-#if defined(WARPX_DIM_RZ)
+#if defined(WARPX_DIM_RZ) && !defined(WARPX_EM_TEY)
             amrex::Real const vy = (-uxp_nph[ip]*sintheta_mid + uyp_nph[ip]*costheta_mid)*gaminv;
 #elif defined(WARPX_DIM_XZ) && !defined(WARPX_EM_TEY)
             amrex::Real const vy = uyp_nph[ip]*gaminv;
@@ -1279,7 +1281,9 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
             amrex::Real const vy = uyp_nph[ip]*gaminv;
 #endif
 #elif defined(WARPX_DIM_RCYLINDER)
+#if !defined(WARPX_EM_TEY)
             amrex::Real const vy = (-uxp_nph[ip]*sintheta_mid + uyp_nph[ip]*costheta_mid)*gaminv;
+#endif
             amrex::Real const vz = uzp_nph[ip]*gaminv;
 #elif defined(WARPX_DIM_RSPHERE)
             // convert from Cartesian to spherical
@@ -1398,7 +1402,7 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
                 for (int i=dil; i<=depos_order+1-diu; i++) {
                     sdxi += wq*invdtd.x*(sx_old[i] - sx_new[i])*0.5_rt*(sz_new[k] + sz_old[k]);
                     amrex::Gpu::Atomic::AddNoRet( &Jx_arr(lo.x+i_new-1+i, lo.y+k_new-1+k, 0, 0), sdxi);
-#if defined(WARPX_DIM_RZ)
+#if defined(WARPX_DIM_RZ) && !defined(WARPX_EM_TEY)
                     Complex xy_mid = xy_mid0; // Throughout the following loop, xy_mid takes the value e^{i m theta}
                     for (int imode=1 ; imode < n_rz_azimuthal_modes ; imode++) {
                         // The factor 2 comes from the normalization of the modes
@@ -1444,7 +1448,7 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
                 for (int k=dkl; k<=depos_order+1-dku; k++) {
                     sdzk += wq*invdtd.z*(sz_old[k] - sz_new[k])*0.5_rt*(sx_new[i] + sx_old[i]);
                     amrex::Gpu::Atomic::AddNoRet( &Jz_arr(lo.x+i_new-1+i, lo.y+k_new-1+k, 0, 0), sdzk);
-#if defined(WARPX_DIM_RZ)
+#if defined(WARPX_DIM_RZ) && !defined(WARPX_EM_TEY)
                     Complex xy_mid = xy_mid0; // Throughout the following loop, xy_mid takes the value e^{i m theta}
                     for (int imode=1 ; imode < n_rz_azimuthal_modes ; imode++) {
                         // The factor 2 comes from the normalization of the modes
@@ -1481,10 +1485,12 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
                 sdri += wq*invdtd.x*(sx_old[i] - sx_new[i]);
                 amrex::Gpu::Atomic::AddNoRet( &Jx_arr(lo.x+i_new-1+i, 0, 0, 0), sdri);
             }
+#if !defined(WARPX_EM_TEY)
             for (int i=dil; i<=depos_order+2-diu; i++) {
                 amrex::Real const sdyj = wq*vy*invvol*0.5_rt*(sx_old[i] + sx_new[i]);
                 amrex::Gpu::Atomic::AddNoRet( &Jy_arr(lo.x+i_new-1+i, 0, 0, 0), sdyj);
             }
+#endif
             for (int i=dil; i<=depos_order+2-diu; i++) {
                 amrex::Real const sdzk = wq*vz*invvol*0.5_rt*(sx_old[i] + sx_new[i]);
                 amrex::Gpu::Atomic::AddNoRet( &Jz_arr(lo.x+i_new-1+i, 0, 0, 0), sdzk);
