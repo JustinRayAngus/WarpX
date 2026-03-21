@@ -1668,8 +1668,6 @@ WarpX::ApplyInverseVolumeScalingToMassMatricesPC (MultiFab* Sxx, MultiFab* Syy, 
         tbr.grow(1, ngS[1]);
         tbt.grow(1, ngS[1]);
         tbz.grow(1, ngS[1]);
-
-        const int nmodes = n_rz_azimuthal_modes;
 #endif
 
         // Rescale current in r-z mode since the inverse volume factor was not

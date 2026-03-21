@@ -519,11 +519,6 @@ void ImplicitSolver::parseNonlinearSolverParams ( const amrex::ParmParse&  pp )
             !m_use_mass_matrices,
             "Using mass matrices is not setup for DIM = RSHERE!");
 #endif
-#if defined(WARPX_DIM_RZ)
-        WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
-            !m_use_mass_matrices,
-            "Using mass matrices is not setup for DIM = RZ");
-#endif
 #if defined(WARPX_DIM_3D)
         WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
             !m_use_mass_matrices_jacobian,

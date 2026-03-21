@@ -1553,6 +1553,13 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
     amrex::Real const rp_new = std::sqrt(xp_new*xp_new + yp_new*yp_new);
     amrex::Real const rp_old = std::sqrt(xp_old*xp_old + yp_old*yp_old);
+#if !defined(WARPX_EM_TEY) || defined(WARPX_DIM_RZ)
+    amrex::Real const xp_mid = (xp_new + xp_old)*0.5_rt;
+    amrex::Real const yp_mid = (yp_new + yp_old)*0.5_rt;
+    amrex::Real const rp_mid = (rp_new + rp_old)/2._rt;
+    amrex::Real const costheta_mid = (rp_mid > 0._rt ? xp_mid/rp_mid : 1._rt);
+    amrex::Real const sintheta_mid = (rp_mid > 0._rt ? yp_mid/rp_mid : 0._rt);
+#endif
 #if defined(WARPX_DIM_RZ)
     Complex const xy_mid0 = Complex{costheta_mid, sintheta_mid};
 #endif
@@ -1562,11 +1569,6 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     double const x_old = (rp_old - xyzmin.x)*dinv.x;
     amrex::Real const vx = (rp_new - rp_old)/dt;
 #if !defined(WARPX_EM_TEY)
-    amrex::Real const xp_mid = (xp_new + xp_old)*0.5_rt;
-    amrex::Real const yp_mid = (yp_new + yp_old)*0.5_rt;
-    amrex::Real const rp_mid = (rp_new + rp_old)/2._rt;
-    amrex::Real const costheta_mid = (rp_mid > 0._rt ? xp_mid/rp_mid : 1._rt);
-    amrex::Real const sintheta_mid = (rp_mid > 0._rt ? yp_mid/rp_mid : 0._rt);
     amrex::Real const vy = (-uxp_mid*sintheta_mid + uyp_mid*costheta_mid)*gaminv;
 #endif
 #if defined(WARPX_DIM_RCYLINDER)
