@@ -952,7 +952,9 @@ void ImplicitSolver::SyncMassMatricesPCAndApplyBCs ()
             const int mm_pc_comp_start = diag_comp_pc_zz - MM_PC_width_zz[0] + m_ncomp_pc_zz[0]*jj0;
             amrex::MultiFab::Add(*MM_PC[2], *MM_zz, mm_comp_start, mm_pc_comp_start, m_ncomp_pc_zz[0], MM_zz->nGrowVect());
         }
-
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+        m_WarpX->ApplyInverseVolumeScalingToMassMatricesPC(MM_PC[0], MM_PC[1], MM_PC[2], lev);
+#endif
     }
 
     // Do addOp Exchange on MassMatrices_PC
@@ -990,9 +992,7 @@ void ImplicitSolver::SetMassMatricesForPC ( const amrex::Real a_theta_dt )
         MMyy_PC->mult(pc_factor, 0, MMyy_PC->nComp());
 #endif
         MMzz_PC->mult(pc_factor, 0, MMzz_PC->nComp());
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
-        //m_WarpX->ApplyInverseVolumeScalingToCurrentDensity(MMxx_PC, MMyy_PC, MMzz_PC, lev);
-#endif
+
         const PreconditionerType pc_type = m_nlsolver->GetPreconditionerType();
         if (pc_type == PreconditionerType::pc_curl_curl_mlmg) {
             // Need to add 1 to the diagonal terms for the curl_curl pc
