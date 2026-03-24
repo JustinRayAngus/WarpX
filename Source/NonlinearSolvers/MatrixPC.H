@@ -730,7 +730,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                                 if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
                             }
                         }
-                        // mixed derivative terms of the curl curl operator
+                        // left and right components (i+/-1,j,k), (i,j+/-1,k), or (i,j,k+/-1) of second derivative operator
                         for (int ctr_dir = -1; ctr_dir <= 0; ctr_dir++) {
                             for (int ctr_tdir = -1; ctr_tdir <= 0; ctr_tdir++) {
                                 for (int tdir = 1; tdir <= 2; tdir++) {
