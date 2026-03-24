@@ -215,7 +215,9 @@ void doDirectJandSigmaDepositionKernel ( [[maybe_unused]] const amrex::ParticleR
     const amrex::Real wqz = wq_invvol*(-vx*costheta*sinphi - vy*sintheta*sinphi + vz*cosphi);
 #else
     const amrex::Real wqx = wq_invvol*vx;
+#if !defined(WARPX_EM_TEY)
     const amrex::Real wqy = wq_invvol*vy;
+#endif
     const amrex::Real wqz = wq_invvol*vz;
 #endif
 
