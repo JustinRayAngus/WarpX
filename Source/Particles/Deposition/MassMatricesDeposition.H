@@ -84,7 +84,7 @@ void setMassMatricesKernels (const amrex::ParticleReal qs,
 
     // Convert B on particle to normalized cyclotron units with dt/2.0
     const amrex::ParticleReal gamma_bar = std::sqrt(1._prt + (uxp*uxp + uyp*uyp + uzp*uzp)*inv_c2);
-    if (gamma_bar > 1.01) { amrex::AllPrint() << " JRA: gamma_bar = " << gamma_bar << std::endl; }
+    //if (gamma_bar > 1.2) { amrex::AllPrint() << " JRA: gamma_bar = " << gamma_bar << std::endl; }
     const amrex::ParticleReal alpha = qs/ms*0.5_prt*dt/gamma_bar;
     const amrex::ParticleReal bxp = alpha*Bxp;
     const amrex::ParticleReal byp = alpha*Byp;
