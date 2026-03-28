@@ -619,7 +619,6 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                             // DIM_XZ:
                             // dir = 0: d/dx(dEz/dz) at Ex(i,j) with Ex centered in x and nodal in z
                             // dir = 2: d/dz(dEx/dx) at Ez(i,j) with Ez centered in z and nodal in x
-<<<<<<< HEAD
                             // DIM_RZ:
                             // dir = 0: d/dr(dEz/dz) at Er(i,j) with Er centered in r and nodal in z
                             // dir = 2: 1/r*d/dr[r*dEr/dz] at Ez(i,j) with Ez centered in z and nodal in r
@@ -631,10 +630,8 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                             const amrex::Real geom_p = 1.0_rt;
 #endif
                             {
-=======
                             if (!blank_Efield[tdir]) {
                                 {
->>>>>>> 00139d6d4 (add blanking for components of E.)
                                 int cidx_g_rhs = (dir == 0 ? dof_tdir_arr(i,j-1,k,1) : dof_tdir_arr(i-1,j,k,1));
                                 amrex::Real val = geom_m * alpha * dxi[0] * dxi[1] * BC_mask_Edir_arr(i,j,k,2);
                                 auto flag = MatrixPCUtils::insertOrAdd( cidx_g_rhs, val,
