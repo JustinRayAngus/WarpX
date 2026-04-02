@@ -783,7 +783,7 @@ PhysicalParticleContainer::AddPlasma (PlasmaInjector& plasma_injector, int lev, 
     const amrex::Real density_min = plasma_injector.density_min;
     const amrex::Real density_max = plasma_injector.density_max;
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ)
     const int nmodes = WarpX::n_rz_azimuthal_modes;
 #endif
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
@@ -970,7 +970,7 @@ PhysicalParticleContainer::AddPlasma (PlasmaInjector& plasma_injector, int lev, 
             const amrex::IntVect iv = amrex::IntVect(AMREX_D_DECL(i, j, k));
             amrex::ignore_unused(j,k);
             const auto index = overlap_box.index(iv);
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ)
             amrex::Real theta_offset = 0._rt;
             if (rz_random_theta) { theta_offset = amrex::Random(engine) * 2._rt * MathConst::pi; }
 #endif
@@ -1013,16 +1013,17 @@ PhysicalParticleContainer::AddPlasma (PlasmaInjector& plasma_injector, int lev, 
                 // These x and y are used to get the momentum and density
                 // With only 1 mode, the angle doesn't matter so
                 // choose it randomly.
-                const amrex::Real theta = (nmodes == 1 && rz_random_theta)?
 #if defined(WARPX_DIM_RZ)
                     // This should be updated to be the same as below, since theta
                     // should range from -pi to +pi. This should be a separate PR
                     // since it will break RZ CI tests.
-                    (2._rt*MathConst::pi*amrex::Random(engine)):
-#elif defined(WARPX_DIM_RCYLINDER)
-                    (MathConst::pi*(2._rt*amrex::Random(engine) - 1._rt)):
-#endif
+                const amrex::Real theta = (nmodes == 1 && rz_random_theta) ?
+                    (2._rt*MathConst::pi*amrex::Random(engine)) :
                     (2._rt*MathConst::pi*r.y + theta_offset);
+#elif defined(WARPX_DIM_RCYLINDER)
+                const amrex::Real theta = ( rz_random_theta ?
+                    MathConst::pi*(2._rt*amrex::Random(engine) - 1._rt) : 0._rt);
+#endif
 
                 // Adjust the particle radius to produce the correct distribution.
                 // Note that this may shift particles outside of the current tile,
@@ -1283,8 +1284,10 @@ PhysicalParticleContainer::AddPlasmaFlux (PlasmaInjector const& plasma_injector,
     constexpr int level_zero = 0;
     const amrex::Real t = WarpX::GetInstance().gett_new(level_zero);
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ)
     const int nmodes = WarpX::n_rz_azimuthal_modes;
+#endif
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
     const bool rz_random_theta = m_rz_random_theta;
 #endif
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
@@ -1589,16 +1592,17 @@ PhysicalParticleContainer::AddPlasmaFlux (PlasmaInjector const& plasma_injector,
                 // These x and y are used to get the momentum and flux
                 // With only 1 mode, the angle doesn't matter so
                 // choose it randomly.
-                const amrex::Real theta = (nmodes == 1 && rz_random_theta)?
 #if defined(WARPX_DIM_RZ)
                     // This should be updated to be the same as below, since theta
                     // should range from -pi to +pi. This should be a separate PR
                     // since it will break RZ CI tests.
-                    (2._rt*MathConst::pi*amrex::Random(engine)):
-#elif defined(WARPX_DIM_RCYLINDER)
-                    (MathConst::pi*(2._rt*amrex::Random(engine) - 1._rt)):
-#endif
+                const amrex::Real theta = (nmodes == 1 && rz_random_theta) ?
+                    (2._rt*MathConst::pi*amrex::Random(engine)) :
                     (2._prt*MathConst::pi*r.y);
+#elif defined(WARPX_DIM_RCYLINDER)
+                const amrex::Real theta = ( rz_random_theta ?
+                    MathConst::pi*(2._rt*amrex::Random(engine) - 1._rt) : 0._rt);
+#endif
                 amrex::Real const cos_theta = std::cos(theta);
                 amrex::Real const sin_theta = std::sin(theta);
                 // Rotate the position
