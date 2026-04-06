@@ -551,6 +551,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
     const int max_iterations = implicit_options->max_particle_iterations;
     const amrex::ParticleReal particle_tolerance = implicit_options->particle_tolerance;
     [[maybe_unused]] const bool print_unconverged_particle_details = implicit_options->print_unconverged_particle_details;
+    const bool linear_stage_of_jfnk = implicit_options->linear_stage_of_jfnk;
 
     amrex::Gpu::Buffer<amrex::Long> unconverged_particles({0});
     amrex::Long* unconverged_particles_ptr = unconverged_particles.data();
@@ -625,24 +626,33 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
         // check if particle did not converge
         if (max_iterations > 1 && !convergence) {
 
-            if (nsuborbits) {
-                // Suborbits are required for this particle to converge.
-                // It will be handled later in a special loop with suborbiting.
-                nsuborbits[ip] = 2;
-            }
+            // During the JFNK linear stage, freeze suborbit classification.
+            // Allowing new suborbit particles creates a discontinuity in F(E)
+            // that corrupts the finite-difference Jacobian approximation.
+            // The non-converged Picard result is used for deposition instead.
+            if (!linear_stage_of_jfnk) {
+
+                if (nsuborbits) {
+                    nsuborbits[ip] = 2;
+                }
 
 #if !defined(AMREX_USE_GPU)
-            if (print_unconverged_particle_details) {
-                std::stringstream convergenceMsg;
-                convergenceMsg << "Picard solver for particle failed to converge after " <<
-                    max_iterations << " iterations.\n";
-                convergenceMsg << "Position step norm is " << step_norm <<
-                    " and the tolerance is " << particle_tolerance << "\n";
-                convergenceMsg << " ux = " << ux[ip] << ", uy = " << uy[ip] << ", uz = " << uz[ip] << "\n";
-                convergenceMsg << " xp = " << xp << ", yp = " << yp << ", zp = " << zp;
-                ablastr::warn_manager::WMRecordWarning("ImplicitPushXP", convergenceMsg.str());
-            }
+                if (print_unconverged_particle_details) {
+                    std::stringstream convergenceMsg;
+                    convergenceMsg << "Picard solver for particle failed to converge after " <<
+                        max_iterations << " iterations.\n";
+                    convergenceMsg << "Position step norm is " << step_norm <<
+                        " and the tolerance is " << particle_tolerance << "\n";
+                    convergenceMsg << " ux = " << ux[ip] << ", uy = " << uy[ip] << ", uz = " << uz[ip] << "\n";
+                    convergenceMsg << " xp = " << xp << ", yp = " << yp << ", zp = " << zp;
+                    ablastr::warn_manager::WMRecordWarning("ImplicitPushXP", convergenceMsg.str());
+                }
 #endif
+
+                // write signaling flag: how many particles did not converge?
+                amrex::Gpu::Atomic::Add(unconverged_particles_ptr, amrex::Long(1));
+
+            } // !linear_stage_of_jfnk
 
 #ifdef WARPX_QED
             // Reset the QED parameter to what is was at the start of the step
@@ -651,8 +661,6 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
             }
 #endif
 
-            // write signaling flag: how many particles did not converge?
-            amrex::Gpu::Atomic::Add(unconverged_particles_ptr, amrex::Long(1));
         }
 
     });
