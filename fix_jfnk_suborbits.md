@@ -1,13 +1,20 @@
-# Bug: JFNK Jacobian discontinuity from suborbit reclassification
+# Bug fixes: JFNK with particle suborbits
 
-## Summary
+Two related bugs were found in the implicit solver's handling of suborbit
+particles during the JFNK linear stage. Both are in the non-mass-matrix JFNK
+code path (`use_mass_matrices_jacobian = false`, `particle_suborbits = true`).
 
-When using the implicit theta scheme with JFNK (Jacobian-Free Newton-Krylov)
-and `particle_suborbits = true`, Newton's method can diverge because the
-finite-difference Jacobian approximation captures an algorithmic discontinuity
-rather than the smooth derivative of the nonlinear function.
+---
 
-## Background
+## Bug 1: Suborbit reclassification during JFNK linear stage
+
+### Summary
+
+Newton's method diverges because the finite-difference Jacobian approximation
+captures an algorithmic discontinuity rather than the smooth derivative of the
+nonlinear function `F(E)`.
+
+### Background
 
 The implicit solver uses a Picard fixed-point iteration to advance each
 particle. Particles that fail to converge within `max_particle_iterations` are
@@ -27,7 +34,7 @@ This requires evaluating the nonlinear function `F` at a slightly perturbed
 field `E + ε*v`. For a good approximation, `F` must be smooth with respect to
 `E`.
 
-## The bug
+### The bug
 
 In `ImplicitPushXP`, when a particle fails Picard convergence, the code
 unconditionally sets `nsuborbits[ip] = 2` and flags the particle for the
@@ -45,9 +52,8 @@ if (max_iterations > 1 && !convergence) {
 ```
 
 This happens during both the nonlinear evaluation *and* the JFNK linear stage.
-The problem: a particle that barely converges in Picard for field `E` may
-barely fail for the perturbed field `E + ε*v`. When this happens during the
-JFNK evaluation:
+A particle that barely converges in Picard for field `E` may barely fail for
+the perturbed field `E + ε*v`. When this happens during the JFNK evaluation:
 
 1. For `F(E)`: the particle was pushed by `ImplicitPushXP` (normal path,
    `nsuborbits = 1`), depositing current via the standard algorithm.
@@ -62,10 +68,6 @@ between two different deposition algorithms rather than the smooth response
 `dF/dE`. This produces a garbage Jacobian approximation, causing Newton to take
 wildly wrong steps and diverge.
 
-A secondary effect: the `nsuborbits` change persists after the JFNK evaluation,
-contaminating subsequent nonlinear evaluations and making `F(E)` non-repeatable
-across Newton iterations.
-
 Note that `ImplicitPushXPSubOrbits` already has the correct guard:
 
 ```cpp
@@ -75,7 +77,7 @@ if (linear_stage_of_jfnk) { convergence = true; }
 
 The same protection was missing from `ImplicitPushXP`.
 
-## The fix
+### The fix (commit 6796c9f)
 
 Guard the suborbit reclassification in `ImplicitPushXP` with
 `!linear_stage_of_jfnk`:
@@ -92,28 +94,100 @@ if (max_iterations > 1 && !convergence) {
 }
 ```
 
-During the JFNK linear stage, a particle that fails Picard simply deposits
-current using its approximate (not fully converged) Picard result. This is
-acceptable because:
+---
 
-- The perturbation `ε*v` is small, so the Picard iterate is close to what
-  the converged result would be.
-- What matters for the Jacobian is that `F` is a smooth function of `E`, not
-  that each particle is perfectly converged.
-- The same algorithmic path is used for both `F(E)` and `F(E + ε*v)`,
-  ensuring the finite difference captures the true derivative.
+## Bug 2: Suborbit particles not advanced during JFNK linear stage
+
+### Summary
+
+Particles already flagged as suborbit (`nsuborbits > 1`) from the nonlinear
+evaluation are not properly handled during the JFNK linear stage. They are
+pushed through `ImplicitPushXP` with a single-step Picard that doesn't converge,
+and the Bug 1 fix prevents them from being counted as unconverged, so
+`ImplicitPushXPSubOrbits` is never invoked. Their deposited current comes from
+a non-converged Picard result, corrupting the Jacobian-vector product.
+
+### How PICNIC handles this
+
+In PICNIC (the predecessor code), suborbit particles live in a separate
+container (`m_data_suborbit`). The function `addSubOrbitJ` calls
+`advanceSubOrbitParticlesAndSetJ` for these particles at the end of `preRHSOp`,
+**regardless** of whether the call is from the linear or nonlinear stage and
+whether mass matrices are used. This ensures suborbit particles are always
+properly advanced via sub-stepping with their current correctly deposited.
+
+During the PICNIC linear stage, suborbit Picard iteration limits are doubled
+for a safety buffer, and if convergence still fails, the suborbit count is
+frozen (not increased) -- the particle is simply transferred to a temporary
+list and its approximate result is used. This matches the WarpX guard in
+`ImplicitPushXPSubOrbits`.
+
+### The bug in WarpX
+
+In `PhysicalParticleContainer::Evolve`, the control flow is:
+
+```cpp
+if (evolve_suborbit_particles_only) {       // mass-matrix linear stage
+    FindSuborbitParticles(...);              // identifies suborbits, zeros weights
+} else {
+    ImplicitPushXP(...);                    // pushes ALL particles
+}
+```
+
+For the non-mass-matrix JFNK linear stage, `evolve_suborbit_particles_only` is
+`false`, so all particles go through `ImplicitPushXP` -- including those with
+`nsuborbits > 1`. The Bug 1 fix correctly prevents new suborbit classification
+during the linear stage, but as a side effect, existing suborbit particles are
+also not counted as unconverged. Their weights are not zeroed and
+`ImplicitPushXPSubOrbits` is never called for them. They deposit current from
+a non-converged single-step Picard result.
+
+### The fix (commit 9bf6ecb)
+
+Call `FindSuborbitParticles` before `ImplicitPushXP` when in the JFNK linear
+stage:
+
+```cpp
+} else {
+    if (implicit_options->linear_stage_of_jfnk) {
+        FindSuborbitParticles(pti, offset, np_to_push,
+                              num_unconverged_particles,
+                              unconverged_indices, saved_weights);
+    }
+    long const saved_num_unconverged = num_unconverged_particles;
+    ImplicitPushXP(pti, ...
+                   num_unconverged_particles, unconverged_indices, saved_weights);
+    num_unconverged_particles += saved_num_unconverged;
+}
+```
+
+This ensures:
+
+1. `FindSuborbitParticles` identifies particles with `nsuborbits > 1` and zeros
+   their weights before `ImplicitPushXP` runs.
+2. `ImplicitPushXP` pushes all particles; suborbit ones have `w = 0` so they do
+   not deposit current.
+3. `ImplicitPushXPSubOrbits` is triggered (via `num_unconverged_particles > 0`)
+   and properly advances the suborbit particles using sub-stepping, depositing
+   their current correctly.
+
+This is safe because `ImplicitPushXPSubOrbits` reads the saved particle state
+(`x_n`, `ux_n` attributes) directly, overriding any position/velocity changes
+from `ImplicitPushXP`.
+
+---
 
 ## Why this wasn't caught before
 
-The bug exists on the `development` branch — it is not specific to the
-cylindrical mass matrices PR. However, the only test on `development` that
-uses `particle_suborbits = true` is a mild 2D Cartesian case
+Both bugs exist on the `development` branch -- they are not specific to the
+cylindrical mass matrices PR. However, the only test on `development` that uses
+`particle_suborbits = true` is a mild 2D Cartesian case
 (`inputs_test_2d_theta_implicit_jfnk_vandb_cropping`: 16x16 cells, 10 steps,
 electron-positron). In that test, the physics is benign enough that few or no
-particles actually fail Picard, so `nsuborbits` never reaches 2 and the
-discontinuity is never triggered.
+particles actually fail Picard, so `nsuborbits` never reaches 2 and the bugs
+are never triggered.
 
-The cylindrical Z-pinch test case exposes the bug because:
+The cylindrical Z-pinch test case exposes the bugs because:
 
 - The stagnation physics is extremely stiff (plasma compressed to near-zero
   radius).
@@ -124,23 +198,34 @@ The cylindrical Z-pinch test case exposes the bug because:
 
 ## Test results
 
-With the fix applied to the 1D cylindrical dynamic pinch at step 110861
-(restarting from checkpoint 110860, JFNK with `particle_suborbits = true`,
-`use_mass_matrices_jacobian = false`):
+1D cylindrical dynamic pinch, restarting from checkpoint 110860, JFNK with
+`particle_suborbits = true`, `use_mass_matrices_jacobian = false`, 4 MPI ranks:
 
-**Before fix:** Newton diverges immediately at step 110861.
+**Before either fix:** Newton diverges immediately at step 110861.
 
-**After fix:** Step 110861 converges with textbook quadratic Newton convergence:
+**After Bug 1 fix only:** Step 110861 converges, but step 110862 diverges
+(suborbit particles are not properly advanced during the linear stage).
+
+**After both fixes:** All steps converge:
 
 ```
-Newton: iteration = 0, norm = 7.75e+11 (abs.), 1.00e+00  (rel.)
-Newton: iteration = 1, norm = 1.40e+11 (abs.), 1.80e-01  (rel.)
-Newton: iteration = 2, norm = 1.16e+10 (abs.), 1.50e-02  (rel.)
-Newton: iteration = 3, norm = 3.60e+08 (abs.), 4.65e-04  (rel.)
-Newton: iteration = 4, norm = 5.49e+04 (abs.), 7.08e-08  (rel.)
-Newton: iteration = 5, norm = 3.08e+00 (abs.), 3.97e-12  (rel.)
-Newton: exiting at iteration = 5. Satisfied relative tolerance 1e-08
-```
+STEP 110861:
+Newton: iteration =   0, norm = 7.75323e+11 (abs.), 1.00000e+00 (rel.)
+Newton: iteration =   1, norm = 5.30653e+10 (abs.), 6.84428e-02 (rel.)
+...
+Newton: iteration =  12, norm = 2.67727e+03 (abs.), 3.45310e-09 (rel.)
+Newton: exiting at iteration =  12. Satisfied relative tolerance 1e-08
 
-Step 110862 still diverges and requires further investigation (likely related
-to increasingly extreme stagnation conditions).
+STEP 110862:
+Newton: iteration =   0, norm = 3.06359e+11 (abs.), 1.00000e+00 (rel.)
+Newton: iteration =   1, norm = 4.19645e+10 (abs.), 1.36978e-01 (rel.)
+...
+Newton: iteration =  14, norm = 2.70871e+03 (abs.), 8.84162e-09 (rel.)
+Newton: exiting at iteration =  14. Satisfied relative tolerance 1e-08
+
+STEP 110863:
+Newton: iteration =   0, norm = 9.38006e+10 (abs.), 1.00000e+00 (rel.)
+...
+Newton: iteration =   7, norm = 4.01454e+01 (abs.), 4.27986e-10 (rel.)
+Newton: exiting at iteration =   7. Satisfied relative tolerance 1e-08
+```
