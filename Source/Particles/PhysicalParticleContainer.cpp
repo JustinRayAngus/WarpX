@@ -862,7 +862,7 @@ PhysicalParticleContainer::DepositMassMatrices (ablastr::fields::MultiFabRegiste
         {
 
             // Extract particle data
-            const auto& attribs = pti.GetAttribs();
+            auto& attribs = pti.GetAttribs();
             const auto&  wp = attribs[PIdx::w];
             const auto& uxp = attribs[PIdx::ux];
             const auto& uyp = attribs[PIdx::uy];
@@ -874,6 +874,24 @@ PhysicalParticleContainer::DepositMassMatrices (ablastr::fields::MultiFabRegiste
             FArrayBox const* bxfab = &Bx[pti];
             FArrayBox const* byfab = &By[pti];
             FArrayBox const* bzfab = &Bz[pti];
+
+            // Exclude suborbit particles from mass matrix deposit by
+            // temporarily zeroing their weights. This matches PICNIC's
+            // behavior where mass matrices are accumulated only from the
+            // main particle container (excluding suborbit particles).
+            int* nsuborbits = (HasiAttrib("nsuborbits")
+                ? pti.GetiAttribs("nsuborbits").dataPtr() : nullptr);
+            amrex::Gpu::DeviceVector<amrex::ParticleReal> saved_w_mm;
+            if (nsuborbits && np_to_deposit > 0) {
+                amrex::ParticleReal* w_ptr = attribs[PIdx::w].dataPtr();
+                saved_w_mm.resize(np_to_deposit);
+                amrex::ParticleReal* sw = saved_w_mm.data();
+                amrex::ParallelFor(np_to_deposit,
+                    [=] AMREX_GPU_DEVICE (long ip) {
+                        sw[ip] = w_ptr[ip];
+                        if (nsuborbits[ip] > 1) { w_ptr[ip] = 0.0; }
+                    });
+            }
 
             // Mass Matrices Deposition
             amrex::MultiFab * Sxx = fields.get(FieldType::MassMatrices_X, Direction{0}, lev);
@@ -890,6 +908,15 @@ PhysicalParticleContainer::DepositMassMatrices (ablastr::fields::MultiFabRegiste
                               bxfab, byfab, bzfab, 0, np_to_deposit, thread_num, lev, lev, dt);
 
             amrex::Gpu::synchronize();
+
+            // Restore suborbit particle weights
+            if (nsuborbits && np_to_deposit > 0) {
+                amrex::ParticleReal* w_ptr = attribs[PIdx::w].dataPtr();
+                const amrex::ParticleReal* sw = saved_w_mm.data();
+                amrex::ParallelFor(np_to_deposit,
+                    [=] AMREX_GPU_DEVICE (long ip) { w_ptr[ip] = sw[ip]; });
+                amrex::Gpu::synchronize();
+            }
         }
     }
 

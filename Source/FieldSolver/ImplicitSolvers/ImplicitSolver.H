@@ -281,6 +281,11 @@ protected:
     void CumulateJ ();
 
     /**
+     * \brief Replace current_fp with converged-particle current only
+     */
+    void CopyJ0toJ ();
+
+    /**
      * \brief Save E at start of each Newton step
      */
     void SaveE ();

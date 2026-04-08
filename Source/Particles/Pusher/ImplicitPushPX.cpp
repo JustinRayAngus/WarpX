@@ -552,6 +552,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
     const amrex::ParticleReal particle_tolerance = implicit_options->particle_tolerance;
     [[maybe_unused]] const bool print_unconverged_particle_details = implicit_options->print_unconverged_particle_details;
     const bool linear_stage_of_jfnk = implicit_options->linear_stage_of_jfnk;
+    const int max_crossings = WarpX::particle_max_grid_crossings;
 
     amrex::Gpu::Buffer<amrex::Long> unconverged_particles({0});
     amrex::Long* unconverged_particles_ptr = unconverged_particles.data();
@@ -661,6 +662,32 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
             }
 #endif
 
+        }
+        else if (convergence && nsuborbits && !linear_stage_of_jfnk
+                 && max_crossings > 0) {
+            // Flag fast-crossing converged particles as suborbits (PICNIC's
+            // transferFastParticles). Their mass matrix linearization is poor
+            // because the particle displacement spans too many cells.
+            amrex::ParticleReal xp_new = 2.0_prt * xp - xp_n;
+            int ncross = static_cast<int>(
+                amrex::Math::abs(amrex::Math::floor((xp_new - xyzmin.x) * dinv.x)
+                               - amrex::Math::floor((xp_n   - xyzmin.x) * dinv.x)));
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+            amrex::ParticleReal yp_new = 2.0_prt * yp - yp_n;
+            ncross = amrex::max(ncross, static_cast<int>(
+                amrex::Math::abs(amrex::Math::floor((yp_new - xyzmin.y) * dinv.y)
+                               - amrex::Math::floor((yp_n   - xyzmin.y) * dinv.y))));
+#endif
+#if defined(WARPX_DIM_3D)
+            amrex::ParticleReal zp_new = 2.0_prt * zp - zp_n;
+            ncross = amrex::max(ncross, static_cast<int>(
+                amrex::Math::abs(amrex::Math::floor((zp_new - xyzmin.z) * dinv.z)
+                               - amrex::Math::floor((zp_n   - xyzmin.z) * dinv.z))));
+#endif
+            if (ncross > max_crossings) {
+                nsuborbits[ip] = 2;
+                amrex::Gpu::Atomic::Add(unconverged_particles_ptr, amrex::Long(1));
+            }
         }
 
     });
