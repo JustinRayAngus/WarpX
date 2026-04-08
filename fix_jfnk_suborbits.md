@@ -218,7 +218,7 @@ This means no additional filtering is needed for mass matrix deposition itself.
 
 Three architectural mismatches were identified:
 
-#### 3a. Linear stage pushing suborbit particles
+#### 3a. Linear stage uses only mass matrix formula (no particle push)
 
 WarpX's linear stage with mass matrices was pushing suborbit particles and
 adding their current on top of the mass matrix formula. PICNIC's linear stage
@@ -235,7 +235,7 @@ if (m_use_mass_matrices_jacobian && a_from_jacobian) {
 }
 ```
 
-#### 3b. Nonlinear residual including suborbit current
+#### 3b. Nonlinear residual discards suborbit current
 
 WarpX's nonlinear stage used `CumulateJ()` which adds suborbit current to the
 total current field. PICNIC uses only converged-particle current for the
@@ -251,7 +251,7 @@ else if (m_use_mass_matrices_jacobian && !a_from_jacobian) {
 }
 ```
 
-#### 3c. Fast-crossing converged particles not flagged as suborbits
+#### 3c. Fast-crossing converged particles flagged as suborbits
 
 PICNIC's `transferFastParticles` identifies converged particles that cross more
 than `max_grid_crossings` cells and moves them to the suborbit container. Their
