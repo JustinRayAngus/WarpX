@@ -187,7 +187,7 @@ from `ImplicitPushXP`.
 
 When `use_mass_matrices_jacobian = true` and `particle_suborbits = true`, the
 solver fails at stagnation (step 110862). Comparison with PICNIC revealed
-several architectural mismatches in how WarpX handles suborbit particles in the
+architectural mismatches in how WarpX handles suborbit particles in the
 mass-matrix Jacobian code path.
 
 ### Background: how PICNIC handles mass matrices with suborbits
@@ -204,46 +204,21 @@ controls the behavior:
   particles. Suborbit current is discarded because it is inconsistent with the
   mass matrix linearization.
 
-### The problems in WarpX
-
-Four architectural mismatches were identified:
-
-#### 3a. Suborbit particles contributing to mass matrices
-
-`DepositMassMatrices` in `PhysicalParticleContainer.cpp` deposited mass matrices
-from all particles, including those flagged as suborbits (`nsuborbits > 1`).
-In PICNIC, suborbits live in a separate container and never contribute to mass
-matrices. Including them produces a poor linearization because these particles
-traverse many cells in one time step.
-
-**Fix:** Temporarily zero suborbit particle weights before
-`WarpXParticleContainer::DepositMassMatrices` and restore them afterwards:
+Note: suborbit particles are already excluded from mass matrix deposition in
+WarpX by a guard in `doVillasenorSigmaDeposition` (in
+`MassMatricesDeposition.H`):
 
 ```cpp
-int* nsuborbits = (HasiAttrib("nsuborbits")
-    ? pti.GetiAttribs("nsuborbits").dataPtr() : nullptr);
-amrex::Gpu::DeviceVector<amrex::ParticleReal> saved_w_mm;
-if (nsuborbits && np_to_deposit > 0) {
-    amrex::ParticleReal* w_ptr = attribs[PIdx::w].dataPtr();
-    saved_w_mm.resize(np_to_deposit);
-    amrex::ParticleReal* sw = saved_w_mm.data();
-    amrex::ParallelFor(np_to_deposit,
-        [=] AMREX_GPU_DEVICE (long ip) {
-            sw[ip] = w_ptr[ip];
-            if (nsuborbits[ip] > 1) { w_ptr[ip] = 0.0; }
-        });
-}
-// ... DepositMassMatrices call ...
-if (nsuborbits && np_to_deposit > 0) {
-    amrex::ParticleReal* w_ptr = attribs[PIdx::w].dataPtr();
-    const amrex::ParticleReal* sw = saved_w_mm.data();
-    amrex::ParallelFor(np_to_deposit,
-        [=] AMREX_GPU_DEVICE (long ip) { w_ptr[ip] = sw[ip]; });
-    amrex::Gpu::synchronize();
-}
+if (nsuborbits && nsuborbits[ip] > 1) { return; }
 ```
 
-#### 3b. Linear stage pushing suborbit particles
+This means no additional filtering is needed for mass matrix deposition itself.
+
+### The problems in WarpX
+
+Three architectural mismatches were identified:
+
+#### 3a. Linear stage pushing suborbit particles
 
 WarpX's linear stage with mass matrices was pushing suborbit particles and
 adding their current on top of the mass matrix formula. PICNIC's linear stage
@@ -260,7 +235,7 @@ if (m_use_mass_matrices_jacobian && a_from_jacobian) {
 }
 ```
 
-#### 3c. Nonlinear residual including suborbit current
+#### 3b. Nonlinear residual including suborbit current
 
 WarpX's nonlinear stage used `CumulateJ()` which adds suborbit current to the
 total current field. PICNIC uses only converged-particle current for the
@@ -276,7 +251,7 @@ else if (m_use_mass_matrices_jacobian && !a_from_jacobian) {
 }
 ```
 
-#### 3d. Fast-crossing converged particles not flagged as suborbits
+#### 3c. Fast-crossing converged particles not flagged as suborbits
 
 PICNIC's `transferFastParticles` identifies converged particles that cross more
 than `max_grid_crossings` cells and moves them to the suborbit container. Their
@@ -366,6 +341,7 @@ Notes:
   particles corrupt the Jacobian. This is expected behavior, not a bug.
 - The MM + suborbits ON case progresses several steps past the previous
   immediate crash (110862 → ~110866) but eventually fails when the mass matrix
-  linearization becomes too poor at peak stagnation. PICNIC handles this regime
-  successfully, likely due to its use of PETSc SNES with line search (a
-  globalization strategy that WarpX's full-step Newton solver lacks).
+  linearization becomes too poor at peak stagnation.
+- An epsilon sweep (`newton.jfnk_epsilon` from 1e-3 to 1e-10) and PETSc SNES
+  (`implicit_evolve.nonlinear_solver = petsc_snes`) were also tested for the
+  MM + suborbits ON case. Neither resolved the failure at step 110866.
