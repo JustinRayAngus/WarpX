@@ -618,12 +618,19 @@ PhysicalParticleContainer::Evolve (ablastr::fields::MultiFabRegister& fields,
                                               unconverged_indices, saved_weights);
 
                     } else {
+                        if (implicit_options->linear_stage_of_jfnk) {
+                            FindSuborbitParticles(pti, offset, np_to_push,
+                                                  num_unconverged_particles,
+                                                  unconverged_indices, saved_weights);
+                        }
+                        long const saved_num_unconverged = num_unconverged_particles;
                         ImplicitPushXP(pti, exfab, eyfab, ezfab,
                                        bxfab, byfab, bzfab,
                                        implicit_options,
                                        Ex.nGrowVect(),
                                        offset, np_to_push, lev, gather_lev, dt,
                                        num_unconverged_particles, unconverged_indices, saved_weights);
+                        num_unconverged_particles += saved_num_unconverged;
                     }
                 }
 
@@ -676,6 +683,12 @@ PhysicalParticleContainer::Evolve (ablastr::fields::MultiFabRegister& fields,
                                                   unconverged_indices, saved_weights);
 
                         } else {
+                            if (implicit_options->linear_stage_of_jfnk) {
+                                FindSuborbitParticles(pti, nfine_gather, np-nfine_gather,
+                                                      num_unconverged_particles_c,
+                                                      unconverged_indices, saved_weights);
+                            }
+                            long const saved_num_unconverged_c = num_unconverged_particles_c;
                             ImplicitPushXP(pti, cexfab, ceyfab, cezfab,
                                            cbxfab, cbyfab, cbzfab,
                                            implicit_options,
@@ -683,6 +696,7 @@ PhysicalParticleContainer::Evolve (ablastr::fields::MultiFabRegister& fields,
                                            nfine_gather, np-nfine_gather,
                                            lev, lev-1, dt,
                                            num_unconverged_particles_c, unconverged_indices, saved_weights);
+                            num_unconverged_particles_c += saved_num_unconverged_c;
                         }
                     }
                 }
@@ -848,7 +862,7 @@ PhysicalParticleContainer::DepositMassMatrices (ablastr::fields::MultiFabRegiste
         {
 
             // Extract particle data
-            const auto& attribs = pti.GetAttribs();
+            auto& attribs = pti.GetAttribs();
             const auto&  wp = attribs[PIdx::w];
             const auto& uxp = attribs[PIdx::ux];
             const auto& uyp = attribs[PIdx::uy];

@@ -125,6 +125,24 @@ void ImplicitSolver::CumulateJ ()
 
 }
 
+void ImplicitSolver::CopyJ0toJ ()
+{
+    // Replace current_fp with current_fp_non_suborbit (converged particles
+    // only), discarding any suborbit current.  This matches PICNIC's
+    // nonlinear-stage behavior where only converged particles contribute
+    // to the residual current when mass matrices are used.
+
+    using warpx::fields::FieldType;
+    for (int lev = 0; lev < m_num_amr_levels; ++lev) {
+        ablastr::fields::VectorField J = m_WarpX->m_fields.get_alldirs(FieldType::current_fp, lev);
+        const ablastr::fields::VectorField J0 = m_WarpX->m_fields.get_alldirs(FieldType::current_fp_non_suborbit, lev);
+        amrex::MultiFab::Copy(*J[0], *J0[0], 0, 0, J0[0]->nComp(), J0[0]->nGrowVect());
+        amrex::MultiFab::Copy(*J[1], *J0[1], 0, 0, J0[1]->nComp(), J0[1]->nGrowVect());
+        amrex::MultiFab::Copy(*J[2], *J0[2], 0, 0, J0[2]->nComp(), J0[2]->nGrowVect());
+    }
+
+}
+
 void ImplicitSolver::SaveE ()
 {
 
@@ -805,15 +823,20 @@ void ImplicitSolver::PreRHSOp ( const amrex::Real  a_cur_time,
         options.particle_tolerance = m_particle_tolerance;
     }
 
-    if (m_use_mass_matrices_jacobian && a_from_jacobian) { // Called from linear stage of JFNK and using mass matrices for Jacobian
-        if (m_particle_suborbits) {
-            options.evolve_suborbit_particles_only = true;
-            m_WarpX->PushParticlesandDeposit(a_cur_time, skip_deposition, PositionPushType::Full, MomentumPushType::Full, &options);
-        }
-        const bool J_from_MM_only = !options.evolve_suborbit_particles_only;
+    if (m_use_mass_matrices_jacobian && a_from_jacobian) {
+        // Linear stage with mass matrices: use mass matrix formula only,
+        // no particle push (matching PICNIC's linear stage behavior)
+        const bool J_from_MM_only = true;
         ComputeJfromMassMatrices( J_from_MM_only );
     }
-    else { // Conventional particle-suppressed JFNK
+    else if (m_use_mass_matrices_jacobian && !a_from_jacobian) {
+        // Nonlinear stage with mass matrices: push all particles
+        // (to update positions/velocities), but use only converged
+        // particles' current for the residual (matching PICNIC).
+        m_WarpX->PushParticlesandDeposit(a_cur_time, skip_deposition, PositionPushType::Full, MomentumPushType::Full, &options);
+        CopyJ0toJ();
+    }
+    else { // JFNK without mass matrices
         m_WarpX->PushParticlesandDeposit(a_cur_time, skip_deposition, PositionPushType::Full, MomentumPushType::Full, &options);
         CumulateJ();
     }
