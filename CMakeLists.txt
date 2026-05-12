@@ -638,13 +638,12 @@ foreach(D IN LISTS WarpX_DIMS)
     if(WarpX_FFT)
         target_compile_definitions(ablastr_${SD} PUBLIC WARPX_USE_FFT)
     endif()
+    if(WarpX_EM_TEY)
+        target_compile_definitions(ablastr_${SD} PUBLIC WARPX_EM_TEY)
+    endif()
     if(ABLASTR_FFT)
         # We need to enable FFT support in ABLASTR for PSATD solver
         target_compile_definitions(ablastr_${SD} PUBLIC ABLASTR_USE_FFT)
-    endif()
-
-    if(WarpX_EM_TEY)
-        target_compile_definitions(ablastr_${SD} PUBLIC WARPX_EM_TEY)
     endif()
 
     if(WarpX_PYTHON AND pyWarpX_VERSION_INFO)
