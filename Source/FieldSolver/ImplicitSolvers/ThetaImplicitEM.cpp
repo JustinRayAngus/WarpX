@@ -57,7 +57,6 @@ void ThetaImplicitEM::Define (WarpX* const a_WarpX, bool a_from_restart)
         for (int dir = 0; dir < 3; ++dir) {
             m_blank_electric_field[dir] = (tmp[dir] != 0);
         }
-        m_blank_electric_field[1] = true;
     }
 
     // Parse nonlinear solver parameters
