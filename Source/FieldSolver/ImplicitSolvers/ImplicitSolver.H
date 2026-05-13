@@ -261,7 +261,7 @@ protected:
 
     void parseBaseImplicitSolverParams ();
 
-    void parseNonlinearSolverParams ( const amrex::ParmParse&  pp );
+    void parseNonlinearSolverParams (const amrex::ParmParse& pp);
 
     void SaveEoldMultifab ();
 

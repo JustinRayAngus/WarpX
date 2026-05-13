@@ -52,16 +52,6 @@ void ThetaImplicitEM::Define (WarpX* const a_WarpX, bool a_from_restart)
         m_theta>=0.5 && m_theta<=1.0,
         "theta parameter for theta implicit time solver must be between 0.5 and 1.0");
 
-    amrex::Vector<int> tmp(3);
-    if (pp.queryarr("blank_electric_field", tmp)) {
-        for (int dir = 0; dir < 3; ++dir) {
-            m_blank_electric_field[dir] = (tmp[dir] != 0);
-        }
-#if defined(WARPX_EM_TEY)
-        m_blank_electric_field[1] = true;
-#endif
-    }
-
     parseBaseImplicitSolverParams();
 
     // Define the nonlinear solver

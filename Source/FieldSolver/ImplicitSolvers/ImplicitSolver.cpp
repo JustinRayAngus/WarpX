@@ -485,7 +485,7 @@ void ImplicitSolver::parseBaseImplicitSolverParams ()
     parseNonlinearSolverParams(pp);
 }
 
-void ImplicitSolver::parseNonlinearSolverParams ( const amrex::ParmParse&  pp )
+void ImplicitSolver::parseNonlinearSolverParams (const amrex::ParmParse& pp)
 {
 
     pp.get("nonlinear_solver", m_nlsolver_type);
