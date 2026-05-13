@@ -62,8 +62,7 @@ void ThetaImplicitEM::Define (WarpX* const a_WarpX, bool a_from_restart)
 #endif
     }
 
-    // Parse nonlinear solver parameters
-    parseNonlinearSolverParams( pp );
+    parseBaseImplicitSolverParams();
 
     // Define the nonlinear solver
     m_nlsolver->Define(m_E, this);
@@ -88,9 +87,6 @@ void ThetaImplicitEM::PrintParameters () const
     amrex::Print() << "----------- THETA IMPLICIT EM SOLVER PARAMETERS -----------\n";
     amrex::Print() << "-----------------------------------------------------------\n";
     amrex::Print() << "Time-bias parameter theta:           " << m_theta << "\n";
-    amrex::Print() << "Blank x-electric field:              " << (m_blank_electric_field[0] ? "true":"false") << "\n";
-    amrex::Print() << "Blank y-electric field:              " << (m_blank_electric_field[1] ? "true":"false") << "\n";
-    amrex::Print() << "Blank z-electric field:              " << (m_blank_electric_field[2] ? "true":"false") << "\n";
     PrintBaseImplicitSolverParameters();
     m_nlsolver->PrintParams();
     amrex::Print() << "-----------------------------------------------------------\n\n";

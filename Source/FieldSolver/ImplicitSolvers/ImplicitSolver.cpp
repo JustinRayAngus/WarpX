@@ -468,6 +468,22 @@ void ImplicitSolver::ComputeJfromMassMatrices (const bool  a_J_from_MM_only)
     }
 }
 
+void ImplicitSolver::parseBaseImplicitSolverParams ()
+{
+    const amrex::ParmParse pp("implicit_evolve");
+
+    amrex::Vector<int> tmp(3);
+    if (pp.queryarr("blank_electric_field", tmp)) {
+        for (int dir = 0; dir < 3; ++dir) {
+            m_blank_electric_field[dir] = (tmp[dir] != 0);
+        }
+#if defined(WARPX_EM_TEY)
+        m_blank_electric_field[1] = true;
+#endif
+    }
+
+    parseNonlinearSolverParams(pp);
+}
 
 void ImplicitSolver::parseNonlinearSolverParams ( const amrex::ParmParse&  pp )
 {
@@ -1220,6 +1236,9 @@ void ImplicitSolver::FinishMassMatrices ()
 
 void ImplicitSolver::PrintBaseImplicitSolverParameters () const
 {
+    amrex::Print() << "Blank x-electric field:              " << (m_blank_electric_field[0] ? "true":"false") << "\n";
+    amrex::Print() << "Blank y-electric field:              " << (m_blank_electric_field[1] ? "true":"false") << "\n";
+    amrex::Print() << "Blank z-electric field:              " << (m_blank_electric_field[2] ? "true":"false") << "\n";
     amrex::Print() << "max particle iterations:             " << m_max_particle_iterations << "\n";
     amrex::Print() << "particle relative tolerance:         " << m_particle_tolerance << "\n";
     amrex::Print() << "use particle suborbits:              " << (m_particle_suborbits ? "true":"false") << "\n";

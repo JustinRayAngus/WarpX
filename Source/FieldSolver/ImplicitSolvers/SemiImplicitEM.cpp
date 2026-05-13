@@ -31,9 +31,7 @@ void SemiImplicitEM::Define (WarpX*  a_WarpX, bool  a_from_restart)
     m_E.Copy(FieldType::Efield_fp);
     m_Eold.Copy(a_from_restart ? FieldType::E_old : FieldType::Efield_fp, FieldType::None, true);
 
-    // Parse implicit solver parameters
-    const amrex::ParmParse pp("implicit_evolve");
-    parseNonlinearSolverParams(pp);
+    parseBaseImplicitSolverParams();
 
     // Define the nonlinear solver
     m_nlsolver->Define(m_E, this);

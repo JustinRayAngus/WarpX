@@ -259,9 +259,8 @@ protected:
      */
     amrex::Vector<amrex::Array<amrex::MultiFab*,3>> m_mmpc_mfarrvec;
 
-    /**
-     * \brief parse nonlinear solver parameters (if one is used)
-     */
+    void parseBaseImplicitSolverParams ();
+
     void parseNonlinearSolverParams ( const amrex::ParmParse&  pp );
 
     void SaveEoldMultifab ();
