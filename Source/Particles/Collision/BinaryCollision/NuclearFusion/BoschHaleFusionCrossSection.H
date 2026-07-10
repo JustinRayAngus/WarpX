@@ -39,12 +39,11 @@ amrex::ParticleReal BoschHaleFusionCrossSection (
 
     // The parameterization used to compute fusion cross sections by Bosch and Hale
     // is only valid above a lower cutoff energy, which is 0.3 keV for the He3(d,p)He4
-    // reaction and 0.5 keV for the other reactions. Return a 0 cross section below
-    // this threshold. See H.-S. Bosch and G.M. Hale 1992 Nucl. Fusion 32 611, Table IV.
-    if (fusion_type == NuclearFusionType::DeuteriumHeliumToProtonHelium) {
-        if (E_keV < 0.3_prt) {return 0._prt;}
-    }
-    else if (E_keV < 0.5_prt) {return 0._prt;}
+    // reaction and 0.5 keV for the other reactions. Return 0 cross section for energies
+    // below this threshold. See H.-S. Bosch and G.M. Hale 1992 Nucl. Fusion 32 611, Table IV.
+    const amrex::ParticleReal E_cutoff_keV =
+    (fusion_type == NuclearFusionType::DeuteriumHeliumToProtonHelium) ? 0.3_prt : 0.5_prt;
+    if (E_keV < E_cutoff_keV) {return 0._prt;}
 
     // Compute the Gamow constant B_G (in keV^{1/2})
     // (See Eq. 3 in H.-S. Bosch and G.M. Hale 1992 Nucl. Fusion 32 611)
