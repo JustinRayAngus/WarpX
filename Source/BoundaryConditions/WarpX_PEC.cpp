@@ -754,28 +754,24 @@ PEC::ApplyReflectiveBoundarytoRhofield (
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
 
         // Check if boundary is reflective on lo side
-        is_reflective[idim][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Reflecting)
-                               ||  (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
+        is_reflective[idim][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
                                ||  (field_boundary_lo[idim] == FieldBoundaryType::PMC)
                                ||  (field_boundary_lo[idim] == FieldBoundaryType::PEC)
                                ||  (field_boundary_lo[idim] == FieldBoundaryType::PEC_Insulator) );
 
         // Check if boundary is reflective on hi side
-        is_reflective[idim][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Reflecting)
-                               ||  (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
+        is_reflective[idim][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
                                ||  (field_boundary_hi[idim] == FieldBoundaryType::PMC)
                                ||  (field_boundary_hi[idim] == FieldBoundaryType::PEC)
                                ||  (field_boundary_hi[idim] == FieldBoundaryType::PEC_Insulator) );
 
         // Set psign on lo side
-        psign[idim][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Reflecting)
-                       ||  (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
+        psign[idim][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
                        ||  (field_boundary_lo[idim] == FieldBoundaryType::PMC) )
                            ? 1._rt : -1._rt;
 
         // Set psign on hi side
-        psign[idim][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Reflecting)
-                       ||  (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
+        psign[idim][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
                        ||  (field_boundary_hi[idim] == FieldBoundaryType::PMC) )
                            ? 1._rt : -1._rt;
 
@@ -931,15 +927,13 @@ PEC::ApplyReflectiveBoundarytoJfield (
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
 
         // Check if boundary is reflective on lo side
-        is_reflective[idim][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Reflecting)
-                               ||  (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
+        is_reflective[idim][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
                                ||  (field_boundary_lo[idim] == FieldBoundaryType::PMC)
                                ||  (field_boundary_lo[idim] == FieldBoundaryType::PEC)
                                ||  (field_boundary_lo[idim] == FieldBoundaryType::PEC_Insulator) );
 
         // Check if boundary is reflective on hi side
-        is_reflective[idim][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Reflecting)
-                               ||  (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
+        is_reflective[idim][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
                                ||  (field_boundary_hi[idim] == FieldBoundaryType::PMC)
                                ||  (field_boundary_hi[idim] == FieldBoundaryType::PEC)
                                ||  (field_boundary_hi[idim] == FieldBoundaryType::PEC_Insulator) );
@@ -963,14 +957,12 @@ PEC::ApplyReflectiveBoundarytoJfield (
             if (!is_tangent_to_bndy) { pmc_sign = -1._rt; }
 
             // Set psign on lo side
-            psign[idim][icomp][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Reflecting)
-                                  ||  (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
+            psign[idim][icomp][0] = ( (particle_boundary_lo[idim] == ParticleBoundaryType::Thermal)
                                   ||  (field_boundary_lo[idim] == FieldBoundaryType::PMC) )
                                       ? pmc_sign : -pmc_sign;
 
             // Set psign on hi side
-            psign[idim][icomp][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Reflecting)
-                                  ||  (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
+            psign[idim][icomp][1] = ( (particle_boundary_hi[idim] == ParticleBoundaryType::Thermal)
                                   ||  (field_boundary_hi[idim] == FieldBoundaryType::PMC) )
                                       ? pmc_sign : -pmc_sign;
         }
