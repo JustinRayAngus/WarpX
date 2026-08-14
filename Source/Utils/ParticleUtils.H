@@ -260,6 +260,9 @@ namespace ParticleUtils {
         }
         else if (do_cropping[1] && x1 > xmax) {
             x1 = xmax;
+            //x1 = xmin + (1.0 - 1.0e-12) * (xmax - xmin);
+            //x1 = xmin + std::nextafter(1.0, 0.0) * (xmax - xmin);
+            //x1 = std::nextafter(xmax, xmin);
         }
     }
 

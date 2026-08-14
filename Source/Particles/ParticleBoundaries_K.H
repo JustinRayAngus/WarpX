@@ -40,7 +40,8 @@ namespace ApplyParticleBoundaries {
                 }
             }
             else if (xmin_bc == ParticleBoundaryType::Reflecting) {
-                x = 2*xmin - x;
+                //x = 2*xmin - x;
+                x = xmin;
                 change_sign_ux = true;
             }
             else if (xmin_bc == ParticleBoundaryType::Thermal) {
@@ -63,7 +64,11 @@ namespace ApplyParticleBoundaries {
                 }
             }
             else if (xmax_bc == ParticleBoundaryType::Reflecting) {
-                x = 2*xmax - x;
+                //x = 2*xmax - x;
+                //x = xmax;
+                //x = xmin + std::nextafter(1.0, 0.0) * (xmax - xmin);
+                //x = xmin + (1.0 - 1.0e-12) * (xmax - xmin);
+                x = std::nextafter(xmax, xmin);
                 change_sign_ux = true;
             }
             else if (xmax_bc == ParticleBoundaryType::Thermal) {
