@@ -199,7 +199,7 @@ void ThetaImplicitEM::ZeroSolverVecOnNonzeroDirichletBC (WarpXSolverVec& a_E) co
     // Set nodal components of a solver vector to zero on nonzero Dirichlet boundaries.
     // This is a work-around that is needed when using the curl curl PC with such boundaries.
     // Without calling this function, that PC solver doesn't work properly and results in
-    // newton solver divergence.
+    // the GMRES solver diverging.
 
     const amrex::Array<FieldBoundaryType,AMREX_SPACEDIM>& bc_type_lo = GetFieldBoundaryLo();
     const amrex::Array<FieldBoundaryType,AMREX_SPACEDIM>& bc_type_hi = GetFieldBoundaryHi();
