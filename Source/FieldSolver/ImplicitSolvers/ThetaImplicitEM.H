@@ -123,6 +123,11 @@ private:
      */
     void FinishFieldUpdate ( amrex::Real end_time );
 
+    /**
+     * \brief Enforce zero value for WarpXSolverVec on non-zero dirichlet boundaries
+     */
+    void ZeroSolverVecOnNonzeroDirichletBC (WarpXSolverVec& a_E) const;
+
 };
 
 #endif
