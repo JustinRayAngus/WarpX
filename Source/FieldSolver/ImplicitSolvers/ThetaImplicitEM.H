@@ -99,6 +99,11 @@ public:
      */
     void InitializeCurlCurlBCMasks ();
 
+    /**
+     * \brief Enforce zero value for WarpXSolverVec on non-zero dirichlet boundaries
+     */
+    void ZeroSolverVecOnNonzeroDirichletBC (WarpXSolverVec& a_E) const;
+
 private:
 
     /**
@@ -122,11 +127,6 @@ private:
      * the solver, need to use m_E and m_Eold to compute E^{n+1}
      */
     void FinishFieldUpdate ( amrex::Real end_time );
-
-    /**
-     * \brief Enforce zero value for WarpXSolverVec on non-zero dirichlet boundaries
-     */
-    void ZeroSolverVecOnNonzeroDirichletBC (WarpXSolverVec& a_E) const;
 
 };
 
