@@ -22,7 +22,6 @@
 
 #include <ablastr/profiler/ProfilerWrapper.H>
 #include <ablastr/utils/SignalHandling.H>
-#include <ablastr/warn_manager/WarnManager.H>
 
 #include <AMReX.H>
 #include <AMReX_Array.H>
@@ -136,7 +135,6 @@ WarpX::SaveParticlesAtImplicitStepStart ( )
     // Thus, we need to save this information.
 
     for (auto const& pc : *mypc) {
-
         for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef AMREX_USE_OMP
 #pragma omp parallel
@@ -203,7 +201,6 @@ WarpX::SaveParticlesAtImplicitStepStart ( )
         }
 
     }
-
 }
 
 void
