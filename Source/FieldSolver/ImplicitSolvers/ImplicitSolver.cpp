@@ -1308,7 +1308,7 @@ void ImplicitSolver::PrintBaseImplicitSolverParameters () const
     amrex::Print() << "particle relative tolerance:         " << m_particle_tolerance << "\n";
     amrex::Print() << "use particle suborbits:              " << (m_particle_suborbits ? "true":"false") << "\n";
     if (m_particle_suborbits) {
-        amrex::Print() << "suborbit warning theshold:           " << m_suborbit_warning_threshold << "\n";
+        amrex::Print() << "suborbit warning threshold:          " << m_suborbit_warning_threshold << "\n";
         amrex::Print() << "suborbit statistics interval:        " << m_suborbit_statistics_interval << "\n";
         amrex::Print() << "print unconverged particle details:  " << (m_print_unconverged_particle_details ? "true":"false") << "\n";
     }
