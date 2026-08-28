@@ -163,6 +163,11 @@ public:
      */
     void FinishMassMatrices ();
 
+    /**
+     * \brief Finish the implicit particle update after the converged time-centered solve
+     */
+    void FinishImplicitParticleUpdate (amrex::Real time, int step);
+
 protected:
 
     /**
@@ -215,8 +220,6 @@ protected:
     int m_suborbit_statistics_interval = 100;
     std::map<std::string, amrex::Long> m_accumulated_suborbit_counts;
     int m_suborbit_statistics_start_step = -1;
-
-    void FinishImplicitParticleUpdate (amrex::Real time, int step);
 
     void AccumulateSuborbitStatistics (
         std::map<std::string, amrex::Long> const& local_suborbit_counts,
