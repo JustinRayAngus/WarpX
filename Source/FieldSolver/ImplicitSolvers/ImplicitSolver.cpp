@@ -89,7 +89,7 @@ void ImplicitSolver::AccumulateSuborbitStatistics (
     }
     if (amrex::ParallelDescriptor::IOProcessor() && have_statistics) {
         statistics_msg << "  total: " << global_total;
-        amrex::Print() << "\nImplicitPushXP statistics:\n"
+        amrex::Print() << "\nSuborbit particle statistics:\n"
                        << statistics_msg.str() << "\n\n";
     }
     m_suborbit_statistics_start_step = step+2;
