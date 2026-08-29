@@ -181,14 +181,6 @@ void ThetaImplicitEM::UpdateWarpXFields (const WarpXSolverVec&  a_E,
     const amrex::Real theta_time = start_time + m_theta*m_dt;
     m_WarpX->SetElectricFieldAndApplyBCs(a_E, theta_time);
 
-    // Apply blanking to the electric field vector
-    for (int lev = 0; lev < m_num_amr_levels; ++lev) {
-        ablastr::fields::VectorField Efp = m_WarpX->m_fields.get_alldirs(FieldType::Efield_fp, lev);
-        for (int dir = 0; dir < 3; ++dir) {
-            if (m_blank_electric_field[dir]) { Efp[dir]->setVal(0._rt); }
-        }
-    }
-
     // Update Bfield_fp owned by WarpX
     ablastr::fields::MultiLevelVectorField const& B_old = m_WarpX->m_fields.get_mr_levels_alldirs(FieldType::B_old, 0);
     m_WarpX->UpdateMagneticFieldAndApplyBCs(B_old, m_theta*m_dt, start_time);
