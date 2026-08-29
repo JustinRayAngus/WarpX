@@ -1326,7 +1326,7 @@ void ImplicitSolver::PrintBaseImplicitSolverParameters () const
 {
     amrex::Print() << "Blank x-electric field:              " << (m_blank_electric_field[0] ? "true":"false") << "\n";
     amrex::Print() << "Blank y-electric field:              " << (m_blank_electric_field[1] ? "true":"false") << "\n";
-    amrex::Print() << "Blank z-electric field:              " << (m_blank_electric_field[2] ? "true":"false") << "\n"
+    amrex::Print() << "Blank z-electric field:              " << (m_blank_electric_field[2] ? "true":"false") << "\n";
     amrex::Print() << "max particle iterations:             " << m_max_particle_iterations << "\n";
     amrex::Print() << "particle relative tolerance:         " << m_particle_tolerance << "\n";
     amrex::Print() << "use particle suborbits:              " << (m_particle_suborbits ? "true":"false") << "\n";
