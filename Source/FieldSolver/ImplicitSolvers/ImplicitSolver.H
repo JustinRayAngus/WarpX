@@ -199,7 +199,15 @@ protected:
     /**
      * \brief Flags to turn off evolving select components of the electric field
      */
-    amrex::Array<bool,3> m_blank_electric_field{false,false,false};
+    amrex::Array<bool,3> m_blank_electric_field{false, false, false};
+
+#if defined(WARPX_DIM_1D_Z)
+    bool m_oneD_electrostatic_periodic = false;
+
+    void setOneDElectrostaticPeriodicFlag ();
+
+    void Enforce1DESPeriodic (WarpXSolverVec& a_RHS);
+#endif
 
     /**
      * \brief Nonlinear solver type and object

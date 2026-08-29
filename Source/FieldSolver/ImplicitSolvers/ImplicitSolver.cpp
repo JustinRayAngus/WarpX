@@ -190,6 +190,59 @@ Array<LinOpBCType,AMREX_SPACEDIM> ImplicitSolver::convertFieldBCToLinOpBC (const
     return lbc;
 }
 
+#if defined(WARPX_DIM_1D_Z)
+void ImplicitSolver::setOneDElectrostaticPeriodicFlag ()
+{
+    // Check if doing electrostatic (must not evolve out-of-plane E)
+    if (m_blank_electric_field[0] && m_blank_electric_field[1]) {
+
+        auto const& fbc_lo = m_WarpX->GetFieldBoundaryLo();
+        auto const& fbc_hi = m_WarpX->GetFieldBoundaryHi();
+
+        // Check if using periodic boundary conditions
+        if (fbc_lo[0] == FieldBoundaryType::Periodic &&
+            fbc_hi[0] == FieldBoundaryType::Periodic)
+        {
+            m_oneD_electrostatic_periodic = true;
+        }
+
+    }
+}
+
+void ImplicitSolver::Enforce1DESPeriodic (WarpXSolverVec& a_RHS)
+{
+    BL_PROFILE("ImplicitSolver::Enforce1DESPeriodic()");
+
+    // Subtract the average Jz from a_RHS to enforce zero potential
+    // drop for 1D electrostatic model with periodic BCs.
+
+    if (!m_oneD_electrostatic_periodic) { return; }
+
+    const amrex::Real norm_factor = PhysConst::c2 * PhysConst::mu0 * m_theta * m_dt;
+
+    using warpx::fields::FieldType;
+    using ablastr::fields::Direction;
+    for (int lev = 0; lev < m_num_amr_levels; ++lev) {
+
+        const amrex::Geometry& geom = m_WarpX->Geom(lev);
+        amrex::Real const *dx = geom.CellSize();
+        const amrex::RealBox& prob_domain = geom.ProbDomain();
+        const amrex::Real Lz = prob_domain.hi(0) - prob_domain.lo(0);
+
+        // Compute the spatial average of Jz
+        const amrex::MultiFab& Jz = *m_WarpX->m_fields.get(FieldType::current_fp, Direction{2}, lev);
+        const bool local_sum = false;
+        const amrex::Real sumJz_global = Jz.sum(0,amrex::IntVect(0),local_sum);
+        const amrex::Real meanJz = sumJz_global*dx[0]/Lz;
+
+        // RHSz += cvac^2*m_theta*dt*mu0*sum(Jg^{n+1/2})*dz/Lz
+        amrex::MultiFab& RHSz = *a_RHS.getArrayVec()[lev][2];
+        RHSz.plus(norm_factor*meanJz,0,RHSz.nComp());
+    }
+
+}
+#endif
+
 void ImplicitSolver::CumulateJ ()
 {
 
@@ -605,6 +658,10 @@ void ImplicitSolver::parseBaseImplicitSolverParams ()
             m_blank_electric_field[dir] = (tmp[dir] != 0);
         }
     }
+
+#if defined(WARPX_DIM_1D_Z)
+    setOneDElectrostaticPeriodicFlag();
+#endif
 
     parseNonlinearSolverParams(pp);
 }

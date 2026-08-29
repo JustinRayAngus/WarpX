@@ -141,4 +141,9 @@ void SemiImplicitEM::ComputeRHS (WarpXSolverVec&  a_RHS,
         }
     }
 
+#if defined(WARPX_DIM_1D_Z)
+    // RHS += cvac^2*m_theta*dt*mu0*sum(Jg^{n+1/2})*dz/Lz
+    Enforce1DESPeriodic(a_RHS);
+#endif
+
 }
