@@ -385,6 +385,8 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
         Gpu::Buffer<int> nnz_actual_d({nnz_max});
         auto* nnz_actual_ptr = nnz_actual_d.data();
 
+        const amrex::Array<bool,3>& blank_Efield = m_ops->GetBlankElectricField();
+
         for (int dir = 0; dir < 3; dir++) {
 
             for (amrex::MFIter mfi(*dofs_mfarrvec[lev][dir]); mfi.isValid(); ++mfi) {
@@ -456,6 +458,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
 
                         int icol = num_nz_ptr[ridx_l]; //NOLINT (misc-const-correctness)
 
+                        if (!blank_Efield[dir]) {
 #if defined(WARPX_DIM_1D_Z)
                         // dir = 0: xhat\cdot[\nabla\times\nabla E] = -[d2/dx2]Ex
                         // dir = 1: yhat\cdot[\nabla\times\nabla E] = -[d2/dx2]Ey
@@ -624,6 +627,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                             // DIM_RZ:
                             // dir = 0: d/dr(dEz/dz) at Er(i,j) with Er centered in r and nodal in z
                             // dir = 2: 1/r*d/dr[r*dEr/dz] at Ez(i,j) with Ez centered in z and nodal in r
+                            if (!blank_Efield[tdir]) {
 #if defined(WARPX_DIM_RZ)
                             const amrex::Real geom_m = (dir == 2 && i != 0 ? 1.0_rt - 0.5_rt / i_real : 1.0_rt);
                             const amrex::Real geom_p = (dir == 2 && i != 0 ? 1.0_rt + 0.5_rt / i_real : 1.0_rt);
@@ -666,6 +670,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                                                                               &a_ij_ptr[ridx_l*nnz_max],
                                                                               nnz_max, icol );
                                 if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
+                            }
                             }
                         } else if (dir==1) {
                             for (int jdir = 0; jdir <= 2; jdir+=2) {
@@ -734,6 +739,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                         for (int ctr_dir = -1; ctr_dir <= 0; ctr_dir++) {
                             for (int ctr_tdir = -1; ctr_tdir <= 0; ctr_tdir++) {
                                 for (int tdir = 1; tdir <= 2; tdir++) {
+                                    if (blank_Efield[dvec[tdir]]) { continue; }
                                     auto iv = ic; iv[dvec[0]] += (ctr_dir+1); iv[dvec[tdir]] += ctr_tdir;
                                     const auto sign = std::copysign(1,ctr_dir) * std::copysign(1,ctr_tdir);
                                     const int cidx_g_rhs = dof_arrays[tdir](iv,1);
@@ -748,6 +754,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                             }
                         }
 #endif
+                        }
                         num_nz_ptr[ridx_l] = icol;
                     });
                 }
@@ -762,7 +769,7 @@ int MatrixPC<T,Ops>::Assemble (const T& a_U)
                 // Similarly for Jy/Ey (m_bcoefs[dir=1]) and Jz/Ez (m_bcoefs[dir=2]).
                 // The mapping to the components is given by:
                 // mm_comp = i0 + MM_width[0] + MM_comp[0]*(j0 + MM_width[1]) + (MM_comp[0] + MM_comp[1])*(k0 + MM_width[2])
-                if (m_include_mass_matrices) {
+                if (m_include_mass_matrices && !blank_Efield[dir]) {
 
                     auto sigma_ii_arr = (*m_bcoefs)[lev][dir]->const_array(mfi);
                     amrex::GpuArray<int,3> MM_ncomp = {1,1,1};

@@ -29,9 +29,7 @@ void StrangImplicitSpectralEM::Define (WarpX* const a_WarpX, bool a_from_restart
     m_E.Copy(FieldType::Efield_fp);
     m_Eold.Copy(a_from_restart ? FieldType::E_old : FieldType::Efield_fp, FieldType::None, true);
 
-    // Parse nonlinear solver parameters
-    const amrex::ParmParse pp_implicit_evolve("implicit_evolve");
-    parseNonlinearSolverParams( pp_implicit_evolve );
+    parseBaseImplicitSolverParams();
 
     // Define the nonlinear solver
     m_nlsolver->Define(m_E, this);
