@@ -56,7 +56,62 @@ namespace {
     enum qed_flags : int { no_qed, has_qed };
     enum depos_order_flags : int { order_one = 1, order_two, order_three, order_four };
 
-    template<int exteb_control, int qed_control>
+    AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+    bool isNodalGatherPositionInBounds (
+        amrex::ParticleReal const xp_n,
+        amrex::ParticleReal const yp_n,
+        amrex::ParticleReal const zp_n,
+        amrex::ParticleReal const xp_nph,
+        amrex::ParticleReal const yp_nph,
+        amrex::ParticleReal const zp_nph,
+        amrex::XDim3 const & dinv,
+        amrex::XDim3 const & xyzmin,
+        amrex::Dim3 const & lo,
+        amrex::Dim3 const & nodal_lo,
+        amrex::Dim3 const & nodal_hi)
+    {
+        [[maybe_unused]] amrex::ParticleReal const xp_np1 = 2._prt*xp_nph - xp_n;
+        [[maybe_unused]] amrex::ParticleReal const yp_np1 = 2._prt*yp_nph - yp_n;
+        [[maybe_unused]] amrex::ParticleReal const zp_np1 = 2._prt*zp_nph - zp_n;
+
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+        double const x_new = lo.x + (std::sqrt(xp_np1*xp_np1 + yp_np1*yp_np1) - xyzmin.x)*dinv.x;
+#elif defined(WARPX_DIM_RSPHERE)
+        double const x_new = lo.x +
+            (std::sqrt(xp_np1*xp_np1 + yp_np1*yp_np1 + zp_np1*zp_np1) - xyzmin.x)*dinv.x;
+#elif !defined(WARPX_DIM_1D_Z)
+        double const x_new = lo.x + (xp_np1 - xyzmin.x)*dinv.x;
+#endif
+#if !defined(WARPX_DIM_1D_Z)
+        bool const x_in_bounds = x_new >= nodal_lo.x && x_new <= nodal_hi.x;
+#else
+        bool const x_in_bounds = true;
+#endif
+
+#if defined(WARPX_DIM_3D)
+        double const y_new = lo.y + (yp_np1 - xyzmin.y)*dinv.y;
+        bool const y_in_bounds = y_new >= nodal_lo.y && y_new <= nodal_hi.y;
+#else
+        bool const y_in_bounds = true;
+#endif
+
+#if defined(WARPX_DIM_3D)
+        double const z_new = lo.z + (zp_np1 - xyzmin.z)*dinv.z;
+        bool const z_in_bounds = z_new >= nodal_lo.z && z_new <= nodal_hi.z;
+#elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
+        double const z_new = lo.y + (zp_np1 - xyzmin.z)*dinv.z;
+        bool const z_in_bounds = z_new >= nodal_lo.y && z_new <= nodal_hi.y;
+#elif defined(WARPX_DIM_1D_Z)
+        double const z_new = lo.x + (zp_np1 - xyzmin.z)*dinv.z;
+        bool const z_in_bounds = z_new >= nodal_lo.x && z_new <= nodal_hi.x;
+#else
+        bool const z_in_bounds = true;
+#endif
+
+        return x_in_bounds && y_in_bounds && z_in_bounds;
+    }
+
+    template<int exteb_control, int qed_control, bool check_gather_bounds>
     AMREX_GPU_DEVICE AMREX_FORCE_INLINE
     bool PushXPSingleStep (
         int const & ip,
@@ -106,6 +161,8 @@ namespace {
         amrex::GpuArray<amrex::GpuArray<double,2>, AMREX_SPACEDIM> domain_double,
         amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> const & do_cropping,
         amrex::Dim3 const & lo,
+        amrex::Dim3 const & nodal_lo,
+        amrex::Dim3 const & nodal_hi,
         int const & n_rz_azimuthal_modes,
         int const & depos_order,
         CurrentDepositionAlgo const & depos_type,
@@ -168,6 +225,13 @@ namespace {
             Bzp = Bz_external_particle;
 
             if (do_gather) {
+                if constexpr (check_gather_bounds) {
+                    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+                        isNodalGatherPositionInBounds(
+                            xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi),
+                        "Implicit particle gather position exceeds the local nodal field domain.");
+                }
+
                 // first gather E and B to the particle positions
                 doGatherShapeNImplicit(xp_n, yp_n, zp_n, xp, yp, zp, Exp, Eyp, Ezp, Bxp, Byp, Bzp,
                                        ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
@@ -610,7 +674,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
         amrex::ParticleReal step_norm = 1._prt;
 
         const bool convergence =
-            PushXPSingleStep<exteb_control, qed_control>(
+            PushXPSingleStep<exteb_control, qed_control, false>(
                 ip, dt, setPosition, false,
                 xp, yp, zp, ux, uy, uz, xp_n, yp_n, zp_n, ux_n[ip], uy_n[ip], uz_n[ip],
                 step_norm, particle_tolerance, max_iterations,
@@ -619,7 +683,8 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
                 Bxp, Byp, Bzp, max_grid_crossings,
                 do_gather, ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                 ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
-                dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes, depos_order, depos_type,
+                dinv, xyzmin, domain_double, do_cropping, lo, lo, lo,
+                n_rz_azimuthal_modes, depos_order, depos_type,
                 getExternalEB, ion_lev, mass, q, pusher_algo, do_crr
 #ifdef WARPX_QED
                 , do_sync, t_chi_max, p_optical_depth_QSR, evolve_opt
@@ -745,7 +810,16 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
         box = amrex::coarsen(pti.tilebox(),ref_ratio);
     }
 
-    // Add guard cells to the box.
+    const int max_grid_crossings = WarpX::particle_max_grid_crossings;
+
+    // Limit trial positions to max_grid_crossings beyond the valid nodal box,
+    // leaving the remaining field guard cells available for the gather shape.
+    amrex::Box nodal_gather_position_box = amrex::surroundingNodes(box);
+    nodal_gather_position_box.grow(max_grid_crossings);
+    amrex::Dim3 const nodal_lo = amrex::lbound(nodal_gather_position_box);
+    amrex::Dim3 const nodal_hi = amrex::ubound(nodal_gather_position_box);
+
+    // Add guard cells to the field gather box.
     box.grow(ngEB);
 
     auto setPosition = SetParticlePosition(pti, 0);
@@ -788,7 +862,6 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
     const int depos_order = WarpX::nox;
     const int n_rz_azimuthal_modes = WarpX::n_rz_azimuthal_modes;
-    const int max_grid_crossings = WarpX::particle_max_grid_crossings;
 
     amrex::Array4<const amrex::Real> const & ex_arr = exfab->array();
     amrex::Array4<const amrex::Real> const & ey_arr = eyfab->array();
@@ -1005,8 +1078,8 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
             amrex::ParticleReal step_norm = 1._prt;
 
             // Try advancing the particle one suborbit step
-            bool convergence = PushXPSingleStep<exteb_control, qed_control>(ip, dt_suborbit, setPosition,
-                                 this_suborbit_out_of_bounds,
+            bool convergence = PushXPSingleStep<exteb_control, qed_control, true>(
+                                 ip, dt_suborbit, setPosition, this_suborbit_out_of_bounds,
                                  xp, yp, zp, ux, uy, uz, xp_n, yp_n, zp_n, uxp_n, uyp_n, uzp_n,
                                  step_norm, particle_tolerance, max_iterations,
                                  Ex_external_particle, Ey_external_particle, Ez_external_particle,
@@ -1014,7 +1087,8 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                                  Bxp, Byp, Bzp, max_grid_crossings,
                                  do_gather, ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                  ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
-                                 dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes, depos_order, depos_type,
+                                 dinv, xyzmin, domain_double, do_cropping, lo, nodal_lo, nodal_hi,
+                                 n_rz_azimuthal_modes, depos_order, depos_type,
                                  getExternalEB, ion_lev, mass, q, pusher_algo, do_crr
 #ifdef WARPX_QED
                                  , do_sync, t_chi_max, p_optical_depth_QSR, evolve_opt
