@@ -1137,28 +1137,32 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                         VillasenorDepositionShapeNKernel<1>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
                                                             ux[ip], uy[ip], uz[ip], gaminv,
                                                             Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping, lo, invvol, n_rz_azimuthal_modes);
+                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                            lo, invvol, n_rz_azimuthal_modes, max_grid_crossings);
                     }
                     else if constexpr (depos_order_control == order_two) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
                         VillasenorDepositionShapeNKernel<2>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
                                                             ux[ip], uy[ip], uz[ip], gaminv,
                                                             Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping, lo, invvol, n_rz_azimuthal_modes);
+                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                            lo, invvol, n_rz_azimuthal_modes, max_grid_crossings);
                     }
                     else if constexpr (depos_order_control == order_three) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
                         VillasenorDepositionShapeNKernel<3>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
                                                             ux[ip], uy[ip], uz[ip], gaminv,
                                                             Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping, lo, invvol, n_rz_azimuthal_modes);
+                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                            lo, invvol, n_rz_azimuthal_modes, max_grid_crossings);
                     }
                     else if constexpr (depos_order_control == order_four) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
                         VillasenorDepositionShapeNKernel<4>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
                                                             ux[ip], uy[ip], uz[ip], gaminv,
                                                             Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping, lo, invvol, n_rz_azimuthal_modes);
+                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                            lo, invvol, n_rz_azimuthal_modes, max_grid_crossings);
                     }
                 }
             }

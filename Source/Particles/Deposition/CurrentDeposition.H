@@ -1497,6 +1497,7 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
  * \param lo                    Index lower bounds of domain
  * \param invvol                One over cell volume
  * \param n_rz_azimuthal_modes  Number of azimuthal modes when using RZ geometry
+ * \param max_grid_crossings    Maximum allowed number of grid crossings in each direction.
  */
 template <int depos_order>
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
@@ -1521,7 +1522,8 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
                                        const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
                                        amrex::Dim3 const lo,
                                        amrex::Real const invvol,
-                                       [[maybe_unused]] int const n_rz_azimuthal_modes)
+                                       [[maybe_unused]] int const n_rz_azimuthal_modes,
+                                       int const max_grid_crossings)
 {
 
     using namespace amrex::literals;
@@ -1663,6 +1665,15 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const auto k_new = static_cast<int>(z_new-shift);
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_x <= max_grid_crossings,
+        "Villasenor deposition error: x-cell_crossings exceeds max_grid_crossings.");
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_y <= max_grid_crossings,
+        "Villasenor deposition error: y-cell_crossings exceeds max_grid_crossings.");
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_z <= max_grid_crossings,
+        "Villasenor deposition error: z-cell_crossings exceeds max_grid_crossings.");
 
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
@@ -1841,6 +1852,12 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_x <= max_grid_crossings,
+        "Villasenor deposition error: x-cell_crossings exceeds max_grid_crossings.");
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_z <= max_grid_crossings,
+        "Villasenor deposition error: z-cell_crossings exceeds max_grid_crossings.");
+
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
     const auto dirZ_sign = static_cast<double>(dzp < 0. ? -1. : 1.);
@@ -2001,6 +2018,9 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_z <= max_grid_crossings,
+        "Villasenor deposition error: z-cell_crossings exceeds max_grid_crossings.");
+
     // compute the initial cell location used to find the cell crossings.
     const auto dirZ_sign = static_cast<double>(dzp < 0. ? -1. : 1.);
     double Zcell = static_cast<double>(k_old) + shift + 0.5*(1.-dirZ_sign);
@@ -2075,6 +2095,9 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const auto i_new = static_cast<int>(x_new-shift);
     const int cell_crossings_x = std::abs(i_new-i_old);
     num_segments += cell_crossings_x;
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_x <= max_grid_crossings,
+        "Villasenor deposition error: x-cell_crossings exceeds max_grid_crossings.");
 
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
@@ -2172,6 +2195,7 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
  * \param lo                    Index lower bounds of domain.
  * \param q                     species charge.
  * \param n_rz_azimuthal_modes  Number of azimuthal modes when using RZ geometry.
+ * \param max_grid_crossings    Maximum allowed number of grid crossings in each direction.
  */
 template <int depos_order>
 void doVillasenorDepositionShapeNExplicit (const GetParticlePosition<PIdx>& GetPosition,
@@ -2192,7 +2216,8 @@ void doVillasenorDepositionShapeNExplicit (const GetParticlePosition<PIdx>& GetP
                                            const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
                                            const amrex::Dim3 lo,
                                            const amrex::Real q,
-                                           [[maybe_unused]] const int n_rz_azimuthal_modes)
+                                           [[maybe_unused]] const int n_rz_azimuthal_modes,
+                                           const int max_grid_crossings)
 {
     using namespace amrex::literals;
 
@@ -2233,7 +2258,7 @@ void doVillasenorDepositionShapeNExplicit (const GetParticlePosition<PIdx>& GetP
                                                           uxp[ip], uyp[ip], uzp[ip], gaminv,
                                                           Jx_arr, Jy_arr, Jz_arr,
                                                           dt, dinv, xyzmin, domain_double, do_cropping,
-                                                          lo, invvol, n_rz_azimuthal_modes);
+                                                          lo, invvol, n_rz_azimuthal_modes, max_grid_crossings);
 
     });
 }
@@ -2265,6 +2290,7 @@ void doVillasenorDepositionShapeNExplicit (const GetParticlePosition<PIdx>& GetP
  * \param lo                    Index lower bounds of domain.
  * \param q                     species charge.
  * \param n_rz_azimuthal_modes  Number of azimuthal modes when using RZ geometry.
+ * \param max_grid_crossings    Maximum allowed number of grid crossings in each direction.
  */
 template <int depos_order>
 void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::ParticleReal * const xp_n_data,
@@ -2290,7 +2316,8 @@ void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::Particle
                                            const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
                                            const amrex::Dim3 lo,
                                            const amrex::Real q,
-                                           [[maybe_unused]] const int n_rz_azimuthal_modes)
+                                           [[maybe_unused]] const int n_rz_azimuthal_modes,
+                                           const int max_grid_crossings)
 {
     using namespace amrex::literals;
 
@@ -2341,7 +2368,7 @@ void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::Particle
                                                           uxp_nph[ip], uyp_nph[ip], uzp_nph[ip], gaminv,
                                                           Jx_arr, Jy_arr, Jz_arr,
                                                           dt, dinv, xyzmin, domain_double, do_cropping,
-                                                          lo, invvol, n_rz_azimuthal_modes);
+                                                          lo, invvol, n_rz_azimuthal_modes, max_grid_crossings);
 
     });
 }
