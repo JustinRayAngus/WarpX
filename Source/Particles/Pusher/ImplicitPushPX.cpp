@@ -214,6 +214,13 @@ namespace {
         // field gather and the possiblity that the particle orbit re-enters the domain.
         if (this_suborbit_out_of_bounds) { return true; }
 
+        if constexpr (check_gather_bounds) {
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+                isNodalGatherPositionInBounds(
+                    xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi),
+                "Implicit particle gather position exceeds the local nodal field domain.");
+        }
+
         bool convergence = false;
         for (int iter=0; iter < max_iterations; iter++) {
 
@@ -225,13 +232,6 @@ namespace {
             Bzp = Bz_external_particle;
 
             if (do_gather) {
-                if constexpr (check_gather_bounds) {
-                    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-                        isNodalGatherPositionInBounds(
-                            xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi),
-                        "Implicit particle gather position exceeds the local nodal field domain.");
-                }
-
                 // first gather E and B to the particle positions
                 doGatherShapeNImplicit(xp_n, yp_n, zp_n, xp, yp, zp, Exp, Eyp, Ezp, Bxp, Byp, Bzp,
                                        ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
@@ -310,6 +310,13 @@ namespace {
             yp = yp_n + dyp;
             zp = zp_n + dzp;
             setPosition(ip, xp, yp, zp);
+
+            if constexpr (check_gather_bounds) {
+                AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+                    isNodalGatherPositionInBounds(
+                        xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi),
+                    "Implicit particle gather position exceeds the local nodal field domain.");
+            }
 
             // Check for convergence based on the step norm of the position change
             PositionNorm(dxp, dyp, dzp, dxp_save, dyp_save, dzp_save, idxg2, idyg2, idzg2, step_norm);
