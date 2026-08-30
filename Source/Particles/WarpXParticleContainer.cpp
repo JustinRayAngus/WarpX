@@ -1184,7 +1184,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
 #endif
 
         if (WarpX::nox == 1 && full_mass_matrices) {
-            doVillasenorSigmaDeposition<1,true>(
+            doVillasenorSigmaDeposition<1,true,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
@@ -1197,7 +1197,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
         } else if (WarpX::nox == 1 && !full_mass_matrices) {
-            doVillasenorSigmaDeposition<1,false>(
+            doVillasenorSigmaDeposition<1,false,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
@@ -1210,7 +1210,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
         } else if (WarpX::nox == 2 && full_mass_matrices) {
-            doVillasenorSigmaDeposition<2,true>(
+            doVillasenorSigmaDeposition<2,true,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
@@ -1223,7 +1223,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
         } else if (WarpX::nox == 2 && !full_mass_matrices) {
-            doVillasenorSigmaDeposition<2,false>(
+            doVillasenorSigmaDeposition<2,false,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
@@ -1236,7 +1236,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
         } else if (WarpX::nox == 3 && full_mass_matrices) {
-            doVillasenorSigmaDeposition<3,true>(
+            doVillasenorSigmaDeposition<3,true,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
@@ -1249,7 +1249,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
         } else if (WarpX::nox == 3 && !full_mass_matrices) {
-            doVillasenorSigmaDeposition<3,false>(
+            doVillasenorSigmaDeposition<3,false,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
@@ -1262,7 +1262,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
         } else if (WarpX::nox == 4 && full_mass_matrices) {
-            doVillasenorSigmaDeposition<4,true>(
+            doVillasenorSigmaDeposition<4,true,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,
@@ -1275,7 +1275,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
         } else if (WarpX::nox == 4 && !full_mass_matrices) {
-            doVillasenorSigmaDeposition<4,false>(
+            doVillasenorSigmaDeposition<4,false,WarpX::villasenor_mass_matrices_max_grid_crossings>(
                     xp_n_data, yp_n_data, zp_n_data,
                     GetPosition, nsuborbits, wp.dataPtr() + offset,
                     uxp_n.dataPtr() + offset, uyp_n.dataPtr() + offset, uzp_n.dataPtr() + offset,

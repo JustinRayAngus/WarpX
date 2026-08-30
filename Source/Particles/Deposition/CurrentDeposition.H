@@ -1664,10 +1664,6 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 7) ...
-
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
     const auto dirY_sign = static_cast<double>(dyp < 0. ? -1. : 1.);
@@ -1845,10 +1841,6 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 5) ...
-
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
     const auto dirZ_sign = static_cast<double>(dzp < 0. ? -1. : 1.);
@@ -2009,10 +2001,6 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 3) ...
-
     // compute the initial cell location used to find the cell crossings.
     const auto dirZ_sign = static_cast<double>(dzp < 0. ? -1. : 1.);
     double Zcell = static_cast<double>(k_old) + shift + 0.5*(1.-dirZ_sign);
@@ -2087,10 +2075,6 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     const auto i_new = static_cast<int>(x_new-shift);
     const int cell_crossings_x = std::abs(i_new-i_old);
     num_segments += cell_crossings_x;
-
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 3) ...
 
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);

@@ -1422,7 +1422,8 @@ void doGatherPicnicShapeN (
                      const amrex::GpuArray<amrex::GpuArray<double,2>, AMREX_SPACEDIM> & domain_double,
                      const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
                      const amrex::Dim3& lo,
-                     const int n_rz_azimuthal_modes)
+                     const int n_rz_azimuthal_modes,
+                     const int max_grid_crossings)
 {
     using namespace amrex;
 #if !defined(WARPX_DIM_RZ)
@@ -1562,9 +1563,14 @@ void doGatherPicnicShapeN (
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 7) ...
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_x <= max_grid_crossings,
+        "Gather error: x-cell_crossings exceeds max_grid_crossings.");
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_y <= max_grid_crossings,
+        "Gather error: y-cell_crossings exceeds max_grid_crossings.");
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_z <= max_grid_crossings,
+        "Gather error: z-cell_crossings exceeds max_grid_crossings.");
 
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
@@ -1746,9 +1752,11 @@ void doGatherPicnicShapeN (
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 5) ...
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_x <= max_grid_crossings,
+        "Gather error: x-cell_crossings exceeds max_grid_crossings.");
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_z <= max_grid_crossings,
+        "Gather error: z-cell_crossings exceeds max_grid_crossings.");
 
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
@@ -1913,9 +1921,8 @@ void doGatherPicnicShapeN (
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 3) ...
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_z <= max_grid_crossings,
+        "Gather error: z-cell_crossings exceeds max_grid_crossings.");
 
     // compute the initial cell location used to find the cell crossings.
     const auto dirZ_sign = static_cast<double>(dzp < 0. ? -1. : 1.);
@@ -1998,9 +2005,8 @@ void doGatherPicnicShapeN (
     const int cell_crossings_x = std::abs(i_new-i_old);
     num_segments += cell_crossings_x;
 
-    // need to assert that the number of cell crossings in each direction
-    // is within the range permitted by the number of guard cells
-    // e.g., if (num_segments > 3) ...
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( cell_crossings_x <= max_grid_crossings,
+        "Gather error: x-cell_crossings exceeds max_grid_crossings.");
 
     // compute the initial cell location used to find the cell crossings.
     const auto dirX_sign = static_cast<double>(dxp < 0. ? -1. : 1.);
@@ -2236,6 +2242,7 @@ void doGatherShapeN (const amrex::ParticleReal xp,
  * \param do_cropping             Whether to crop particle orbits at domain boundaries
  * \param lo                      Index lower bounds of domain.
  * \param n_rz_azimuthal_modes    Number of azimuthal modes when using RZ geometry
+ * \param max_grid_crossings           Maximum number of cell crossings in each direction
  * \param nox                     order of the particle shape function
  * \param depos_type              current deposition algorithm (e.g., direct, Esirkepov, Vay, Villasenor, etc.)
  */
@@ -2271,6 +2278,7 @@ void doGatherShapeNImplicit (
                      const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
                      const amrex::Dim3& lo,
                      const int n_rz_azimuthal_modes,
+                     const int max_grid_crossings,
                      const int nox,
                      const CurrentDepositionAlgo depos_type )
 {
@@ -2307,25 +2315,29 @@ void doGatherShapeNImplicit (
                                     Exp, Eyp, Ezp, Bxp, Byp, Bzp,
                                     ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                     ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
-                                    dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes);
+                                    dinv, xyzmin, domain_double, do_cropping, lo,
+                                    n_rz_azimuthal_modes, max_grid_crossings);
         } else if (nox == 2) {
             doGatherPicnicShapeN<2>(xp_n, yp_n, zp_n, xp_nph, yp_nph, zp_nph,
                                     Exp, Eyp, Ezp, Bxp, Byp, Bzp,
                                     ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                     ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
-                                    dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes);
+                                    dinv, xyzmin, domain_double, do_cropping, lo,
+                                    n_rz_azimuthal_modes, max_grid_crossings);
         } else if (nox == 3) {
             doGatherPicnicShapeN<3>(xp_n, yp_n, zp_n, xp_nph, yp_nph, zp_nph,
                                     Exp, Eyp, Ezp, Bxp, Byp, Bzp,
                                     ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                     ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
-                                    dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes);
+                                    dinv, xyzmin, domain_double, do_cropping, lo,
+                                    n_rz_azimuthal_modes, max_grid_crossings);
         } else if (nox == 4) {
             doGatherPicnicShapeN<4>(xp_n, yp_n, zp_n, xp_nph, yp_nph, zp_nph,
                                     Exp, Eyp, Ezp, Bxp, Byp, Bzp,
                                     ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                     ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
-                                    dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes);
+                                    dinv, xyzmin, domain_double, do_cropping, lo,
+                                    n_rz_azimuthal_modes, max_grid_crossings);
         }
     }
     else if (depos_type == CurrentDepositionAlgo::Direct) {

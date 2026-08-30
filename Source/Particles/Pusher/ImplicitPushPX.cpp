@@ -87,6 +87,7 @@ namespace {
         amrex::ParticleReal & Bxp,
         amrex::ParticleReal & Byp,
         amrex::ParticleReal & Bzp,
+        int const & max_grid_crossings,
         int const & do_gather,
         amrex::Array4<const amrex::Real> const & ex_arr,
         amrex::Array4<const amrex::Real> const & ey_arr,
@@ -172,7 +173,7 @@ namespace {
                                        ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                        ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
                                        dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes,
-                                       depos_order, depos_type);
+                                       max_grid_crossings, depos_order, depos_type);
             }
 
             // Externally applied E and B-field in Cartesian co-ordinates
@@ -470,6 +471,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
     const auto depos_type = WarpX::current_deposition_algo;
     const int depos_order = WarpX::nox;
     const int n_rz_azimuthal_modes = WarpX::n_rz_azimuthal_modes;
+    const int max_grid_crossings = WarpX::particle_max_grid_crossings;
 
     amrex::Array4<const amrex::Real> const& ex_arr = exfab->array();
     amrex::Array4<const amrex::Real> const& ey_arr = eyfab->array();
@@ -614,7 +616,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
                 step_norm, particle_tolerance, max_iterations,
                 Ex_external_particle, Ey_external_particle, Ez_external_particle,
                 Bx_external_particle, By_external_particle, Bz_external_particle,
-                Bxp, Byp, Bzp,
+                Bxp, Byp, Bzp, max_grid_crossings,
                 do_gather, ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                 ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
                 dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes, depos_order, depos_type,
@@ -786,7 +788,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
     const int depos_order = WarpX::nox;
     const int n_rz_azimuthal_modes = WarpX::n_rz_azimuthal_modes;
-    const int max_crossings = WarpX::particle_max_grid_crossings;
+    const int max_grid_crossings = WarpX::particle_max_grid_crossings;
 
     amrex::Array4<const amrex::Real> const & ex_arr = exfab->array();
     amrex::Array4<const amrex::Real> const & ey_arr = eyfab->array();
@@ -1009,7 +1011,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                                  step_norm, particle_tolerance, max_iterations,
                                  Ex_external_particle, Ey_external_particle, Ez_external_particle,
                                  Bx_external_particle, By_external_particle, Bz_external_particle,
-                                 Bxp, Byp, Bzp,
+                                 Bxp, Byp, Bzp, max_grid_crossings,
                                  do_gather, ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                  ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
                                  dinv, xyzmin, domain_double, do_cropping, lo, n_rz_azimuthal_modes, depos_order, depos_type,
@@ -1057,61 +1059,65 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
                     // The ignore_unused is needed so that the variables are not first-captured
                     // in a constexpr-if context.
-                    amrex::ignore_unused(max_crossings);
+                    amrex::ignore_unused(max_grid_crossings);
                     amrex::ignore_unused(Jx_arr, Jy_arr, Jz_arr, invvol);
                     amrex::ignore_unused(pSbuf);
                     if constexpr (depos_order_control == order_one) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        doVillasenorJandSigmaDepositionKernel<1,false,/*deposit_J=*/true>(
+                        doVillasenorJandSigmaDepositionKernel<1,false,/*deposit_J=*/true,
+                                                              WarpX::villasenor_mass_matrices_max_grid_crossings>(
                                                               xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1,
                                                               wq_invvol, ux[ip], uy[ip], uz[ip], gaminv,
                                                               fpxx, fpxy, fpxz,
                                                               fpyx, fpyy, fpyz,
                                                               fpzx, fpzy, fpzz,
                                                               Jx_arr, Jy_arr, Jz_arr,
-                                                              max_crossings,
+                                                              max_grid_crossings,
                                                               pSbuf[0], pSbuf[1], pSbuf[2],
                                                               pSbuf[3], pSbuf[4], pSbuf[5],
                                                               pSbuf[6], pSbuf[7], pSbuf[8],
                                                               dt_suborbit, dinv, xyzmin, domain_double, do_cropping, lo );
                     } else if constexpr (depos_order_control == order_two) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        doVillasenorJandSigmaDepositionKernel<2,false,/*deposit_J=*/true>(
+                        doVillasenorJandSigmaDepositionKernel<2,false,/*deposit_J=*/true,
+                                                              WarpX::villasenor_mass_matrices_max_grid_crossings>(
                                                               xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1,
                                                               wq_invvol, ux[ip], uy[ip], uz[ip], gaminv,
                                                               fpxx, fpxy, fpxz,
                                                               fpyx, fpyy, fpyz,
                                                               fpzx, fpzy, fpzz,
                                                               Jx_arr, Jy_arr, Jz_arr,
-                                                              max_crossings,
+                                                              max_grid_crossings,
                                                               pSbuf[0], pSbuf[1], pSbuf[2],
                                                               pSbuf[3], pSbuf[4], pSbuf[5],
                                                               pSbuf[6], pSbuf[7], pSbuf[8],
                                                               dt_suborbit, dinv, xyzmin, domain_double, do_cropping, lo );
                     } else if constexpr (depos_order_control == order_three) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        doVillasenorJandSigmaDepositionKernel<3,false,/*deposit_J=*/true>(
+                        doVillasenorJandSigmaDepositionKernel<3,false,/*deposit_J=*/true,
+                                                              WarpX::villasenor_mass_matrices_max_grid_crossings>(
                                                               xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1,
                                                               wq_invvol, ux[ip], uy[ip], uz[ip], gaminv,
                                                               fpxx, fpxy, fpxz,
                                                               fpyx, fpyy, fpyz,
                                                               fpzx, fpzy, fpzz,
                                                               Jx_arr, Jy_arr, Jz_arr,
-                                                              max_crossings,
+                                                              max_grid_crossings,
                                                               pSbuf[0], pSbuf[1], pSbuf[2],
                                                               pSbuf[3], pSbuf[4], pSbuf[5],
                                                               pSbuf[6], pSbuf[7], pSbuf[8],
                                                               dt_suborbit, dinv, xyzmin, domain_double, do_cropping, lo );
                     } else if constexpr (depos_order_control == order_four) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        doVillasenorJandSigmaDepositionKernel<4,false,/*deposit_J=*/true>(
+                        doVillasenorJandSigmaDepositionKernel<4,false,/*deposit_J=*/true,
+                                                              WarpX::villasenor_mass_matrices_max_grid_crossings>(
                                                               xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1,
                                                               wq_invvol, ux[ip], uy[ip], uz[ip], gaminv,
                                                               fpxx, fpxy, fpxz,
                                                               fpyx, fpyy, fpyz,
                                                               fpzx, fpzy, fpzz,
                                                               Jx_arr, Jy_arr, Jz_arr,
-                                                              max_crossings,
+                                                              max_grid_crossings,
                                                               pSbuf[0], pSbuf[1], pSbuf[2],
                                                               pSbuf[3], pSbuf[4], pSbuf[5],
                                                               pSbuf[6], pSbuf[7], pSbuf[8],
