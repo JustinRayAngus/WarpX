@@ -236,19 +236,13 @@ WarpX::WriteDtUpdateFileHeader ()
         const bool IsNotRestart = restart_chkfile.empty();
 
         // If not a restart, discard the file if already exists.
-        auto file_mode = std::ofstream::out;
         if (IsNotRestart) {
-            file_mode = std::ofstream::out | std::ofstream::trunc;
-        } else {
-            file_mode = std::ofstream::out | std::ofstream::app;
-        }
+            auto file_mode = std::ofstream::out | std::ofstream::trunc;
+            std::ofstream diagnostic_file{m_dt_update_diagnostic_file, file_mode};
+            if (!diagnostic_file.is_open()) {
+                amrex::Abort("Failed to open file: " + m_dt_update_diagnostic_file);
+            }
 
-        std::ofstream diagnostic_file{m_dt_update_diagnostic_file, file_mode};
-        if (!diagnostic_file.is_open()) {
-            amrex::Abort("Failed to open file: " + m_dt_update_diagnostic_file);
-        }
-
-        if (IsNotRestart) {
             int c = 0;
             diagnostic_file << "#";
             diagnostic_file << "[" << c++ << "]step()";
@@ -267,8 +261,8 @@ WarpX::WriteDtUpdateFileHeader ()
                 diagnostic_file << "[" << c++ << "]omegac_dt";
             }
             diagnostic_file << "\n";
+            diagnostic_file.close();
         }
-        diagnostic_file.close();
     }
 
 }
