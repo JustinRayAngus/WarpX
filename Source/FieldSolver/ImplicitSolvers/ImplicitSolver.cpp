@@ -216,6 +216,9 @@ void ImplicitSolver::Enforce1DESPeriodic (WarpXSolverVec& a_RHS)
     // Subtract the average Jz from a_RHS to enforce zero potential
     // drop for 1D electrostatic model with periodic BCs.
 
+    // See G. Chen and L. Chacon and D. Barnes, An energy- and charge-conserving,
+    // implicit, electrostatic particle-in-cell algorithm, JCP 230 (2011).
+
     if (!m_oneD_electrostatic_periodic) { return; }
 
     const amrex::Real norm_factor = PhysConst::c2 * PhysConst::mu0 * m_theta * m_dt;
