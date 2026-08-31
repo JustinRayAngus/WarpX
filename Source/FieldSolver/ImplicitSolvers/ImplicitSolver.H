@@ -172,19 +172,6 @@ public:
         return m_blank_electric_field;
     }
 
-    /**
-     * \brief Set RHS arrays to zero for components of the electric field that are not evolved
-     */
-    void ApplyElectricFieldBlanking (WarpXSolverVec& a_RHSE) {
-        for (int lev = 0; lev < m_num_amr_levels; ++lev) {
-            for (int dir = 0; dir < 3; ++dir) {
-                if (m_blank_electric_field[dir]) {
-                    a_RHSE.getArrayVec()[lev][dir]->setVal(0.0);
-                }
-            }
-        }
-    }
-
 protected:
 
     /**
@@ -213,6 +200,19 @@ protected:
      * \brief Flags to turn off evolving select components of the electric field
      */
     amrex::Array<bool,3> m_blank_electric_field{false, false, false};
+
+    /**
+     * \brief Set RHS arrays to zero for components of the electric field that are not evolved
+     */
+    void ApplyElectricFieldBlanking (WarpXSolverVec& a_RHSE) {
+        for (int lev = 0; lev < m_num_amr_levels; ++lev) {
+            for (int dir = 0; dir < 3; ++dir) {
+                if (m_blank_electric_field[dir]) {
+                    a_RHSE.getArrayVec()[lev][dir]->setVal(0.0);
+                }
+            }
+        }
+    }
 
 #if defined(WARPX_DIM_1D_Z)
     bool m_oneD_electrostatic_periodic = false;
