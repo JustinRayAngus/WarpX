@@ -249,7 +249,7 @@ Overall simulation parameters
         - Practical limits on :math:`\Delta t` set by solver efficiency, number of particle cell crossings, and physics resolution.
 
       - **Electric field blanking:**
-        Selective components of the electric field can be prevented from evolving in time (set to zero in the implicit solve). This is useful for electrostatic approximations where transverse field components are not needed.
+        Selective components of the electric field can be prevented from evolving in time (set to zero in the implicit solve). This is useful when assumed symmetries permit neglecting those components.
 
         - ``implicit_evolve.blank_electric_field`` (3 ``integers``, default: ``0 0 0``)
           Three integer flags (0 or 1) corresponding to the x, y, and z components of the electric field.
