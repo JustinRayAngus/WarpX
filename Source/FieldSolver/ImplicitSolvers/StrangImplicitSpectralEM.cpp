@@ -125,6 +125,8 @@ void StrangImplicitSpectralEM::ComputeRHS ( WarpXSolverVec& a_RHS,
     amrex::Real constexpr coeff = PhysConst::c2 * PhysConst::mu0;
     a_RHS.scale(-coeff * 0.5_rt*m_dt);
 
+    ApplyElectricFieldBlanking(a_RHS);
+
 }
 
 void StrangImplicitSpectralEM::UpdateWarpXFields (WarpXSolverVec const & a_E,
