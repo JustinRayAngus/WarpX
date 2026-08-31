@@ -375,9 +375,10 @@ void CurlCurlMLMGPC<T,Ops>::Apply (T& a_x, const T& a_b)
         // preconditioner is a fixed linear operator, as required by GMRES.
         m_solver->solve({&solution}, {&rhs}, m_rtol, m_atol);
 
-        const bool blank_Ey = m_ops->GetBlankElectricField()[1];
-        if (blank_Ey) {
-            x_mfarrvec[n][1]->setVal(0.0);
+        // Apply E-field blanking to the solution vector
+        const amrex::Array<bool,3>& blank_Efield = m_ops->GetBlankElectricField();
+        for (dir = 0; dir < 3; ++dir) {
+            if (blank_Efield[dir]) { x_mfarrvec[n][dir]->setVal(0.0); }
         }
     }
 }
