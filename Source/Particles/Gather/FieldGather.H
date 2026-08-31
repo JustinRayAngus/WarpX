@@ -1389,6 +1389,7 @@ void doGatherShapeNEsirkepovStencilImplicit (
  * \param do_cropping               Whether to crop particle orbits at domain boundaries
  * \param lo                        Index lower bounds of domain.
  * \param n_rz_azimuthal_modes      Number of azimuthal modes when using RZ geometry
+ * \param max_grid_crossings        Maximum number of cell crossings in each direction
  */
 template <int depos_order>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -2242,7 +2243,7 @@ void doGatherShapeN (const amrex::ParticleReal xp,
  * \param do_cropping             Whether to crop particle orbits at domain boundaries
  * \param lo                      Index lower bounds of domain.
  * \param n_rz_azimuthal_modes    Number of azimuthal modes when using RZ geometry
- * \param max_grid_crossings           Maximum number of cell crossings in each direction
+ * \param max_grid_crossings      Maximum number of cell crossings in each direction
  * \param nox                     order of the particle shape function
  * \param depos_type              current deposition algorithm (e.g., direct, Esirkepov, Vay, Villasenor, etc.)
  */
