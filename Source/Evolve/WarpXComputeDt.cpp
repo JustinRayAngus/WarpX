@@ -237,31 +237,37 @@ WarpX::WriteDtUpdateFileHeader ()
 
         // If not a restart, discard the file if already exists.
         auto file_mode = std::ofstream::out;
-        if (IsNotRestart) { file_mode |= std::ofstream::trunc; }
+        if (IsNotRestart) {
+            file_mode = std::ofstream::out | std::ofstream::trunc;
+        } else {
+            file_mode = std::ofstream::out | std::ofstream::app;
+        }
 
         std::ofstream diagnostic_file{m_dt_update_diagnostic_file, file_mode};
         if (!diagnostic_file.is_open()) {
             amrex::Abort("Failed to open file: " + m_dt_update_diagnostic_file);
         }
 
-        int c = 0;
-        diagnostic_file << "#";
-        diagnostic_file << "[" << c++ << "]step()";
-        diagnostic_file << " ";
-        diagnostic_file << "[" << c++ << "]time(s)";
-        diagnostic_file << " ";
-        diagnostic_file << "[" << c++ << "]new_dt";
-        diagnostic_file << " ";
-        diagnostic_file << "[" << c++ << "]vmax_dt";
-        if (m_max_omegap_dt.has_value()) {
+        if (IsNotRestart) {
+            int c = 0;
+            diagnostic_file << "#";
+            diagnostic_file << "[" << c++ << "]step()";
             diagnostic_file << " ";
-            diagnostic_file << "[" << c++ << "]omegap_dt";
-        }
-        if (m_max_omegac_dt.has_value()) {
+            diagnostic_file << "[" << c++ << "]time(s)";
             diagnostic_file << " ";
-            diagnostic_file << "[" << c++ << "]omegac_dt";
+            diagnostic_file << "[" << c++ << "]new_dt";
+            diagnostic_file << " ";
+            diagnostic_file << "[" << c++ << "]vmax_dt";
+            if (m_max_omegap_dt.has_value()) {
+                diagnostic_file << " ";
+                diagnostic_file << "[" << c++ << "]omegap_dt";
+            }
+            if (m_max_omegac_dt.has_value()) {
+                diagnostic_file << " ";
+                diagnostic_file << "[" << c++ << "]omegac_dt";
+            }
+            diagnostic_file << "\n";
         }
-        diagnostic_file << "\n";
         diagnostic_file.close();
     }
 
