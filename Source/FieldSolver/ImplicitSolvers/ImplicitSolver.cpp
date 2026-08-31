@@ -759,7 +759,8 @@ void ImplicitSolver::InitializeMassMatrices ()
                 "Guard cells for J are not consistent with particle_max_grid_crossings.");
             WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
                 max_grid_crossings <= WarpX::villasenor_mass_matrices_max_grid_crossings,
-                "Mass matrices for the Jacobian with Villasenor deposition support particles.max_grid_crossings <= 3.");
+                "Mass matrices for the Jacobian with Villasenor deposition support "
+                "particles.max_grid_crossings <= WarpX::villasenor_mass_matrices_max_grid_crossings.");
 #endif
             // Comment on direction-dependent number of mass matrices components
             // set below for charge-conserving Villasenor deposition:
