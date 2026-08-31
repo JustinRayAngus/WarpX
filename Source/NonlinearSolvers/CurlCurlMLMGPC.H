@@ -377,7 +377,7 @@ void CurlCurlMLMGPC<T,Ops>::Apply (T& a_x, const T& a_b)
 
         // Apply E-field blanking to the solution vector
         const amrex::Array<bool,3>& blank_Efield = m_ops->GetBlankElectricField();
-        for (dir = 0; dir < 3; ++dir) {
+        for (int dir = 0; dir < 3; ++dir) {
             if (blank_Efield[dir]) { x_mfarrvec[n][dir]->setVal(0.0); }
         }
     }
