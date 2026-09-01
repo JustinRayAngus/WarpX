@@ -925,7 +925,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     double shift = 0.0;
     if ( (depos_order % 2) == 0 ) { shift = 0.5; }
 
-    constexpr int max_num_segments = 1 + max_supported_grid_crossings * AMREX_SPACEDIM;
+    [[maybe_unused]] constexpr int max_num_segments = 1 + max_supported_grid_crossings * AMREX_SPACEDIM;
 
 #if defined(WARPX_DIM_3D)
 
