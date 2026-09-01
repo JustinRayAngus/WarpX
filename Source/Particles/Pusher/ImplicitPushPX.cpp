@@ -56,10 +56,11 @@ namespace {
     enum exteb_flags : int { no_exteb, has_exteb };
     enum qed_flags : int { no_qed, has_qed };
     enum depos_order_flags : int { order_one = 1, order_two, order_three, order_four };
+    enum class PushXPStatus : int { converged, unconverged, out_of_bounds };
 
     template<int exteb_control, int qed_control>
     AMREX_GPU_DEVICE AMREX_FORCE_INLINE
-    bool PushXPSingleStep (
+    PushXPStatus PushXPSingleStep (
         int const & ip,
         amrex::Real const & dt,
         SetParticlePosition<PIdx> const &  setPosition,
@@ -158,13 +159,13 @@ namespace {
 
         // Propogate ballistically if the suborbit starts out of bounds, avoiding
         // field gather and the possiblity that the particle orbit re-enters the domain.
-        if (this_suborbit_out_of_bounds) { return true; }
+        if (this_suborbit_out_of_bounds) { return PushXPStatus::converged; }
 
         if (!ParticleUtils::isImplicitParticlePositionInBounds(
                 xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi))
         {
             amrex::Gpu::Atomic::Add(position_error_count, 1);
-            return false;
+            return PushXPStatus::out_of_bounds;
         }
 
         bool convergence = false;
@@ -261,7 +262,7 @@ namespace {
                     xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi))
             {
                 amrex::Gpu::Atomic::Add(position_error_count, 1);
-                return false;
+                return PushXPStatus::out_of_bounds;
             }
 
             // Check for convergence based on the step norm of the position change
@@ -272,7 +273,7 @@ namespace {
             }
         }
 
-        return convergence;
+        return convergence ? PushXPStatus::converged : PushXPStatus::unconverged;
     }
 }
 
@@ -637,7 +638,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
         amrex::ParticleReal Bzp = 0.0_prt;
         amrex::ParticleReal step_norm = 1._prt;
 
-        const bool convergence =
+        const PushXPStatus push_status =
             PushXPSingleStep<exteb_control, qed_control>(
                 ip, dt, setPosition, false,
                 xp, yp, zp, ux, uy, uz, xp_n, yp_n, zp_n, ux_n[ip], uy_n[ip], uz_n[ip],
@@ -655,6 +656,9 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
                 , do_sync, t_chi_max, p_optical_depth_QSR, evolve_opt
 #endif
             );
+
+        if (push_status == PushXPStatus::out_of_bounds) { return; }
+        const bool convergence = push_status == PushXPStatus::converged;
 
         // check if particle did not converge
         if (max_iterations > 1 && !convergence) {
@@ -1060,7 +1064,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
             amrex::ParticleReal step_norm = 1._prt;
 
             // Try advancing the particle one suborbit step
-            bool convergence = PushXPSingleStep<exteb_control, qed_control>(
+            const PushXPStatus push_status = PushXPSingleStep<exteb_control, qed_control>(
                                  ip, dt_suborbit, setPosition, this_suborbit_out_of_bounds,
                                  xp, yp, zp, ux, uy, uz, xp_n, yp_n, zp_n, uxp_n, uyp_n, uzp_n,
                                  step_norm, particle_tolerance, max_iterations,
@@ -1077,6 +1081,9 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                                  , do_sync, t_chi_max, p_optical_depth_QSR, evolve_opt
 #endif
                                  );
+
+            if (push_status == PushXPStatus::out_of_bounds) { return; }
+            bool convergence = push_status == PushXPStatus::converged;
 
             // Don't change number of suborbits during linear stage of jfnk
             if (linear_stage_of_jfnk) { convergence = true; }
