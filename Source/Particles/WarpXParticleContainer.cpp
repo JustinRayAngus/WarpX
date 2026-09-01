@@ -982,38 +982,6 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
 
     const amrex::IntVect& ng_J = warpx.get_ng_depos_J();
 
-    // Extract deposition order and check that particles shape fits within the guard cells.
-    // NOTE: In specific situations where the staggering of J and the current deposition algorithm
-    // are not trivial, this check might be too relaxed and we might include a particle that should
-    // deposit part of its current in a neighboring box. However, this should catch particles
-    // traveling many cells away, for example with algorithms that allow for large time steps.
-
-#if   defined(WARPX_DIM_1D_Z)
-    const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::noz/2));
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
-    const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2));
-#elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
-    const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2),
-                                                       static_cast<int>(WarpX::noz/2));
-#elif defined(WARPX_DIM_3D)
-    const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2),
-                                                       static_cast<int>(WarpX::noy/2),
-                                                       static_cast<int>(WarpX::noz/2));
-#endif
-
-    // On CPU: particles deposit on tile arrays, which have a small number of guard cells ng_J
-    // On GPU: particles deposit directly on the J arrays, which usually have a larger number of guard cells
-#ifndef AMREX_USE_GPU
-    const amrex::IntVect range = ng_J - shape_extent;
-#else
-    // Jx, Jy and Jz have the same number of guard cells, hence it is sufficient to check for Jx
-    const amrex::IntVect range = Sxx->nGrowVect() - shape_extent;
-#endif
-    amrex::ignore_unused(range); // for release builds
-    AMREX_ASSERT_WITH_MESSAGE(
-        amrex::numParticlesOutOfRange(pti, range) == 0,
-        "Particles shape does not fit within tile (CPU) or guard cells (GPU) used for current deposition");
-
     const amrex::XDim3 dinv = WarpX::InvCellSize(std::max(depos_lev,0));
 
     const amrex::ParticleReal qs = this->m_charge;

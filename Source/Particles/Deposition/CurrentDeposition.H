@@ -2307,6 +2307,7 @@ void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::Particle
 
     // Calculate nodal field domain bounds for position checking
     // Limit trial positions to max_grid_crossings beyond the valid nodal box
+    // Note that the number of guard cells is at least max_grid_crossings + shape - 1.
     amrex::Box nodal_position_box = amrex::surroundingNodes(tilebox);
     nodal_position_box.grow(max_grid_crossings);
     amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);

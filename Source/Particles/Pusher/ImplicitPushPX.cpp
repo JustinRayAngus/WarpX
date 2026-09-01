@@ -443,6 +443,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
 
     // Limit trial positions to max_grid_crossings beyond the valid nodal box,
     // leaving the remaining field guard cells available for the gather shape.
+    // Note that the number of guard cells is at least max_grid_crossings + shape - 1.
     amrex::Box nodal_position_box = amrex::surroundingNodes(box);
     nodal_position_box.grow(max_grid_crossings);
     amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);
@@ -770,6 +771,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
     // Limit trial positions to max_grid_crossings beyond the valid nodal box,
     // leaving the remaining field guard cells available for the gather shape.
+    // Note that the number of guard cells is at least max_grid_crossings + shape - 1.
     amrex::Box nodal_position_box = amrex::surroundingNodes(box);
     nodal_position_box.grow(max_grid_crossings);
     amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);
