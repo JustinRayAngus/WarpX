@@ -678,9 +678,9 @@ namespace ParticleUtils {
      */
     AMREX_INLINE
     void CheckGridCrossingErrors (const amrex::Gpu::DeviceVector<int>& d_error_x,
-                                   const amrex::Gpu::DeviceVector<int>& d_error_y,
-                                   const amrex::Gpu::DeviceVector<int>& d_error_z,
-                                   const int max_grid_crossings)
+                                  const amrex::Gpu::DeviceVector<int>& d_error_y,
+                                  const amrex::Gpu::DeviceVector<int>& d_error_z,
+                                  const int max_grid_crossings)
     {
         int h_error_x = d_error_x[0];
         int h_error_y = d_error_y[0];
