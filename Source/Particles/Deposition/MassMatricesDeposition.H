@@ -14,6 +14,7 @@
 #include "Particles/Gather/FieldGather.H"
 #include "Particles/Gather/GetExternalFields.H"
 #include "Particles/ShapeFactors.H"
+#include "Utils/ParticleUtils.H"
 #include "Utils/TextMsg.H"
 #include "Utils/WarpXAlgorithmSelection.H"
 #include "Utils/WarpXConst.H"
@@ -746,7 +747,10 @@ void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
  * \param fpyx,fpyy,fpyz           Mass matrix kernels for Jy
  * \param fpzx,fpzy,fpzz           Mass matrix kernels for Jz
  * \param Jx_arr,Jy_arr,Jz_arr     Array4 of current density, either full array or tile
- * \param max_crossings            Maximum number of particle cell crossings in each dir
+ * \param max_grid_crossings       Maximum number of particle cell crossings in each dir
+ * \param error_count_x            Pointer to atomic counter for x-direction errors (device)
+ * \param error_count_y            Pointer to atomic counter for y-direction errors (device)
+ * \param error_count_z            Pointer to atomic counter for z-direction errors (device)
  * \param Sxx_arr,Sxy_arr,Sxz_arr  Array4 of mass matrices for Jx, either full array or tile
  * \param Syx_arr,Syy_arr,Syz_arr  Array4 of mass matrices for Jy, either full array or tile
  * \param Szx_arr,Szy_arr,Szz_arr  Array4 of mass matrices for Jz, either full array or tile
@@ -783,7 +787,10 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
                                             amrex::Array4<amrex::Real> const& Jx_arr,
                                             [[maybe_unused]] amrex::Array4<amrex::Real> const& Jy_arr,
                                             amrex::Array4<amrex::Real> const& Jz_arr,
-                                            [[maybe_unused]] int max_crossings,
+                                            [[maybe_unused]] int max_grid_crossings,
+                                            [[maybe_unused]] int* error_count_x,
+                                            [[maybe_unused]] int* error_count_y,
+                                            [[maybe_unused]] int* error_count_z,
                                             amrex::Array4<amrex::Real> const& Sxx_arr,
                                             [[maybe_unused]] amrex::Array4<amrex::Real> const& Sxy_arr,
                                             [[maybe_unused]] amrex::Array4<amrex::Real> const& Sxz_arr,
@@ -940,8 +947,21 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( num_segments <= max_num_segments,
-        "Mass matrix deposition exceeded its segment-storage capacity.");
+    // Check cell crossings and flag errors (works on both host and device)
+    if (cell_crossings_x > max_grid_crossings) {
+        amrex::Gpu::Atomic::Add(error_count_x, 1);
+        return;
+    }
+    if (cell_crossings_y > max_grid_crossings) {
+        amrex::Gpu::Atomic::Add(error_count_y, 1);
+        return;
+    }
+    if (cell_crossings_z > max_grid_crossings) {
+        amrex::Gpu::Atomic::Add(error_count_z, 1);
+        return;
+    }
+
+    AMREX_ASSERT(num_segments <= max_num_segments);
 
     // Compute initial particle cell locations in each direction
     // used to find the position at cell crossings.
@@ -1131,8 +1151,17 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( num_segments <= max_num_segments,
-        "Mass matrix deposition exceeded its segment-storage capacity.");
+    // Check cell crossings and flag errors (works on both host and device)
+    if (cell_crossings_x > max_grid_crossings) {
+        amrex::Gpu::Atomic::Add(error_count_x, 1);
+        return;
+    }
+    if (cell_crossings_z > max_grid_crossings) {
+        amrex::Gpu::Atomic::Add(error_count_z, 1);
+        return;
+    }
+
+    AMREX_ASSERT(num_segments <= max_num_segments);
 
     // Compute initial particle cell locations in each direction
     // used to find the position at cell crossings.
@@ -1309,7 +1338,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
 
     if constexpr (full_mass_matrices) {
 
-    const int Ncomp_base = 2*depos_order + 2*max_crossings;
+    const int Ncomp_base = 2*depos_order + 2*max_grid_crossings;
     const int Ncomp_xx0 = Ncomp_base - 1;
     const int Ncomp_xy0 = Ncomp_base;
     const int Ncomp_xz0 = Ncomp_base;
@@ -1320,7 +1349,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     const int Ncomp_zy0 = 1 + Ncomp_base;
     const int Ncomp_zz0 = 1 + Ncomp_base;
 
-    const int width_xx1 = depos_order + max_crossings;  // (Ncomp_xx[1] - 1)/2
+    const int width_xx1 = depos_order + max_grid_crossings;  // (Ncomp_xx[1] - 1)/2
     const int width_yy1 = width_xx1;                    // (Ncomp_yy[1] - 1)/2
     const int width_zz1 = width_xx1 - 1;                // (Ncomp_zz[1] - 1)/2
 
@@ -1334,8 +1363,8 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
                 const int k_J = lo.y + k0_node[ns] + k;
                 const amrex::Real weight_J = weight_cellX_nodeZ[ns][i][k];
                 for (int ms = 0; ms < num_segments; ms++) {
-                    const int SegShiftX = max_crossings + SegNumX[ms] - SegNumX[ns];
-                    const int SegShiftZ = max_crossings + SegNumZ[ms] - SegNumZ[ns];
+                    const int SegShiftX = max_grid_crossings + SegNumX[ms] - SegNumX[ns];
+                    const int SegShiftZ = max_grid_crossings + SegNumZ[ms] - SegNumZ[ns];
                     // Deposit Sxx
                     for (int kE = 0; kE <= depos_order; kE++) {
                         const int row_xx = depos_order - k + kE + SegShiftZ;
@@ -1377,8 +1406,8 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
                 const int k_J = lo.y + k0_cell[ns] + k;
                 const amrex::Real weight_J = weight_nodeX_cellZ[ns][i][k];
                 for (int ms = 0; ms < num_segments; ms++) {
-                    const int SegShiftX = max_crossings + SegNumX[ms] - SegNumX[ns];
-                    const int SegShiftZ = max_crossings + SegNumZ[ms] - SegNumZ[ns];
+                    const int SegShiftX = max_grid_crossings + SegNumX[ms] - SegNumX[ns];
+                    const int SegShiftZ = max_grid_crossings + SegNumZ[ms] - SegNumZ[ns];
                     // Deposit Szx
                     for (int iE = 0; iE <= depos_order - 1; iE++) {
                         for (int kE = 0; kE <= depos_order; kE++) {
@@ -1420,8 +1449,8 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
                 const int k_J = lo.y + k0_node[ns] + k;
                 const amrex::Real weight_J = weight_nodeX_nodeZ[ns][i][k];
                 for (int ms = 0; ms < num_segments; ms++) {
-                    const int SegShiftX = max_crossings + SegNumX[ms] - SegNumX[ns];
-                    const int SegShiftZ = max_crossings + SegNumZ[ms] - SegNumZ[ns];
+                    const int SegShiftX = max_grid_crossings + SegNumX[ms] - SegNumX[ns];
+                    const int SegShiftZ = max_grid_crossings + SegNumZ[ms] - SegNumZ[ns];
                     // Deposit Syx
                     for (int iE = 0; iE <= depos_order - 1; iE++) {
                         for (int kE = 0; kE <= depos_order; kE++) {
@@ -1469,8 +1498,13 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     const int cell_crossings_x = std::abs(i_new-i_old);
     num_segments += cell_crossings_x;
 
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( num_segments <= max_num_segments,
-        "Mass matrix deposition exceeded its segment-storage capacity.");
+    // Check cell crossings and flag errors (works on both host and device)
+    if (cell_crossings_x > max_grid_crossings) {
+        amrex::Gpu::Atomic::Add(error_count_x, 1);
+        return;
+    }
+
+    AMREX_ASSERT(num_segments <= max_num_segments);
 
     // Compute the initial cell location used to find the cell crossings.
     // Keep these double to avoid bug in single precision
@@ -1575,8 +1609,8 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
 
     if constexpr (full_mass_matrices) {
 
-    const int width_xx = depos_order - 1 + max_crossings;
-    const int width_yy = depos_order + max_crossings;
+    const int width_xx = depos_order - 1 + max_grid_crossings;
+    const int width_yy = depos_order + max_grid_crossings;
 
     // Loop over segments and deposit full mass matrices
     for (int ns = 0; ns < num_segments; ns++) {
@@ -1587,7 +1621,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
             const int i_J = lo.x + i0_cell[ns] + i;
             const amrex::Real weight_J = weight_cell[ns][i];
             for (int ms = 0; ms < num_segments; ms++) {
-                const int SegShift = max_crossings + SegNum[ms] - SegNum[ns];
+                const int SegShift = max_grid_crossings + SegNum[ms] - SegNum[ns];
                 for (int iE = 0; iE <= depos_order - 1; iE++) {
                     const int comp_xx = depos_order - 1 - i + iE + SegShift;
                     if (comp_xx > width_xx) { break; } // Reduced deposit for diagonal mass matrices
@@ -1610,7 +1644,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
             const int i_J = lo.x + i0_node[ns] + i;
             const amrex::Real weight_J = weight_node[ns][i];
             for (int ms = 0; ms < num_segments; ms++) {
-                const int SegShift = max_crossings + SegNum[ms] - SegNum[ns];
+                const int SegShift = max_grid_crossings + SegNum[ms] - SegNum[ns];
                 for (int iE = 0; iE <= depos_order; iE++) {
                     const amrex::Real weight_E = weight_node[ms][iE];
                     const int comp_yy = depos_order - i + iE + SegShift;
@@ -1643,8 +1677,13 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     const int cell_crossings_z = std::abs(k_new-k_old);
     num_segments += cell_crossings_z;
 
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( num_segments <= max_num_segments,
-        "Mass matrix deposition exceeded its segment-storage capacity.");
+    // Check cell crossings and flag errors (works on both host and device)
+    if (cell_crossings_z > max_grid_crossings) {
+        amrex::Gpu::Atomic::Add(error_count_z, 1);
+        return;
+    }
+
+    AMREX_ASSERT(num_segments <= max_num_segments);
 
     // Compute initial particle cell location used to find cell crossings.
     // Keep these double to avoid bug in single precision
@@ -1748,8 +1787,8 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
 
     if constexpr (full_mass_matrices) {
 
-    const int width_zz = depos_order - 1 + max_crossings;
-    const int width_yy = depos_order + max_crossings;
+    const int width_zz = depos_order - 1 + max_grid_crossings;
+    const int width_yy = depos_order + max_grid_crossings;
 
     // Loop over segments and deposit full mass matrices
     for (int ns = 0; ns < num_segments; ns++) {
@@ -1760,7 +1799,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
             const int k_J = lo.x + k0_node[ns] + k;
             const amrex::Real weight_J = weight_node[ns][k];
             for (int ms = 0; ms < num_segments; ms++) {
-                const int SegShift = max_crossings + SegNum[ms] - SegNum[ns];
+                const int SegShift = max_grid_crossings + SegNum[ms] - SegNum[ns];
                 for (int kE = 0; kE <= depos_order; kE++) {
                     const amrex::Real weight_E = weight_node[ms][kE];
                     const int comp_yy = depos_order - k + kE + SegShift;
@@ -1787,7 +1826,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
             const int k_J = lo.x + k0_cell[ns] + k;
             const amrex::Real weight_J = weight_cell[ns][k];
             for (int ms = 0; ms < num_segments; ms++) {
-                const int SegShift = max_crossings + SegNum[ms] - SegNum[ns];
+                const int SegShift = max_grid_crossings + SegNum[ms] - SegNum[ns];
                 for (int kE = 0; kE <= depos_order - 1; kE++) {
                     const int comp_zz = depos_order - 1 - k + kE + SegShift;
                     if (comp_zz > width_zz) { break; } // Reduced deposit for diagonal mass matrices
@@ -1823,7 +1862,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
  * \param wp                       Pointer to array of particle weights.
  * \param uxp_n,uyp_n,uzp_n        Pointer to arrays of particle momentum at time level n.
  * \param uxp_nph,uyp_nph,uzp_nph  Pointer to arrays of particle momentum at time level n + 1/2.
- * \param max_crossings            Maximum number of particle cell crossings in each dir
+ * \param max_grid_crossings       Maximum number of particle cell crossings in each dir
  * \param Sxx_arr,Sxy_arr,Sxz_arr  Array4 of mass matrices for Jx, either full array or tile.
  * \param Syx_arr,Syy_arr,Syz_arr  Array4 of mass matrices for Jy, either full array or tile.
  * \param Szx_arr,Szy_arr,Szz_arr  Array4 of mass matrices for Jz, either full array or tile.
@@ -1854,7 +1893,7 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
                                   const amrex::ParticleReal* uxp_nph,
                                   const amrex::ParticleReal* uyp_nph,
                                   const amrex::ParticleReal* uzp_nph,
-                                  const int max_crossings,
+                                  const int max_grid_crossings,
                                   amrex::Array4<amrex::Real> const& Sxx_arr,
                                   amrex::Array4<amrex::Real> const& Sxy_arr,
                                   amrex::Array4<amrex::Real> const& Sxz_arr,
@@ -1890,6 +1929,14 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
 
     enum exteb_flags : int { no_exteb, has_exteb };
     const int exteb_runtime_flag = getExternalEB.isNoOp() ? no_exteb : has_exteb;
+
+    // Create error counters for device-side error detection
+    amrex::Gpu::DeviceVector<int> d_error_x(1, 0);
+    amrex::Gpu::DeviceVector<int> d_error_y(1, 0);
+    amrex::Gpu::DeviceVector<int> d_error_z(1, 0);
+    int* error_count_x = d_error_x.dataPtr();
+    int* error_count_y = d_error_y.dataPtr();
+    int* error_count_z = d_error_z.dataPtr();
 
     // Loop over particles and deposit mass matrices.
     // amrex::For: iterations scatter-add into shared J/Sigma nodes (no SIMD pragma, see issue #7097)
@@ -2020,13 +2067,19 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
                                                                 fpyx, fpyy, fpyz,
                                                                 fpzx, fpzy, fpzz,
                                                                 dummy_Jx, dummy_Jy, dummy_Jz,
-                                                                max_crossings,
+                                                                max_grid_crossings,
+                                                                error_count_x,
+                                                                error_count_y,
+                                                                error_count_z,
                                                                 Sxx_arr, Sxy_arr, Sxz_arr,
                                                                 Syx_arr, Syy_arr, Syz_arr,
                                                                 Szx_arr, Szy_arr, Szz_arr,
                                                                 dt, dinv, xyzmin, domain_double, do_cropping, lo );
 
     });
+
+    // Check for errors after kernel launch
+    ParticleUtils::CheckGridCrossingErrors(d_error_x, d_error_y, d_error_z, max_grid_crossings);
 }
 
 #endif // WARPX_MASSMATRICESDEPOSITION_H_
