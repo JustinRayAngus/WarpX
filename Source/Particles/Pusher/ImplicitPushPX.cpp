@@ -439,6 +439,8 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
         box = amrex::coarsen(pti.tilebox(),ref_ratio);
     }
 
+    const int max_grid_crossings = WarpX::particle_max_grid_crossings;
+
     // Limit trial positions to max_grid_crossings beyond the valid nodal box,
     // leaving the remaining field guard cells available for the gather shape.
     amrex::Box nodal_position_box = amrex::surroundingNodes(box);
