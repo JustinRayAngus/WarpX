@@ -108,6 +108,7 @@ namespace {
         amrex::Dim3 const & lo,
         [[maybe_unused]] amrex::Dim3 const & nodal_lo,
         [[maybe_unused]] amrex::Dim3 const & nodal_hi,
+        int * const position_error_count,
         int const & n_rz_azimuthal_modes,
         int const & depos_order,
         CurrentDepositionAlgo const & depos_type,
@@ -159,10 +160,12 @@ namespace {
         // field gather and the possiblity that the particle orbit re-enters the domain.
         if (this_suborbit_out_of_bounds) { return true; }
 
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-            ParticleUtils::isImplicitParticlePositionInBounds(
-                xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi),
-            "Implicit particle initial position exceeds the permitted range.");
+        if (!ParticleUtils::isImplicitParticlePositionInBounds(
+                xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi))
+        {
+            amrex::Gpu::Atomic::Add(position_error_count, 1);
+            return false;
+        }
 
         bool convergence = false;
         for (int iter=0; iter < max_iterations; iter++) {
@@ -254,10 +257,12 @@ namespace {
             zp = zp_n + dzp;
             setPosition(ip, xp, yp, zp);
 
-            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-                ParticleUtils::isImplicitParticlePositionInBounds(
-                    xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi),
-                "Implicit particle position exceeds the permitted range.");
+            if (!ParticleUtils::isImplicitParticlePositionInBounds(
+                    xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi))
+            {
+                amrex::Gpu::Atomic::Add(position_error_count, 1);
+                return false;
+            }
 
             // Check for convergence based on the step norm of the position change
             PositionNorm(dxp, dyp, dzp, dxp_save, dyp_save, dzp_save, idxg2, idyg2, idzg2, step_norm);
@@ -575,6 +580,8 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
 
     amrex::Gpu::Buffer<amrex::Long> unconverged_particles({0});
     amrex::Long* unconverged_particles_ptr = unconverged_particles.data();
+    amrex::Gpu::DeviceVector<int> d_position_error_count(1, 0);
+    int* position_error_count = d_position_error_count.dataPtr();
     int *nsuborbits = (HasiAttrib("nsuborbits") ? pti.GetiAttribs("nsuborbits").dataPtr() + offset: nullptr);
 
     // Using this version of For with compile time options
@@ -641,6 +648,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
                 do_gather, ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                 ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
                 dinv, xyzmin, domain_double, do_cropping, lo, nodal_lo, nodal_hi,
+                position_error_count,
                 n_rz_azimuthal_modes, depos_order, depos_type,
                 getExternalEB, ion_lev, mass, q, pusher_algo, do_crr
 #ifdef WARPX_QED
@@ -682,6 +690,12 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
         }
 
     });
+
+    amrex::Gpu::streamSynchronize();
+    if (d_position_error_count[0] > 0) {
+        amrex::Abort("Implicit particle position exceeds the permitted range for " +
+                     std::to_string(d_position_error_count[0]) + " particle(s).");
+    }
 
     // Setup for handling the unconverged particles. A list of their indices is
     // gathered, their weights saved, and their weight set to zero (so they
@@ -945,9 +959,11 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
     amrex::Gpu::DeviceVector<int> d_error_x(1, 0);
     amrex::Gpu::DeviceVector<int> d_error_y(1, 0);
     amrex::Gpu::DeviceVector<int> d_error_z(1, 0);
+    amrex::Gpu::DeviceVector<int> d_position_error_count(1, 0);
     int* error_count_x = d_error_x.dataPtr();
     int* error_count_y = d_error_y.dataPtr();
     int* error_count_z = d_error_z.dataPtr();
+    int* position_error_count = d_position_error_count.dataPtr();
 
     // Using this version of For with compile time options
     // improves performance when qed or external EB are not used by reducing
@@ -1054,6 +1070,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                                  do_gather, ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                                  ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
                                  dinv, xyzmin, domain_double, do_cropping, lo, nodal_lo, nodal_hi,
+                                 position_error_count,
                                  n_rz_azimuthal_modes, depos_order, depos_type,
                                  getExternalEB, ion_lev, mass, q, pusher_algo, do_crr
 #ifdef WARPX_QED
@@ -1282,5 +1299,9 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
     amrex::Gpu::streamSynchronize();
 
     // Check for errors after kernel launch
+    if (d_position_error_count[0] > 0) {
+        amrex::Abort("Implicit suborbit particle position exceeds the permitted range for " +
+                     std::to_string(d_position_error_count[0]) + " particle(s).");
+    }
     ParticleUtils::CheckGridCrossingErrors(d_error_x, d_error_y, d_error_z, max_grid_crossings);
 }
