@@ -24,7 +24,12 @@
 #include <AMReX_Arena.H>
 #include <AMReX_Array4.H>
 #include <AMReX_Dim3.H>
+#include <AMReX_GpuAtomic.H>
+#include <AMReX_GpuContainers.H>
+#include <AMReX_GpuDevice.H>
 #include <AMReX_REAL.H>
+
+#include <string>
 
 /**
  * \brief Kernel for the direct current deposition for thread thread_num
@@ -1164,6 +1169,9 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
     amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);
     amrex::Dim3 const nodal_hi = amrex::ubound(nodal_position_box);
 
+    amrex::Gpu::DeviceVector<int> d_position_error_count(1, 0);
+    int* position_error_count = d_position_error_count.dataPtr();
+
     amrex::XDim3 const invdtd = amrex::XDim3{(1.0_rt/dt)*dinv.y*dinv.z,
                                              (1.0_rt/dt)*dinv.x*dinv.z,
                                              (1.0_rt/dt)*dinv.x*dinv.y};
@@ -1193,10 +1201,13 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
             ParticleReal xp_nph, yp_nph, zp_nph;
             GetPosition(ip, xp_nph, yp_nph, zp_nph);
 
-            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-                ParticleUtils::isImplicitParticlePositionInBounds(
-                    xp_n[ip], yp_n[ip], zp_n[ip], xp_nph, yp_nph, zp_nph, dinv, xyzmin, lo, nodal_lo, nodal_hi),
-                "Esirkepov Deposition: Implicit particle position exceeds the permitted range.");
+            if (!ParticleUtils::isImplicitParticlePositionInBounds(
+                    xp_n[ip], yp_n[ip], zp_n[ip], xp_nph, yp_nph, zp_nph,
+                    dinv, xyzmin, lo, nodal_lo, nodal_hi))
+            {
+                amrex::Gpu::Atomic::Add(position_error_count, 1);
+                return;
+            }
 
 #if !defined(WARPX_DIM_1D_Z)
             ParticleReal const xp_np1 = 2._prt*xp_nph - xp_n[ip];
@@ -1491,6 +1502,12 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
 #endif
         }
     );
+
+    amrex::Gpu::streamSynchronize();
+    if (d_position_error_count[0] > 0) {
+        amrex::Abort("Esirkepov Deposition: Implicit particle position exceeds the permitted range for " +
+                     std::to_string(d_position_error_count[0]) + " particle(s).");
+    }
 }
 
 /**
@@ -2330,6 +2347,9 @@ void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::Particle
     amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);
     amrex::Dim3 const nodal_hi = amrex::ubound(nodal_position_box);
 
+    amrex::Gpu::DeviceVector<int> d_position_error_count(1, 0);
+    int* position_error_count = d_position_error_count.dataPtr();
+
     // Loop over particles and deposit into Jx_arr, Jy_arr and Jz_arr.
     // amrex::For: iterations scatter-add into shared J nodes (no SIMD pragma, see issue #7097)
     amrex::For(
@@ -2362,10 +2382,13 @@ void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::Particle
             amrex::ParticleReal const yp_n = (yp_n_data ? yp_n_data[ip] : 0._prt);
             amrex::ParticleReal const zp_n = (zp_n_data ? zp_n_data[ip] : 0._prt);
 
-            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-                ParticleUtils::isImplicitParticlePositionInBounds(
-                    xp_n, yp_n, zp_n, xp_nph, yp_nph, zp_nph, dinv, xyzmin, lo, nodal_lo, nodal_hi),
-                "Villasenor Deposition: Implicit particle position exceeds the permitted range.");
+            if (!ParticleUtils::isImplicitParticlePositionInBounds(
+                    xp_n, yp_n, zp_n, xp_nph, yp_nph, zp_nph,
+                    dinv, xyzmin, lo, nodal_lo, nodal_hi))
+            {
+                amrex::Gpu::Atomic::Add(position_error_count, 1);
+                return;
+            }
 
             amrex::ParticleReal const xp_np1 = 2._prt*xp_nph - xp_n;
             amrex::ParticleReal const yp_np1 = 2._prt*yp_nph - yp_n;
@@ -2379,6 +2402,12 @@ void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::Particle
                                                           lo, invvol, n_rz_azimuthal_modes);
 
     });
+
+    amrex::Gpu::streamSynchronize();
+    if (d_position_error_count[0] > 0) {
+        amrex::Abort("Villasenor Deposition: Implicit particle position exceeds the permitted range for " +
+                     std::to_string(d_position_error_count[0]) + " particle(s).");
+    }
 
 }
 
