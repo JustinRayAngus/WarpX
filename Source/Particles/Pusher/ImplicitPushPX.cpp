@@ -1090,6 +1090,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                     // in a constexpr-if context.
                     amrex::ignore_unused(max_grid_crossings);
                     amrex::ignore_unused(Jx_arr, Jy_arr, Jz_arr, invvol);
+                    amrex::ignore_unused(error_count_x, error_count_y, error_count_z);
                     amrex::ignore_unused(pSbuf);
                     if constexpr (depos_order_control == order_one) {
                         //NOLINTNEXTLINE(readability-suspicious-call-argument)
