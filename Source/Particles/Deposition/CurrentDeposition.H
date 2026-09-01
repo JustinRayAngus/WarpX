@@ -1115,6 +1115,8 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition<PIdx>& GetPosition,
  * \param lo           Index lower bounds of domain.
  * \param q            species charge.
  * \param n_rz_azimuthal_modes Number of azimuthal modes when using RZ geometry.
+ * \param tilebox               The tile box (un-grown) for calculating nodal bounds.
+ * \param max_grid_crossings    Maximum allowed cell crossings for particle trajectories.
  */
 template <int depos_order>
 void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::ParticleReal * const xp_n,
@@ -1140,7 +1142,9 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
                                                  const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
                                                  const amrex::Dim3 lo,
                                                  const amrex::Real q,
-                                                 [[maybe_unused]] const int n_rz_azimuthal_modes)
+                                                 [[maybe_unused]] const int n_rz_azimuthal_modes,
+                                                 const amrex::Box& tilebox,
+                                                 const int max_grid_crossings)
 {
     using namespace amrex;
 
@@ -1151,6 +1155,14 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
 #if !defined(WARPX_DIM_3D)
     const amrex::Real invvol = dinv.x*dinv.y*dinv.z;
 #endif
+
+    // Calculate nodal field domain bounds for position checking
+    // Limit trial positions to max_grid_crossings beyond the valid nodal box
+    // Note that the number of guard cells is at least max_grid_crossings + shape - 1.
+    amrex::Box nodal_position_box = amrex::surroundingNodes(tilebox);
+    nodal_position_box.grow(max_grid_crossings);
+    amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);
+    amrex::Dim3 const nodal_hi = amrex::ubound(nodal_position_box);
 
     amrex::XDim3 const invdtd = amrex::XDim3{(1.0_rt/dt)*dinv.y*dinv.z,
                                              (1.0_rt/dt)*dinv.x*dinv.z,
@@ -1180,6 +1192,11 @@ void doChargeConservingDepositionShapeNImplicit ([[maybe_unused]]const amrex::Pa
 
             ParticleReal xp_nph, yp_nph, zp_nph;
             GetPosition(ip, xp_nph, yp_nph, zp_nph);
+
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+                ParticleUtils::isImplicitParticlePositionInBounds(
+                    xp_n[ip], yp_n[ip], zp_n[ip], xp_nph, yp_nph, zp_nph, dinv, xyzmin, lo, nodal_lo, nodal_hi),
+                "Esirkepov Deposition: Implicit particle position exceeds the permitted range.");
 
 #if !defined(WARPX_DIM_1D_Z)
             ParticleReal const xp_np1 = 2._prt*xp_nph - xp_n[ip];
@@ -2348,7 +2365,7 @@ void doVillasenorDepositionShapeNImplicit ([[maybe_unused]]const amrex::Particle
             AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
                 ParticleUtils::isImplicitParticlePositionInBounds(
                     xp_n, yp_n, zp_n, xp_nph, yp_nph, zp_nph, dinv, xyzmin, lo, nodal_lo, nodal_hi),
-                "Implicit particle position exceeds the permitted range.");
+                "Villasenor Deposition: Implicit particle position exceeds the permitted range.");
 
             amrex::ParticleReal const xp_np1 = 2._prt*xp_nph - xp_n;
             amrex::ParticleReal const yp_np1 = 2._prt*yp_nph - yp_n;
