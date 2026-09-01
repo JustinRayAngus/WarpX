@@ -925,9 +925,7 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     double shift = 0.0;
     if ( (depos_order % 2) == 0 ) { shift = 0.5; }
 
-#if !defined(WARPX_DIM_3D)
     constexpr int max_num_segments = 1 + max_supported_grid_crossings * AMREX_SPACEDIM;
-#endif
 
 #if defined(WARPX_DIM_3D)
 
@@ -961,6 +959,10 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     if (cell_crossings_z > max_grid_crossings) {
         amrex::Gpu::Atomic::Add(error_count_z, 1);
         return;
+    }
+
+    if (num_segments > max_num_segments) {
+        amrex::Abort("Villasenor mass matrix deposition: num_segments exceeds max_num_segments");
     }
 
     // Compute initial particle cell locations in each direction
@@ -1161,7 +1163,9 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
         return;
     }
 
-    AMREX_ASSERT(num_segments <= max_num_segments);
+    if (num_segments > max_num_segments) {
+        amrex::Abort("Villasenor mass matrix deposition: num_segments exceeds max_num_segments");
+    }
 
     // Compute initial particle cell locations in each direction
     // used to find the position at cell crossings.
@@ -1181,10 +1185,6 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     double x0_new, z0_new;
     double x0_old = x_old;
     double z0_old = z_old;
-
-    constexpr int num_segments_max = 1 + 4*AMREX_SPACEDIM;
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( num_segments <= num_segments_max,
-        "Error: num_segments must be less than or equal to 1 + 4*AMREX_SPACEDIM.");
 
     // Save the start index and interpolation weights for each segment
     int i0_cell[max_num_segments];
@@ -1504,7 +1504,9 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
         return;
     }
 
-    AMREX_ASSERT(num_segments <= max_num_segments);
+    if (num_segments > max_num_segments) {
+        amrex::Abort("Villasenor mass matrix deposition: num_segments exceeds max_num_segments");
+    }
 
     // Compute the initial cell location used to find the cell crossings.
     // Keep these double to avoid bug in single precision
@@ -1683,7 +1685,9 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
         return;
     }
 
-    AMREX_ASSERT(num_segments <= max_num_segments);
+    if (num_segments > max_num_segments) {
+        amrex::Abort("Villasenor mass matrix deposition: num_segments exceeds max_num_segments");
+    }
 
     // Compute initial particle cell location used to find cell crossings.
     // Keep these double to avoid bug in single precision
