@@ -2172,8 +2172,6 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
  * \param lo                    Index lower bounds of domain.
  * \param q                     species charge.
  * \param n_rz_azimuthal_modes  Number of azimuthal modes when using RZ geometry.
- * \param tilebox               The tile box (un-grown) for calculating nodal bounds.
- * \param max_grid_crossings    Maximum allowed cell crossings for particle trajectories.
  */
 template <int depos_order>
 void doVillasenorDepositionShapeNExplicit (const GetParticlePosition<PIdx>& GetPosition,
