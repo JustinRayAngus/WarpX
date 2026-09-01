@@ -162,7 +162,7 @@ namespace {
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
             ParticleUtils::isImplicitParticlePositionInBounds(
                 xp_n, yp_n, zp_n, xp, yp, zp, dinv, xyzmin, lo, nodal_lo, nodal_hi),
-            "Implicit particle position exceeds the permitted range.");
+            "Implicit particle initial position exceeds the permitted range.");
 
         bool convergence = false;
         for (int iter=0; iter < max_iterations; iter++) {
@@ -439,6 +439,13 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
         box = amrex::coarsen(pti.tilebox(),ref_ratio);
     }
 
+    // Limit trial positions to max_grid_crossings beyond the valid nodal box,
+    // leaving the remaining field guard cells available for the gather shape.
+    amrex::Box nodal_position_box = amrex::surroundingNodes(box);
+    nodal_position_box.grow(max_grid_crossings);
+    amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);
+    amrex::Dim3 const nodal_hi = amrex::ubound(nodal_position_box);
+
     // Add guard cells to the box.
     box.grow(ngEB);
 
@@ -630,7 +637,7 @@ PhysicalParticleContainer::ImplicitPushXP (WarpXParIter & pti,
                 Bxp, Byp, Bzp,
                 do_gather, ex_arr, ey_arr, ez_arr, bx_arr, by_arr, bz_arr,
                 ex_type, ey_type, ez_type, bx_type, by_type, bz_type,
-                dinv, xyzmin, domain_double, do_cropping, lo, lo, lo,
+                dinv, xyzmin, domain_double, do_cropping, lo, nodal_lo, nodal_hi,
                 n_rz_azimuthal_modes, depos_order, depos_type,
                 getExternalEB, ion_lev, mass, q, pusher_algo, do_crr
 #ifdef WARPX_QED
@@ -761,10 +768,10 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
     // Limit trial positions to max_grid_crossings beyond the valid nodal box,
     // leaving the remaining field guard cells available for the gather shape.
-    amrex::Box nodal_gather_position_box = amrex::surroundingNodes(box);
-    nodal_gather_position_box.grow(max_grid_crossings);
-    amrex::Dim3 const nodal_lo = amrex::lbound(nodal_gather_position_box);
-    amrex::Dim3 const nodal_hi = amrex::ubound(nodal_gather_position_box);
+    amrex::Box nodal_position_box = amrex::surroundingNodes(box);
+    nodal_position_box.grow(max_grid_crossings);
+    amrex::Dim3 const nodal_lo = amrex::lbound(nodal_position_box);
+    amrex::Dim3 const nodal_hi = amrex::ubound(nodal_position_box);
 
     // Add guard cells to the field gather box.
     box.grow(ngEB);
