@@ -925,7 +925,9 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
     double shift = 0.0;
     if ( (depos_order % 2) == 0 ) { shift = 0.5; }
 
-    [[maybe_unused]] constexpr int max_num_segments = 1 + max_supported_grid_crossings * AMREX_SPACEDIM;
+#if !defined(WARPX_DIM_3D)
+    constexpr int max_num_segments = 1 + max_supported_grid_crossings * AMREX_SPACEDIM;
+#endif
 
 #if defined(WARPX_DIM_3D)
 
@@ -960,8 +962,6 @@ void doVillasenorJandSigmaDepositionKernel ([[maybe_unused]] const amrex::Partic
         amrex::Gpu::Atomic::Add(error_count_z, 1);
         return;
     }
-
-    AMREX_ASSERT(num_segments <= max_num_segments);
 
     // Compute initial particle cell locations in each direction
     // used to find the position at cell crossings.
