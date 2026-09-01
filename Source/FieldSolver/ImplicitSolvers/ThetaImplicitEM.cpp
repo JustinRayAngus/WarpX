@@ -107,7 +107,11 @@ int ThetaImplicitEM::OneStep (const amrex::Real  start_time,
     m_Eold.Copy(FieldType::E_old, FieldType::None, true);
 
     // This function is needed when using the curl curl pc with nonzero dirichlet BCs
-    ZeroSolverVecOnNonzeroDirichletBC(m_Eold);
+    const PreconditionerType pc_type = m_nlsolver->GetPreconditionerType();
+    if (pc_type == PreconditionerType::pc_curl_curl_mlmg) {
+        ZeroSolverVecOnNonzeroDirichletBC(m_Eold);
+        ZeroSolverVecOnNonzeroDirichletBC(m_E);
+    }
 
     // Save Bg at start of time step
     for (int lev = 0; lev < m_num_amr_levels; ++lev) {
