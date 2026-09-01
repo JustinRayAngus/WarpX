@@ -682,9 +682,9 @@ namespace ParticleUtils {
                                   const amrex::Gpu::DeviceVector<int>& d_error_z,
                                   const int max_grid_crossings)
     {
-        int h_error_x = d_error_x[0];
-        int h_error_y = d_error_y[0];
-        int h_error_z = d_error_z[0];
+        const int h_error_x = d_error_x[0];
+        const int h_error_y = d_error_y[0];
+        const int h_error_z = d_error_z[0];
 
         if (h_error_x > 0 || h_error_y > 0 || h_error_z > 0) {
             std::string error_msg = "Villasenor deposition error: particles exceeded max_grid_crossings.\n";
