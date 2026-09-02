@@ -3010,15 +3010,15 @@ WarpXParticleContainer::ApplyBoundaryConditions () {
 
                     bool const outside_domain =
 #ifndef WARPX_DIM_1D_Z
-                                             || x < gridmin.x || x > gridmax.x
+                                             (x < gridmin.x || x > gridmax.x)
 #else
                                              false
 #endif
 #ifdef WARPX_DIM_3D
-                                             || y < gridmin.y || y > gridmax.y
+                                             || (y < gridmin.y || y > gridmax.y)
 #endif
 #ifdef WARPX_ZINDEX
-                                             || z < gridmin.z || z > gridmax.z
+                                             || (z < gridmin.z || z > gridmax.z)
 #endif
                                              ;
 
