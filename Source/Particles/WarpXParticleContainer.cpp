@@ -3019,7 +3019,6 @@ WarpXParticleContainer::ApplyBoundaryConditions () {
                     outside_domain |= (z < gridmin.z || z > gridmax.z);
 #endif
 
-
                     if (outside_domain) {
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                         transform_momentum_to_curvilinear(ux[i], uy[i], uz[i], y, z);
