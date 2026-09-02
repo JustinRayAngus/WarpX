@@ -3030,6 +3030,7 @@ WarpXParticleContainer::ApplyBoundaryConditions () {
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                         transform_momentum_to_cartesian(ux[i], uy[i], uz[i], y, z);
 #endif
+                    }
 
                     if (particle_lost) {
                         pidw.make_invalid();
