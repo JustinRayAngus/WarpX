@@ -2953,7 +2953,7 @@ WarpXParticleContainer::particlePostLocate(ParticleType& p,
 }
 
 void
-WarpXParticleContainer::ApplyBoundaryConditions (){
+WarpXParticleContainer::ApplyBoundaryConditions () {
     ABLASTR_PROFILE("WarpXParticleContainer::ApplyBoundaryConditions()");
 
     // Periodic boundaries are handled in AMReX code
@@ -3007,9 +3007,29 @@ WarpXParticleContainer::ApplyBoundaryConditions (){
                     // and for RSPHERE (r, theta, phi).
 
                     bool particle_lost = false;
-                    ApplyParticleBoundaries::apply_boundaries(x, y, z, gridmin, gridmax,
-                                                              ux[i], uy[i], uz[i], particle_lost,
-                                                              boundary_conditions, engine);
+
+                    bool const outside_domain = false
+#ifndef WARPX_DIM_1D_Z
+                                             || x < gridmin.x || x > gridmax.x
+#endif
+#ifdef WARPX_DIM_3D
+                                             || y < gridmin.y || y > gridmax.y
+#endif
+#ifdef WARPX_ZINDEX
+                                             || z < gridmin.z || z > gridmax.z
+#endif
+                                             ;
+
+                    if (outside_domain) {
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+                        transform_momentum_to_curvilinear(ux[i], uy[i], uz[i], y, z);
+#endif
+                        ApplyParticleBoundaries::apply_boundaries(x, y, z, gridmin, gridmax,
+                                                                  ux[i], uy[i], uz[i], particle_lost,
+                                                                  boundary_conditions, engine);
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+                        transform_momentum_to_cartesian(ux[i], uy[i], uz[i], y, z);
+#endif
 
                     if (particle_lost) {
                         pidw.make_invalid();
