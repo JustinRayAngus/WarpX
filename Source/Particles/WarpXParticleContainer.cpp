@@ -3008,19 +3008,17 @@ WarpXParticleContainer::ApplyBoundaryConditions () {
 
                     bool particle_lost = false;
 
-                    bool const outside_domain =
+                    bool outside_domain = false;
 #ifndef WARPX_DIM_1D_Z
-                                             (x < gridmin.x || x > gridmax.x)
-#else
-                                             false
+                    outside_domain = (x < gridmin.x || x > gridmax.x);
 #endif
 #ifdef WARPX_DIM_3D
-                                             || (y < gridmin.y || y > gridmax.y)
+                    outside_domain |= (y < gridmin.y || y > gridmax.y);
 #endif
 #ifdef WARPX_ZINDEX
-                                             || (z < gridmin.z || z > gridmax.z)
+                    outside_domain |= (z < gridmin.z || z > gridmax.z);
 #endif
-                                             ;
+
 
                     if (outside_domain) {
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
