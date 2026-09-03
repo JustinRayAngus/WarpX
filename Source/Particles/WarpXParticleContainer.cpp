@@ -2953,7 +2953,8 @@ WarpXParticleContainer::particlePostLocate(ParticleType& p,
 }
 
 void
-WarpXParticleContainer::ApplyBoundaryConditions () {
+WarpXParticleContainer::ApplyBoundaryConditions ()
+{
     ABLASTR_PROFILE("WarpXParticleContainer::ApplyBoundaryConditions()");
 
     // Periodic boundaries are handled in AMReX code
