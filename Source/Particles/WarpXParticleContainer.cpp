@@ -82,9 +82,9 @@
 
 using namespace amrex;
 
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
 namespace
 {
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     void transform_momentum_to_curvilinear (
         amrex::ParticleReal& ux, amrex::ParticleReal& uy,
@@ -124,8 +124,8 @@ namespace
         uz = +ux_save*std::sin(phi) + uz_save*std::cos(phi);
 #endif
     }
-#endif
 }
+#endif
 
 WarpXParIter::WarpXParIter (ContainerType& pc, int level)
     : amrex::ParIterSoA<PIdx::nattribs, 0, amrex::PolymorphicArenaAllocator>(pc, level,
