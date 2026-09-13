@@ -683,7 +683,7 @@ namespace ParticleUtils {
     {
         std::array<int, 3> h_errors{};
         amrex::Gpu::copy(amrex::Gpu::deviceToHost, d_errors.begin(),
-                         d_errors.begin() + 3, h_errors.data());
+                         d_errors.end(), h_errors.data());
         const int h_error_x = h_errors[0];
         const int h_error_y = h_errors[1];
         const int h_error_z = h_errors[2];
