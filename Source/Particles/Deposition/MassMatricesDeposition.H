@@ -1935,12 +1935,11 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
     const int exteb_runtime_flag = getExternalEB.isNoOp() ? no_exteb : has_exteb;
 
     // Create error counters for device-side error detection
-    amrex::Gpu::DeviceVector<int> d_error_x(1, 0);
-    amrex::Gpu::DeviceVector<int> d_error_y(1, 0);
-    amrex::Gpu::DeviceVector<int> d_error_z(1, 0);
-    int* error_count_x = d_error_x.dataPtr();
-    int* error_count_y = d_error_y.dataPtr();
-    int* error_count_z = d_error_z.dataPtr();
+    // Grid crossing error counts in x, y, z order.
+    amrex::Gpu::DeviceVector<int> d_errors(3, 0);
+    int* error_count_x = d_errors.dataPtr();
+    int* error_count_y = d_errors.dataPtr() + 1;
+    int* error_count_z = d_errors.dataPtr() + 2;
 
     // Loop over particles and deposit mass matrices.
     // amrex::For: iterations scatter-add into shared J/Sigma nodes (no SIMD pragma, see issue #7097)
@@ -2083,7 +2082,7 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
     });
 
     // Check for errors after kernel launch
-    ParticleUtils::CheckGridCrossingErrors(d_error_x, d_error_y, d_error_z, max_grid_crossings);
+    ParticleUtils::CheckGridCrossingErrors(d_errors, max_grid_crossings);
 }
 
 #endif // WARPX_MASSMATRICESDEPOSITION_H_
