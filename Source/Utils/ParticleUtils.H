@@ -18,6 +18,8 @@
 
 #include <AMReX_BaseFwd.H>
 
+#include <array>
+
 namespace ParticleUtils {
 
     // Define shortcuts for frequently-used type names
@@ -672,32 +674,19 @@ namespace ParticleUtils {
     /**
      * \brief Check for grid crossing errors after Villasenor deposition and abort if any found
      *
-     * \param d_error_x  Device vector containing x-direction error count
-     * \param d_error_y  Device vector containing y-direction error count
-     * \param d_error_z  Device vector containing z-direction error count
+     * \param d_errors  Three device error counts in x, y, z order
      * \param max_grid_crossings  Maximum allowed crossings per direction
      */
     AMREX_INLINE
-    void CheckGridCrossingErrors ([[maybe_unused]] const amrex::Gpu::DeviceVector<int>& d_error_x,
-                                  [[maybe_unused]] const amrex::Gpu::DeviceVector<int>& d_error_y,
-                                  [[maybe_unused]] const amrex::Gpu::DeviceVector<int>& d_error_z,
+    void CheckGridCrossingErrors (const amrex::Gpu::DeviceVector<int>& d_errors,
                                   const int max_grid_crossings)
     {
-        int h_error_x = 0; // NOLINT(misc-const-correctness)
-#if !defined(WARPX_DIM_1D_Z)
-        amrex::Gpu::copy(amrex::Gpu::deviceToHost, d_error_x.begin(),
-                         d_error_x.begin() + 1, &h_error_x);
-#endif
-        int h_error_y = 0; // NOLINT(misc-const-correctness)
-#if defined(WARPX_DIM_3D)
-        amrex::Gpu::copy(amrex::Gpu::deviceToHost, d_error_y.begin(),
-                         d_error_y.begin() + 1, &h_error_y);
-#endif
-        int h_error_z = 0; // NOLINT(misc-const-correctness)
-#if defined(WARPX_ZINDEX)
-        amrex::Gpu::copy(amrex::Gpu::deviceToHost, d_error_z.begin(),
-                         d_error_z.begin() + 1, &h_error_z);
-#endif
+        std::array<int, 3> h_errors{};
+        amrex::Gpu::copy(amrex::Gpu::deviceToHost, d_errors.begin(),
+                         d_errors.begin() + 3, h_errors.data());
+        const int h_error_x = h_errors[0];
+        const int h_error_y = h_errors[1];
+        const int h_error_z = h_errors[2];
         if (h_error_x > 0 || h_error_y > 0 || h_error_z > 0) {
             std::string error_msg = "Villasenor deposition error: particles exceeded max_grid_crossings.\n";
             if (h_error_x > 0) {
