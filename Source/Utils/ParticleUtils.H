@@ -673,7 +673,7 @@ namespace ParticleUtils {
     }
 
     /**
-     * \brief Check for grid crossing errors after Villasenor deposition and abort if any found
+     * \brief Check for grid crossing errors after Villasenor mass matrix deposition and abort if any found
      *
      * \param grid_crossing_error_count  Buffer containing three error counts in x, y, z order
      * \param max_grid_crossings  Maximum allowed crossings per direction
@@ -687,7 +687,7 @@ namespace ParticleUtils {
         const int h_error_y = h_errors[1];
         const int h_error_z = h_errors[2];
         if (h_error_x > 0 || h_error_y > 0 || h_error_z > 0) {
-            std::string error_msg = "Villasenor deposition error: particles exceeded max_grid_crossings.\n";
+            std::string error_msg = "Villasenor mass matrix deposition error: particles exceeded max_grid_crossings.\n";
             if (h_error_x > 0) {
                 error_msg += "  X-direction: " + std::to_string(h_error_x) + " particles\n";
             }
