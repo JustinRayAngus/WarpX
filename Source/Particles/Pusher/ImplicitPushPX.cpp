@@ -961,11 +961,11 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
     // Create error counters for device-side error detection
     // Grid crossing error counts in x, y, z order.
-    amrex::Gpu::DeviceVector<int> d_errors(3, 0);
+    amrex::Gpu::Buffer<int> grid_crossing_error_count({0, 0, 0});
     amrex::Gpu::Buffer<int> position_error_count({0});
-    int* error_count_x = d_errors.dataPtr();
-    int* error_count_y = d_errors.dataPtr() + 1;
-    int* error_count_z = d_errors.dataPtr() + 2;
+    int* error_count_x = grid_crossing_error_count.data();
+    int* error_count_y = grid_crossing_error_count.data() + 1;
+    int* error_count_z = grid_crossing_error_count.data() + 2;
     int* position_error_count_ptr = position_error_count.data();
 
     // Using this version of For with compile time options
@@ -1308,5 +1308,5 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
         amrex::Abort("Implicit suborbit particle position exceeds the permitted range for " +
                      std::to_string(h_position_error_count) + " particle(s).");
     }
-    ParticleUtils::CheckGridCrossingErrors(d_errors, max_grid_crossings);
+    ParticleUtils::CheckGridCrossingErrors(grid_crossing_error_count, max_grid_crossings);
 }

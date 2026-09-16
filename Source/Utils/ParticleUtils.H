@@ -12,6 +12,7 @@
 
 #include <AMReX_DenseBins.H>
 #include <AMReX_Geometry.H>
+#include <AMReX_GpuBuffer.H>
 #include <AMReX_GpuContainers.H>
 #include <AMReX_Particles.H>
 #include <AMReX_Math.H>
@@ -674,16 +675,14 @@ namespace ParticleUtils {
     /**
      * \brief Check for grid crossing errors after Villasenor deposition and abort if any found
      *
-     * \param d_errors  Three device error counts in x, y, z order
+     * \param grid_crossing_error_count  Buffer containing three error counts in x, y, z order
      * \param max_grid_crossings  Maximum allowed crossings per direction
      */
     AMREX_INLINE
-    void CheckGridCrossingErrors (const amrex::Gpu::DeviceVector<int>& d_errors,
+    void CheckGridCrossingErrors (amrex::Gpu::Buffer<int>& grid_crossing_error_count,
                                   const int max_grid_crossings)
     {
-        std::array<int, 3> h_errors{};
-        amrex::Gpu::copy(amrex::Gpu::deviceToHost, d_errors.begin(),
-                         d_errors.end(), h_errors.data());
+        const int* h_errors = grid_crossing_error_count.copyToHost();
         const int h_error_x = h_errors[0];
         const int h_error_y = h_errors[1];
         const int h_error_z = h_errors[2];
