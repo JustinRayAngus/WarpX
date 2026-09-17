@@ -168,7 +168,7 @@ namespace {
         const double one_minus_beta_sq_d = amrex::max(1.0 - vc_sq_d*inv_c2_d, std::numeric_limits<double>::epsilon());
         const double gc_d = 1.0 / std::sqrt(one_minus_beta_sq_d);
 
-        // Compute momentum of the first incident particle in the center of mass frame.
+        // Compute the momentum of the first incident particle in the center-of-momentum (COM) frame.
         double p1x_star_in_d = p1x_in_d;
         double p1y_star_in_d = p1y_in_d;
         double p1z_star_in_d = p1z_in_d;
