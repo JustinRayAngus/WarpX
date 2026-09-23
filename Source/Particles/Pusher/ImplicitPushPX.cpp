@@ -1104,6 +1104,15 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                                                      + std::sqrt(xp_n*xp_n + yp_n*yp_n));
                     const amrex::Real costh = (rp_mid > 0._rt ? xp/rp_mid : 1._rt);
                     const amrex::Real sinth = (rp_mid > 0._rt ? yp/rp_mid : 0._rt);
+#elif defined(WARPX_DIM_RSPHERE)
+                    const amrex::Real rp_mid = 0.5_rt*(
+                        std::sqrt(xp_np1*xp_np1 + yp_np1*yp_np1 + zp_np1*zp_np1)
+                        + std::sqrt(xp_n*xp_n + yp_n*yp_n + zp_n*zp_n));
+                    const amrex::Real rpxy_mid = std::sqrt(xp*xp + yp*yp);
+                    const amrex::Real costh = (rpxy_mid > 0._rt ? xp/rpxy_mid : 1._rt);
+                    const amrex::Real sinth = (rpxy_mid > 0._rt ? yp/rpxy_mid : 0._rt);
+                    const amrex::Real cosph = (rp_mid > 0._rt ? rpxy_mid/rp_mid : 1._rt);
+                    const amrex::Real sinph = (rp_mid > 0._rt ? zp/rp_mid : 0._rt);
 #endif
 
                     // Set the Mass Matrices kernels
@@ -1111,8 +1120,11 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
                     amrex::ParticleReal fpyx, fpyy, fpyz;
                     amrex::ParticleReal fpzx, fpzy, fpzz;
                     setMassMatricesKernels(q, mass, dt_suborbit, rhop,
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                                            costh, sinth,
+#endif
+#if defined(WARPX_DIM_RSPHERE)
+                                           cosph, sinph,
 #endif
                                            ux[ip], uy[ip], uz[ip],
                                            Bxp, Byp, Bzp,

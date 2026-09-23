@@ -36,10 +36,16 @@
  * \param dt              Simulation time step
  * \param rhop            qs*wp*invvol*2.0/(gamma_n + gamma_np1)
  */
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
 /**
- * \param costh           cos(theta) for CAR to CYL mapping
- * \param sinth           sin(theta) for CAR to CYL mapping
+ * \param costh           cos(theta) for CAR to CYL/SPH mapping
+ * \param sinth           sin(theta) for CAR to CYL/SPH mapping
+ */
+#endif
+#if defined(WARPX_DIM_RSPHERE)
+/**
+ * \param cosph           cos(phi) for CAR to SPH mapping
+ * \param sinph           sin(phi) for CAR to SPH mapping
  */
 #endif
 /**
@@ -54,9 +60,13 @@ void setMassMatricesKernels (const amrex::ParticleReal qs,
                              const amrex::ParticleReal ms,
                              const amrex::ParticleReal dt,
                              const amrex::ParticleReal rhop,
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                              const amrex::ParticleReal costh,
                              const amrex::ParticleReal sinth,
+#endif
+#if defined(WARPX_DIM_RSPHERE)
+                             const amrex::ParticleReal cosph,
+                             const amrex::ParticleReal sinph,
 #endif
                              const amrex::ParticleReal upx,
                              const amrex::ParticleReal upy,
@@ -127,6 +137,54 @@ void setMassMatricesKernels (const amrex::ParticleReal qs,
     fpyz = fptz;
     fpzx = fpzr;
     fpzy = fpzt;
+#elif defined(WARPX_DIM_RSPHERE)
+
+    // [fprr fprt fprp] = [ cpct  cpst sinp][fpxx fpxy fpxz][cpct -sint -spct]
+    // [fptr fptt fptp] = [-sint  cost 0   ][fpyx fpyy fpyz][cpst  cost -spst]
+    // [fppr fppt fppp] = [-spct -spst cosp][fpzx fpzy fpzz][sinp  0     cosp]
+    const amrex::ParticleReal cpct = cosph*costh;
+    const amrex::ParticleReal cpst = cosph*sinth;
+    const amrex::ParticleReal spct = sinph*costh;
+    const amrex::ParticleReal spst = sinph*sinth;
+
+    // Compute matrix elements correpsonding to product of middle and right matrices
+    // [fp00 fp01 fp02] = [fpxx fpxy fpxz][cpct -sint -spct]
+    // [fp10 fp11 fp12] = [fpyx fpyy fpyz][cpst  cost -spst]
+    // [fp20 fp21 fp22] = [fpzx fpzy fpzz][sinp  0     cosp]
+    const amrex::ParticleReal fp00 =  cpct*fpxx + cpst*fpxy + sinph*fpxz;
+    const amrex::ParticleReal fp10 =  cpct*fpyx + cpst*fpyy + sinph*fpyz;
+    const amrex::ParticleReal fp20 =  cpct*fpzx + cpst*fpzy + sinph*fpzz;
+    const amrex::ParticleReal fp01 = -sinth*fpxx + costh*fpxy;
+    const amrex::ParticleReal fp11 = -sinth*fpyx + costh*fpyy;
+    const amrex::ParticleReal fp21 = -sinth*fpzx + costh*fpzy;
+    const amrex::ParticleReal fp02 = -spct*fpxx - spst*fpxy + cosph*fpxz;
+    const amrex::ParticleReal fp12 = -spct*fpyx - spst*fpyy + cosph*fpyz;
+    const amrex::ParticleReal fp22 = -spct*fpzx - spst*fpzy + cosph*fpzz;
+
+    // Compute final spherical matrix elements
+    // [fprr fprt fprp] = [ cpct  cpst sinp][fp00 fp01 fp02]
+    // [fptr fptt fptp] = [-sint  cost 0   ][fp10 fp11 fp12]
+    // [fppr fppt fppp] = [-spct -spst cosp][fp20 fp21 fp22]
+    const amrex::ParticleReal fprr =  cpct*fp00 + cpst*fp10 + sinph*fp20;
+    const amrex::ParticleReal fprt =  cpct*fp01 + cpst*fp11 + sinph*fp21;
+    const amrex::ParticleReal fprp =  cpct*fp02 + cpst*fp12 + sinph*fp22;
+    const amrex::ParticleReal fptr = -sinth*fp00 + costh*fp10;
+    const amrex::ParticleReal fptt = -sinth*fp01 + costh*fp11;
+    const amrex::ParticleReal fptp = -sinth*fp02 + costh*fp12;
+    const amrex::ParticleReal fppr = -spct*fp00 - spst*fp10 + cosph*fp20;
+    const amrex::ParticleReal fppt = -spct*fp01 - spst*fp11 + cosph*fp21;
+    const amrex::ParticleReal fppp = -spct*fp02 - spst*fp12 + cosph*fp22;
+
+    // Returned values are named for Cartesian, but they are indeed mapped
+    fpxx = fprr;
+    fpxy = fprt;
+    fpxz = fprp;
+    fpyx = fptr;
+    fpyy = fptt;
+    fpyz = fptp;
+    fpzx = fppr;
+    fpzy = fppt;
+    fpzz = fppp;
 #endif
 
 }
@@ -804,6 +862,14 @@ void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
             amrex::Real const rp_mid = std::sqrt(xp_nph*xp_nph + yp_nph*yp_nph);
             amrex::Real const costh = (rp_mid > 0._rt ? xp_nph/rp_mid : 1._rt);
             amrex::Real const sinth = (rp_mid > 0._rt ? yp_nph/rp_mid : 0._rt);
+#elif defined(WARPX_DIM_RSPHERE)
+            amrex::Real const rpxy_mid = std::sqrt(xp_nph*xp_nph + yp_nph*yp_nph);
+            amrex::Real const rp_mid = std::sqrt(xp_nph*xp_nph + yp_nph*yp_nph
+                                                + zp_nph*zp_nph);
+            amrex::Real const costh = (rpxy_mid > 0._rt ? xp_nph/rpxy_mid : 1._rt);
+            amrex::Real const sinth = (rpxy_mid > 0._rt ? yp_nph/rpxy_mid : 0._rt);
+            amrex::Real const cosph = (rp_mid > 0._rt ? rpxy_mid/rp_mid : 1._rt);
+            amrex::Real const sinph = (rp_mid > 0._rt ? zp_nph/rp_mid : 0._rt);
 #endif
 
             // Set the Mass Matrices kernels
@@ -811,8 +877,11 @@ void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
             amrex::ParticleReal fpyx, fpyy, fpyz;
             amrex::ParticleReal fpzx, fpzy, fpzz;
             setMassMatricesKernels(qs, ms, dt, rhop,
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                                    costh, sinth,
+#endif
+#if defined(WARPX_DIM_RSPHERE)
+                                   cosph, sinph,
 #endif
                                    uxp_nph[ip], uyp_nph[ip], uzp_nph[ip],
                                    Bxp, Byp, Bzp,
@@ -2179,8 +2248,11 @@ void doVillasenorSigmaDeposition ([[maybe_unused]] const amrex::ParticleReal* xp
             amrex::ParticleReal fpyx, fpyy, fpyz;
             amrex::ParticleReal fpzx, fpzy, fpzz;
             setMassMatricesKernels(qs, ms, dt, rhop,
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                                    costh, sinth,
+#endif
+#if defined(WARPX_DIM_RSPHERE)
+                                   cosph, sinph,
 #endif
                                    uxp_nph[ip], uyp_nph[ip], uzp_nph[ip],
                                    Bxp, Byp, Bzp,
