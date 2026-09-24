@@ -15,19 +15,23 @@ tolerance_rel_energy = 2.0e-14
 tolerance_rel_charge = 2.0e-14
 
 pltdir = sys.argv[1]
-rootdir = './diags/'
+rootdir = "./diags/"
 
-field_energy_diag = np.loadtxt(rootdir+'/reduced_files/field_energy.txt', skiprows=1)
-parts_energy_diag = np.loadtxt(rootdir+'/reduced_files/particle_energy.txt', skiprows=1)
-parts_number_diag = np.loadtxt(rootdir+'/reduced_files/particle_number.txt', skiprows=1)
+field_energy_diag = np.loadtxt(rootdir + "/reduced_files/field_energy.txt", skiprows=1)
+parts_energy_diag = np.loadtxt(
+    rootdir + "/reduced_files/particle_energy.txt", skiprows=1
+)
+parts_number_diag = np.loadtxt(
+    rootdir + "/reduced_files/particle_number.txt", skiprows=1
+)
 
-step = field_energy_diag[:,0]
-field_energy = field_energy_diag[:,2]
-parts_energy = parts_energy_diag[:,2]
+step = field_energy_diag[:, 0]
+field_energy = field_energy_diag[:, 2]
+parts_energy = parts_energy_diag[:, 2]
 total_energy = field_energy + parts_energy
 
 # Locate the last particle-number sample before particles reach the absorbing boundary.
-diff_parts = parts_number_diag[:,2] - parts_number_diag[0,2]
+diff_parts = parts_number_diag[:, 2] - parts_number_diag[0, 2]
 idx = np.flatnonzero(~np.isclose(diff_parts, 0))[0] - 1
 
 # Measure the relative change in total energy through that sample.
