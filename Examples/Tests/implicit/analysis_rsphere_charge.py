@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# This script checks conservation of energy and charge for a simulation
+# This script checks conservation of energy and charge for simulation
 # of the free expansion of a plasma sphere in 1D RSPHERE geometry.
 # Check energy before particle loss and final-step charge conservation away
 # from radial boundaries.
