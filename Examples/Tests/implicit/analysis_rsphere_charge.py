@@ -14,14 +14,17 @@ data = ds.covering_grid(
     level=0, left_edge=ds.domain_left_edge, dims=ds.domain_dimensions
 )
 
-rho = (data[("boxlib", "rho_electrons")]
-       + data[("boxlib", "rho_ions")]).to_ndarray().squeeze()
+rho = (
+    (data[("boxlib", "rho_electrons")] + data[("boxlib", "rho_ions")])
+    .to_ndarray()
+    .squeeze()
+)
 divE = data[("boxlib", "divE")].to_ndarray().squeeze()
 
 assert rho.ndim == 1 and divE.ndim == 1, "Expected 1D RSPHERE diagnostic fields"
 assert rho.size > 2, "Need interior cells after excluding boundary-adjacent cells"
 
-charge_error = rho[1:-1] - epsilon_0 * divE[1:-1] # ignore values next to boundary.
+charge_error = rho[1:-1] - epsilon_0 * divE[1:-1]  # ignore values next to boundary.
 # Normalize to the characteristic charge density e*n0 from the input deck.
 n0 = 1.0e22
 error_rms = np.sqrt(np.mean((charge_error / (e * n0)) ** 2))
