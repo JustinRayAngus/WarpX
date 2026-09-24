@@ -76,7 +76,7 @@ RhoFunctor::operator() ( amrex::MultiFab& mf_dst, const int dcomp, const int /*i
     amrex::ignore_unused(m_apply_rz_psatd_filter);
 #endif
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     // GetChargeDensity handles axis folding and volume scaling in radial geometries,
     // but leaves physical boundary folding to the caller. Apply it after filtering
     // and guard-cell summation, as in SyncCurrentAndRho, before diagnostic interpolation.
