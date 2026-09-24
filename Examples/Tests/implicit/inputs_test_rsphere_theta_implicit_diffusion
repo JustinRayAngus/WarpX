@@ -1,6 +1,6 @@
 #####################################################
 #
-#   free diffusion of an electron-proton sphere
+#   free diffusion of an electron ion plasma sphere
 #
 #   mi = 25me, T0 = 5.11e3 eV, n0 = 1.0e22/m^3
 #   Vte = 0.1cvac
@@ -15,7 +15,6 @@
 my_constants.T0 = 5.11e3    # temperature [eV]
 my_constants.n0 = 1.0e22    # plasma density [#/m^3]
 my_constants.Mi = 25.0*m_e  # ion_mass
-my_constants.wpe = q_e*sqrt(n0/(epsilon0*m_e)) # electron plasma frequency
 my_constants.wpi = q_e*sqrt(n0/(epsilon0*Mi))  # ion plasma frequency
 my_constants.kpi = wpi/clight  # ion plasma wavenumber
 my_constants.R0 = 1.0/kpi      # plasma radius [m]
