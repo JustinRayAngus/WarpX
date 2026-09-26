@@ -634,6 +634,8 @@ void ImplicitSolver::parseNonlinearSolverParams ( const amrex::ParmParse&  pp )
         if (m_use_mass_matrices_pc) {
             m_mass_matrices_pc_width = 0;
             pp.query("mass_matrices_pc_width", m_mass_matrices_pc_width);
+            WARPX_ALWAYS_ASSERT_WITH_MESSAGE(m_mass_matrices_pc_width >= 0,
+                "implicit_evolve.mass_matrices_pc_width must be >= 0.");
         }
 #if defined(WARPX_DIM_RSPHERE)
         WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
@@ -712,12 +714,14 @@ void ImplicitSolver::InitializeMassMatrices ()
     int Nc_tot_xx = 1, Nc_tot_xy = 1, Nc_tot_xz = 1;
     int Nc_tot_yx = 1, Nc_tot_yy = 1, Nc_tot_yz = 1;
     int Nc_tot_zx = 1, Nc_tot_zy = 1, Nc_tot_zz = 1;
-    if (m_use_mass_matrices_jacobian) {
+    if (m_use_mass_matrices_jacobian || m_use_mass_matrices_pc) {
 
-        for (int dir=0; dir<AMREX_SPACEDIM; dir++) {
-            WARPX_ALWAYS_ASSERT_WITH_MESSAGE( ngE[dir]>=ngJ[dir],
-                "Mass Matrices for Jacobian requires guard cells for E "
-                "to be at least as many as those for J.");
+        if (m_use_mass_matrices_jacobian) {
+            for (int dir=0; dir<AMREX_SPACEDIM; dir++) {
+                WARPX_ALWAYS_ASSERT_WITH_MESSAGE( ngE[dir]>=ngJ[dir],
+                    "Mass Matrices for Jacobian requires guard cells for E "
+                    "to be at least as many as those for J.");
+            }
         }
 
         if (WarpX::current_deposition_algo == CurrentDepositionAlgo::Direct) {
@@ -745,9 +749,30 @@ void ImplicitSolver::InitializeMassMatrices ()
         }
         else if (WarpX::current_deposition_algo == CurrentDepositionAlgo::Villasenor) {
 #ifdef WARPX_DIM_3D
-            WARPX_ABORT_WITH_MESSAGE(
-                "Mass matrices for Jacobian with Villasenor deposition are not yet implemented "
-                "in 3D. Use algo.current_deposition = direct.");
+            if (m_use_mass_matrices_jacobian) {
+                WARPX_ABORT_WITH_MESSAGE(
+                    "Mass matrices for Jacobian with Villasenor deposition are not yet implemented "
+                    "in 3D. Use algo.current_deposition = direct.");
+            }
+            const int max_grid_crossings = ngJ[0] - shape + 1;
+            WARPX_ALWAYS_ASSERT_WITH_MESSAGE(max_grid_crossings > 0,
+                "Mass matrices with Villasenor deposition require particles.max_grid_crossings > 0.");
+            WARPX_ALWAYS_ASSERT_WITH_MESSAGE(max_grid_crossings == WarpX::particle_max_grid_crossings,
+                "Guard cells for J are not consistent with particles.max_grid_crossings.");
+            WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
+                max_grid_crossings <= WarpX::villasenor_mass_matrices_max_grid_crossings,
+                "Villasenor mass matrices exceed the supported maximum grid crossings.");
+            const int ncomp_centered = 1 + 2*(shape-1) + 2*max_grid_crossings;
+            const int ncomp_nodal = 1 + 2*shape + 2*max_grid_crossings;
+            m_ncomp_xx[0] = ncomp_centered;
+            m_ncomp_xx[1] = ncomp_nodal;
+            m_ncomp_xx[2] = ncomp_nodal;
+            m_ncomp_yy[0] = ncomp_nodal;
+            m_ncomp_yy[1] = ncomp_centered;
+            m_ncomp_yy[2] = ncomp_nodal;
+            m_ncomp_zz[0] = ncomp_nodal;
+            m_ncomp_zz[1] = ncomp_nodal;
+            m_ncomp_zz[2] = ncomp_centered;
 #else
             const int max_grid_crossings = ngJ[0] - shape + 1;
             WARPX_ALWAYS_ASSERT_WITH_MESSAGE(max_grid_crossings > 0,
@@ -824,7 +849,7 @@ void ImplicitSolver::InitializeMassMatrices ()
             WARPX_ABORT_WITH_MESSAGE("Mass matrices can only be used with Direct and Villasenor depositions.");
         }
     }
-    else { // Mass matrices used for PC only
+    else { // Mass matrices inactive after checking the preconditioner type
         for (int dir=0; dir<AMREX_SPACEDIM; dir++) {
             m_ncomp_xx[dir] = 1;
             m_ncomp_xy[dir] = 0;
@@ -835,7 +860,6 @@ void ImplicitSolver::InitializeMassMatrices ()
             m_ncomp_zx[dir] = 0;
             m_ncomp_zy[dir] = 0;
             m_ncomp_zz[dir] = 1;
-            //
             Nc_tot_xx *= m_ncomp_xx[dir];
             Nc_tot_xy *= m_ncomp_xy[dir];
             Nc_tot_xz *= m_ncomp_xz[dir];
@@ -847,6 +871,18 @@ void ImplicitSolver::InitializeMassMatrices ()
             Nc_tot_zz *= m_ncomp_zz[dir];
         }
     }
+    if (m_use_mass_matrices_pc && !m_use_mass_matrices_jacobian) {
+        // PC-only mode keeps the regular diagonal stencil but does not allocate off-diagonal matrices.
+        m_ncomp_xy = amrex::IntVect{0};
+        m_ncomp_xz = amrex::IntVect{0};
+        m_ncomp_yx = amrex::IntVect{0};
+        m_ncomp_yz = amrex::IntVect{0};
+        m_ncomp_zx = amrex::IntVect{0};
+        m_ncomp_zy = amrex::IntVect{0};
+        Nc_tot_xy = Nc_tot_xz = Nc_tot_yx = 0;
+        Nc_tot_yz = Nc_tot_zx = Nc_tot_zy = 0;
+    }
+
 
     for (int lev = 0; lev < m_num_amr_levels; ++lev) {
         const auto& ba_Jx = m_WarpX->m_fields.get(FieldType::current_fp, Direction{0}, lev)->boxArray();
@@ -877,8 +913,7 @@ void ImplicitSolver::InitializeMassMatrices ()
             int ncomp_tot_pc_yy = 1;
             int ncomp_tot_pc_zz = 1;
 
-            // Additional MM components in PC not setup yet for when MM is only used for the PC
-            const int ncomp_dir_pc = (m_use_mass_matrices_jacobian ? 1 + 2*m_mass_matrices_pc_width : 1);
+            const int ncomp_dir_pc = 1 + 2*m_mass_matrices_pc_width;
             for (int dir=0; dir<AMREX_SPACEDIM; dir++) {
                 m_ncomp_pc_xx[dir] = std::min(m_ncomp_xx[dir],ncomp_dir_pc);
                 m_ncomp_pc_yy[dir] = std::min(m_ncomp_yy[dir],ncomp_dir_pc);
@@ -1273,13 +1308,13 @@ void ImplicitSolver::PrintBaseImplicitSolverParameters () const
                 amrex::Print() << "    mass matrices pc width:  " << m_mass_matrices_pc_width << "\n";
             }
             amrex::Print() << "    ncomp_xx:  " << m_ncomp_xx << ";  ncomp_pc_xx:  " << m_ncomp_pc_xx << "\n";
-            amrex::Print() << "    ncomp_xy:  " << m_ncomp_xy << ";  ncomp_pc_xy:  " << amrex::IntVect(0) << "\n";
-            amrex::Print() << "    ncomp_xz:  " << m_ncomp_xz << ";  ncomp_pc_xz:  " << amrex::IntVect(0) << "\n";
-            amrex::Print() << "    ncomp_yx:  " << m_ncomp_yx << ";  ncomp_pc_yx:  " << amrex::IntVect(0) << "\n";
+            amrex::Print() << "    ncomp_xy:  " << m_ncomp_xy << ";  ncomp_pc_xy:  " << amrex::IntVect{0} << "\n";
+            amrex::Print() << "    ncomp_xz:  " << m_ncomp_xz << ";  ncomp_pc_xz:  " << amrex::IntVect{0} << "\n";
+            amrex::Print() << "    ncomp_yx:  " << m_ncomp_yx << ";  ncomp_pc_yx:  " << amrex::IntVect{0} << "\n";
             amrex::Print() << "    ncomp_yy:  " << m_ncomp_yy << ";  ncomp_pc_yy:  " << m_ncomp_pc_yy << "\n";
-            amrex::Print() << "    ncomp_yz:  " << m_ncomp_yz << ";  ncomp_pc_yz:  " << amrex::IntVect(0) << "\n";
-            amrex::Print() << "    ncomp_zx:  " << m_ncomp_zx << ";  ncomp_pc_zx:  " << amrex::IntVect(0) << "\n";
-            amrex::Print() << "    ncomp_zy:  " << m_ncomp_zy << ";  ncomp_pc_zy:  " << amrex::IntVect(0) << "\n";
+            amrex::Print() << "    ncomp_yz:  " << m_ncomp_yz << ";  ncomp_pc_yz:  " << amrex::IntVect{0} << "\n";
+            amrex::Print() << "    ncomp_zx:  " << m_ncomp_zx << ";  ncomp_pc_zx:  " << amrex::IntVect{0} << "\n";
+            amrex::Print() << "    ncomp_zy:  " << m_ncomp_zy << ";  ncomp_pc_zy:  " << amrex::IntVect{0} << "\n";
             amrex::Print() << "    ncomp_zz:  " << m_ncomp_zz << ";  ncomp_pc_zz:  " << m_ncomp_pc_zz << "\n";
         }
     }

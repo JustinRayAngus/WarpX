@@ -858,7 +858,7 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
     const bool use_mass_matrices_pc = implicit_options->use_mass_matrices_pc;
     const bool linear_stage_of_jfnk = implicit_options->linear_stage_of_jfnk;
-    const bool deposit_mass_matrices = use_mass_matrices_pc && !linear_stage_of_jfnk;
+    const bool deposit_mass_matrices = false; //use_mass_matrices_pc && !linear_stage_of_jfnk;
     amrex::MultiFab *Sxx, *Sxy, *Sxz, *Syx, *Syy, *Syz, *Szx, *Szy, *Szz;
     if (deposit_mass_matrices) {
         // Mass matrices deposit for suborbit particles is only for the preconditioner,
