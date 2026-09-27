@@ -1004,9 +1004,9 @@ void ImplicitSolver::PreLinearSolve ()
     if (m_use_mass_matrices) {
 
         m_WarpX->DepositMassMatrices(m_dt);
+        FinishMassMatricesDeposition();
 
         if (m_use_mass_matrices_jacobian) {
-            FinishMassMatricesDeposition();
             SaveE();
         }
 
@@ -1288,6 +1288,11 @@ void ImplicitSolver::FinishMassMatricesDeposition ()
     // The full MM deposit routines take advantage of symmetry for the diagonal mass
     // matrices to only deposit half of the values. The remainder are computed
     // via copy here in this routine (see FoldMassMatrix).
+
+    // The full mass-matrix deposit leaves some diagonal-stencil components
+    // to be filled by symmetry in FoldMassMatrix. The PC-only deposit writes
+    // every retained stencil component directly, so no fold is needed.    
+    if (!m_use_mass_matrices_jacobian) { return; }
 
     using warpx::fields::FieldType;
 
