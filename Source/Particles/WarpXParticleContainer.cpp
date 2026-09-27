@@ -1028,7 +1028,8 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                                        amrex::MultiFab* Szx, amrex::MultiFab* Szy, amrex::MultiFab* Szz,
                                        const amrex::FArrayBox* Bx, const amrex::FArrayBox* By, const amrex::FArrayBox* Bz,
                                        long offset, long np_to_deposit, int thread_num, int lev, int depos_lev,
-                                       amrex::Real dt)
+                                       amrex::Real dt,
+                                       ImplicitOptions const& implicit_options)
 {
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE((depos_lev==(lev-1)) ||
                                      (depos_lev==(lev  )),
@@ -1126,6 +1127,10 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
     Array4<Real> const& Szy_arr = local_Szy[thread_num].array();
     Array4<Real> const& Szz_arr = local_Szz[thread_num].array();
 #endif
+
+    const amrex::IntVect ncomp_xx = implicit_options.ncomp_xx;
+    const amrex::IntVect ncomp_yy = implicit_options.ncomp_yy;
+    const amrex::IntVect ncomp_zz = implicit_options.ncomp_zz;
 
     const auto GetPosition = GetParticlePosition<PIdx>(pti, offset);
 
@@ -1227,6 +1232,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1240,6 +1246,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1253,6 +1260,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1266,6 +1274,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1279,6 +1288,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1292,6 +1302,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1305,6 +1316,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1318,6 +1330,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx, ncomp_yy, ncomp_zz,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
                     np_to_deposit, dt, dinv, xyzmin, domain_double, do_cropping, lo, qs, mass);
@@ -1338,6 +1351,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
@@ -1350,6 +1364,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
@@ -1362,6 +1377,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
@@ -1374,6 +1390,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
@@ -1386,6 +1403,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
@@ -1398,6 +1416,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
@@ -1410,6 +1429,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
@@ -1422,6 +1442,7 @@ WarpXParticleContainer::DepositMassMatrices (WarpXParIter& pti, const RealVector
                     Sxx_arr, Sxy_arr, Sxz_arr,
                     Syx_arr, Syy_arr, Syz_arr,
                     Szx_arr, Szy_arr, Szz_arr,
+                    ncomp_xx,
                     Sxx_type, Syy_type, Szz_type,
                     getExternalEB, Bx_ext, By_ext, Bz_ext,
                     Bx_arr, By_arr, Bz_arr, Bx_type, By_type, Bz_type,
