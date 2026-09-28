@@ -744,11 +744,6 @@ void ImplicitSolver::InitializeMassMatrices ()
             }
         }
         else if (WarpX::current_deposition_algo == CurrentDepositionAlgo::Villasenor) {
-#ifdef WARPX_DIM_3D
-            WARPX_ABORT_WITH_MESSAGE(
-                "Mass matrices for Jacobian with Villasenor deposition are not yet implemented "
-                "in 3D. Use algo.current_deposition = direct.");
-#else
             const int max_grid_crossings = ngJ[0] - shape + 1;
             WARPX_ALWAYS_ASSERT_WITH_MESSAGE(max_grid_crossings > 0,
                 "Mass Matrices for Jacobian with Villasenor deposition requires particles.max_grid_crossings > 0.");
@@ -758,13 +753,33 @@ void ImplicitSolver::InitializeMassMatrices ()
                 max_grid_crossings <= WarpX::villasenor_mass_matrices_max_grid_crossings,
                 "Mass matrices for the Jacobian with Villasenor deposition support "
                 "particles.max_grid_crossings <= WarpX::villasenor_mass_matrices_max_grid_crossings.");
+#ifdef WARPX_DIM_3D
+            for (int dir=1; dir<AMREX_SPACEDIM; dir++) {
+                WARPX_ALWAYS_ASSERT_WITH_MESSAGE(ngJ[dir] - shape + 1 == max_grid_crossings,
+                    "Guard cells for J must support the same number of grid crossings in every direction.");
+            }
 #endif
             // Comment on direction-dependent number of mass matrices components
             // set below for charge-conserving Villasenor deposition:
             // 1 + 2*(shape - 1) (both comps centered)
             // 0 + 2*shape       (mixed nodal/centered comps)
             // 1 + 2*shape       (both comps nodal)
-#if defined(WARPX_DIM_1D_Z)
+#if defined(WARPX_DIM_3D)
+            // J and E have the same Yee staggering. Each component count spans
+            // offsets between the corresponding current and electric-field nodes.
+            for (int dir=0; dir<AMREX_SPACEDIM; dir++) {
+                const int base = 2*shape - 1 + 2*max_grid_crossings;
+                m_ncomp_xx[dir] = base + 2*Jx_nodal[dir];
+                m_ncomp_xy[dir] = base + Jx_nodal[dir] + Jy_nodal[dir];
+                m_ncomp_xz[dir] = base + Jx_nodal[dir] + Jz_nodal[dir];
+                m_ncomp_yx[dir] = base + Jy_nodal[dir] + Jx_nodal[dir];
+                m_ncomp_yy[dir] = base + 2*Jy_nodal[dir];
+                m_ncomp_yz[dir] = base + Jy_nodal[dir] + Jz_nodal[dir];
+                m_ncomp_zx[dir] = base + Jz_nodal[dir] + Jx_nodal[dir];
+                m_ncomp_zy[dir] = base + Jz_nodal[dir] + Jy_nodal[dir];
+                m_ncomp_zz[dir] = base + 2*Jz_nodal[dir];
+            }
+#elif defined(WARPX_DIM_1D_Z)
             // x and y are nodal, z is centered
             m_ncomp_xx[0] = 1 + 2*shape + 2*max_grid_crossings;
             m_ncomp_xy[0] = 1 + 2*shape + 2*max_grid_crossings;
