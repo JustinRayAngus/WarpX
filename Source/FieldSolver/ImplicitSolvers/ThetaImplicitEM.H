@@ -80,11 +80,12 @@ public:
                  int          a_step,
                  bool verbose_step) override;
 
-    void ComputeRHS ( WarpXSolverVec&  a_RHS,
-                const WarpXSolverVec&  a_E,
-                      amrex::Real      start_time,
-                      int              a_nl_iter,
-                      bool             a_from_jacobian ) override;
+    void ComputeRHS (WarpXSolverVec& a_RHS,
+               const WarpXSolverVec& a_E,
+                     amrex::Real     start_time,
+                     int             a_nl_iter,
+                     bool            a_from_jacobian,
+                     const bool      update_pc = true) override;
 
 #if defined(WARPX_DIM_1D_Z)
     void Enforce1DESPeriodic (WarpXSolverVec&  a_RHS,

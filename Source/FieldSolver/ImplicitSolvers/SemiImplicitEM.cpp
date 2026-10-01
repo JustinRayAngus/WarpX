@@ -114,11 +114,12 @@ int SemiImplicitEM::OneStep (amrex::Real  start_time,
     return exit_status;
 }
 
-void SemiImplicitEM::ComputeRHS ( WarpXSolverVec&  a_RHS,
-                            const WarpXSolverVec&  a_E,
-                                  amrex::Real      start_time,
-                                  int              a_nl_iter,
-                                  bool             a_from_jacobian )
+void SemiImplicitEM::ComputeRHS (WarpXSolverVec& a_RHS,
+                           const WarpXSolverVec& a_E,
+                                 amrex::Real     start_time,
+                                 int             a_nl_iter,
+                                 bool            a_from_jacobian,
+                                 const bool      update_pc)
 {
     BL_PROFILE("SemiImplicitEM::ComputeRHS()");
 
@@ -128,8 +129,8 @@ void SemiImplicitEM::ComputeRHS ( WarpXSolverVec&  a_RHS,
     m_WarpX->SetElectricFieldAndApplyBCs( a_E, half_time );
 
     // Update particle positions and velocities using the current state
-    // of E and B. Deposit current density at time n+1/2
-    PreRHSOp( half_time, a_nl_iter, a_from_jacobian );
+    // of Eg and Bg. Deposit current density at time n+1/2
+    PreRHSOp(half_time, a_nl_iter, a_from_jacobian, update_pc);
 
     // RHS = cvac^2*0.5*dt*(curl(B^{n+1/2}) - mu0*J^{n+1/2})
     m_WarpX->ImplicitComputeRHSE(0.5_rt*m_dt, a_RHS);
