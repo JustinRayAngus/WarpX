@@ -1020,7 +1020,7 @@ void ImplicitSolver::InitializeMassMatrices ()
 
 }
 
-void ImplicitSolver::PreLinearSolve ()
+void ImplicitSolver::PreLinearSolve (const bool update_pc)
 {
     BL_PROFILE("ImplicitSolver::PreLinearSolve()");
 
@@ -1033,7 +1033,7 @@ void ImplicitSolver::PreLinearSolve ()
             SaveE();
         }
 
-        if (m_use_mass_matrices_pc) {
+        if (m_use_mass_matrices_pc && update_pc) {
             SyncMassMatricesPCAndApplyBCs();
             const amrex::Real theta_dt = m_theta*m_dt;
             SetMassMatricesForPC( theta_dt );
@@ -1043,9 +1043,10 @@ void ImplicitSolver::PreLinearSolve ()
 
 }
 
-void ImplicitSolver::PreRHSOp ( const amrex::Real  a_cur_time,
-                                const int          a_nl_iter,
-                                const bool         a_from_jacobian )
+void ImplicitSolver::PreRHSOp (const amrex::Real a_cur_time,
+                               const int         a_nl_iter,
+                               const bool        a_from_jacobian,
+                               const bool        update_pc)
 {
     BL_PROFILE("ImplicitSolver::PreRHSOp()");
 
@@ -1065,7 +1066,8 @@ void ImplicitSolver::PreRHSOp ( const amrex::Real  a_cur_time,
     // Set the implict solver options for particles and setting the current density
     ImplicitOptions options;
     options.linear_stage_of_jfnk = a_from_jacobian;
-    options.use_mass_matrices_pc = m_use_mass_matrices_pc;
+    // PC deposition and zeroing follow the same schedule as sparse assembly.
+    options.use_mass_matrices_pc = m_use_mass_matrices_pc && update_pc && !a_from_jacobian;
     options.use_mass_matrices_jacobian = m_use_mass_matrices_jacobian;
     options.evolve_suborbit_particles_only = false;
 
@@ -1111,7 +1113,7 @@ void ImplicitSolver::PreRHSOp ( const amrex::Real  a_cur_time,
         // The native Newton solver calls this routine immediately before the linear solve,
         // and only when a linear solve is required (i.e., the system is not converged).
         // PETSc's SNES solver does not provide this optimization, so we must call it here.
-        PreLinearSolve();
+        PreLinearSolve(update_pc);
     }
 
 }
