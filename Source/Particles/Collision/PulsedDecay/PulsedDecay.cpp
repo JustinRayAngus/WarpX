@@ -199,6 +199,10 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
             amrex::Gpu::DeviceVector<int> eligible_vec(np1, 0);
             int* AMREX_RESTRICT eligible = eligible_vec.dataPtr();
 
+            // Pool eligible target weight by cell to create fixed-weight products while
+            // conserving target weight. Compute the expected product weight from each
+            // target's local rate. Product placement and target depletion stay cell-based,
+            // but are restricted to targets with nu_izn > 0.
             // amrex::For: iterations scatter-add into shared per-cell sums (no SIMD pragma, see issue #7097)
             amrex::For( np1,
                 [=] AMREX_GPU_DEVICE (int ip) noexcept
@@ -234,7 +238,10 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                     const amrex::ParticleReal product = product_in_each_cell[i_cell];
                     if (product == 0.0_prt) { return; }
 
-                    // Compute number of products macro particles to create in this cell
+                    // Stochastically round expected product weight to fixed-weight
+                    // products. Cap by eligible target weight so each event can remove
+                    // exactly the weight created; if the cap clips upward rounding, the
+                    // realized expected yield is lower.
                     const amrex::ParticleReal num_expected = product/fixed_product_weight;
                     int num_macro_particles = static_cast<int>(std::floor(num_expected + amrex::Random(engine)));
 
@@ -315,10 +322,10 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                         const index_type ip_A = old_npA + new_idx;
                         const index_type ip_B = old_npB + new_idx;
 
-                        // Get a random particle index from species 1 in this cell
+                        // Choose a parent only from the eligible cell pool (nu_izn > 0)
                         auto k = static_cast<index_type>(amrex::Random(engine) * amrex::Real(num_in_cell));
 
-                        // Probe until a valid particle is found (should always be at least one)
+                        // Probe until an eligible, valid particle is found (the cell pool has one).
                         index_type ip  = -1;
                         for (index_type t = 0; t < num_in_cell; ++t) {
                             const index_type cand_k = (k + t) % num_in_cell;
@@ -358,7 +365,8 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                         wA[ip_A] = wpAB;
                         wB[ip_B] = wpAB;
 
-                        // Remove product weight from species 1
+                        // Remove one fixed product weight from eligible targets, balancing the weight
+                        // assigned to each product species for this event.
                         amrex::ParticleReal wp_remaining = wpAB;
                         for (index_type t = 0; t < num_in_cell; ++t) {
                             const index_type k2 = (k + t) % num_in_cell;
