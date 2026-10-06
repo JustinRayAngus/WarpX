@@ -147,7 +147,7 @@ void setMassMatricesKernels (const amrex::ParticleReal qs,
     const amrex::ParticleReal spct = sinph*costh;
     const amrex::ParticleReal spst = sinph*sinth;
 
-    // Compute matrix elements correpsonding to product of middle and right matrices
+    // Compute matrix elements corresponding to product of middle and right matrices
     // [fp00 fp01 fp02] = [fpxx fpxy fpxz][cpct -sint -spct]
     // [fp10 fp11 fp12] = [fpyx fpyy fpyz][cpst  cost -spst]
     // [fp20 fp21 fp22] = [fpzx fpzy fpzz][sinp  0     cosp]
