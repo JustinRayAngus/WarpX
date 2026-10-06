@@ -139,18 +139,18 @@ void setMassMatricesKernels (const amrex::ParticleReal qs,
     fpzy = fpzt;
 #elif defined(WARPX_DIM_RSPHERE)
 
-    // [fprr fprt fprp] = [ cpct  cpst sinp][fpxx fpxy fpxz][cpct -sint -spct]
-    // [fptr fptt fptp] = [-sint  cost 0   ][fpyx fpyy fpyz][cpst  cost -spst]
-    // [fppr fppt fppp] = [-spct -spst cosp][fpzx fpzy fpzz][sinp  0     cosp]
+    // [fprr fprt fprp] = [ cpct   cpst  sinph][fpxx fpxy fpxz][cpct  -sinth -spct ]
+    // [fptr fptt fptp] = [-sinth  costh 0    ][fpyx fpyy fpyz][cpst   costh -spst ]
+    // [fppr fppt fppp] = [-spct  -spst  cosph][fpzx fpzy fpzz][sinph  0      cosph]
     const amrex::ParticleReal cpct = cosph*costh;
     const amrex::ParticleReal cpst = cosph*sinth;
     const amrex::ParticleReal spct = sinph*costh;
     const amrex::ParticleReal spst = sinph*sinth;
 
     // Compute matrix elements corresponding to product of middle and right matrices
-    // [fp00 fp01 fp02] = [fpxx fpxy fpxz][cpct -sint -spct]
-    // [fp10 fp11 fp12] = [fpyx fpyy fpyz][cpst  cost -spst]
-    // [fp20 fp21 fp22] = [fpzx fpzy fpzz][sinp  0     cosp]
+    // [fp00 fp01 fp02] = [fpxx fpxy fpxz][cpct  -sinth -spct ]
+    // [fp10 fp11 fp12] = [fpyx fpyy fpyz][cpst   costh -spst ]
+    // [fp20 fp21 fp22] = [fpzx fpzy fpzz][sinph  0      cosph]
     const amrex::ParticleReal fp00 =  cpct*fpxx + cpst*fpxy + sinph*fpxz;
     const amrex::ParticleReal fp10 =  cpct*fpyx + cpst*fpyy + sinph*fpyz;
     const amrex::ParticleReal fp20 =  cpct*fpzx + cpst*fpzy + sinph*fpzz;
@@ -162,9 +162,9 @@ void setMassMatricesKernels (const amrex::ParticleReal qs,
     const amrex::ParticleReal fp22 = -spct*fpzx - spst*fpzy + cosph*fpzz;
 
     // Compute final spherical matrix elements
-    // [fprr fprt fprp] = [ cpct  cpst sinp][fp00 fp01 fp02]
-    // [fptr fptt fptp] = [-sint  cost 0   ][fp10 fp11 fp12]
-    // [fppr fppt fppp] = [-spct -spst cosp][fp20 fp21 fp22]
+    // [fprr fprt fprp] = [ cpct   cpst  sinph][fp00 fp01 fp02]
+    // [fptr fptt fptp] = [-sinth  costh 0    ][fp10 fp11 fp12]
+    // [fppr fppt fppp] = [-spct  -spst  cosph][fp20 fp21 fp22]
     const amrex::ParticleReal fprr =  cpct*fp00 + cpst*fp10 + sinph*fp20;
     const amrex::ParticleReal fprt =  cpct*fp01 + cpst*fp11 + sinph*fp21;
     const amrex::ParticleReal fprp =  cpct*fp02 + cpst*fp12 + sinph*fp22;
