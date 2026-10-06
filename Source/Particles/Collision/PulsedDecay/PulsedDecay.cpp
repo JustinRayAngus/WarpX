@@ -176,22 +176,28 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
 #endif
         for (amrex::MFIter mfi = species1.MakeMFIter(lev, info); mfi.isValid(); ++mfi){
 
-            // Extract species 1 particles in the grid tile that `mfi` points to
+            // Extract target species 1 particles in the grid tile that `mfi` points to
             ParticleTileType& ptile_1 = species1.ParticlesAt(lev, mfi);
+            const auto GetPosition1 = GetParticlePosition<PIdx>(ptile_1);
 
             // Find the particles that are in each cell of this tile
             amrex::Geometry const& geom_lev = WarpX::GetInstance().Geom(lev);
             ParticleBins bins_1 = ParticleUtils::findParticlesInEachCell( geom_lev, mfi, ptile_1 );
 
-            // Compute/store total weight of species 1 in each cell
+            // Compute/store total weight of target species 1 in each cell
             auto soa_1 = ptile_1.getParticleTileData();
             const int n_cells = static_cast<int>(bins_1.numBins());
             const auto np1 = ptile_1.numParticles();
-            amrex::Gpu::DeviceVector<amrex::ParticleReal> wtot1_vec(n_cells, 0.0_prt);
+            amrex::Gpu::DeviceVector<amrex::ParticleReal> target_vec(n_cells, 0.0_prt);
+            amrex::Gpu::DeviceVector<amrex::ParticleReal> product_vec(n_cells, 0.0_prt);
             index_type const* AMREX_RESTRICT bins_1_ptr = bins_1.binsPtr();
-            amrex::ParticleReal* AMREX_RESTRICT wtot1_in_each_cell = wtot1_vec.dataPtr();
+            amrex::ParticleReal* AMREX_RESTRICT target_in_each_cell = target_vec.dataPtr();
+            amrex::ParticleReal* AMREX_RESTRICT product_in_each_cell = product_vec.dataPtr();
             amrex::ParticleReal* AMREX_RESTRICT w1 = soa_1.m_rdata[PIdx::w];
             uint64_t* AMREX_RESTRICT idcpu1 = soa_1.m_idcpu;
+
+            amrex::Gpu::DeviceVector<int> eligible_vec(np1, 0);
+            int* AMREX_RESTRICT eligible = eligible_vec.dataPtr();
 
             // amrex::For: iterations scatter-add into shared per-cell sums (no SIMD pragma, see issue #7097)
             amrex::For( np1,
@@ -199,7 +205,21 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                 {
                     if (idcpu1[ip] == amrex::ParticleIdCpus::Invalid) { return; }
 
-                    amrex::Gpu::Atomic::AddNoRet(&wtot1_in_each_cell[bins_1_ptr[ip]], w1[ip]);
+                    amrex::ParticleReal xp, yp, zp;
+                    GetPosition1(ip, xp, yp, zp);
+
+                    const amrex::ParticleReal nu_izn = nu_func(xp, yp, zp, cur_time);
+                    if (nu_izn <= 0.0_prt) { return; }
+
+                    eligible[ip] = 1;
+
+                    // Cumulate total eligible target weight in this cell
+                    amrex::Gpu::Atomic::AddNoRet(&target_in_each_cell[bins_1_ptr[ip]], w1[ip]);
+
+                    // Cumulate total product weight in this cell
+                    const amrex::ParticleReal product = w1[ip] * (-std::expm1(-nu_izn*dt));
+                    amrex::Gpu::Atomic::AddNoRet(&product_in_each_cell[bins_1_ptr[ip]], product);
+
                 }
             );
 
@@ -207,57 +227,20 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
             amrex::Gpu::DeviceVector<index_type> num_products_vec(n_cells, 0);
             index_type* AMREX_RESTRICT p_counts = num_products_vec.dataPtr();
 
-            // Get grid information needed to compute physical cell center coordinates
-            const amrex::Box box = mfi.tilebox(amrex::IntVect::TheZeroVector());
-            const amrex::XDim3 xyzmin = WarpX::LowerCorner(box, lev, 0.0_rt);
-#if AMREX_SPACEDIM > 1
-            const amrex::IntVect len = box.length();
-#endif
-            const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx = geom_lev.CellSizeArray();
-
             amrex::ParallelForRNG( n_cells,
                 [=] AMREX_GPU_DEVICE (int i_cell, amrex::RandomEngine const& engine) noexcept
                 {
-                    const amrex::ParticleReal wtot1 = wtot1_in_each_cell[i_cell];
-                    if (wtot1 == 0.0_prt) { return; }
-
-                    // DenseBins uses x-fastest ordering:
-                    // 2D: i_cell = iz * nx + ix
-                    // 3D: i_cell = (iz * ny + iy) * nx + ix
-
-                    // Get physical coordinates at cell center.
-                    amrex::XDim3 xyz_cc = {0.0_rt, 0.0_rt, 0.0_rt};
-                    const amrex::Real half = 0.5_rt;
-#if   defined(WARPX_DIM_1D_Z)
-                    xyz_cc.z = xyzmin.z + (i_cell + half)*dx[0];
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
-                    xyz_cc.x = xyzmin.x + (i_cell + half)*dx[0];
-#elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
-                    const int ix = i_cell % len[0];
-                    const int iz = i_cell / len[0];
-                    xyz_cc.x = xyzmin.x + (ix + half)*dx[0];
-                    xyz_cc.z = xyzmin.z + (iz + half)*dx[1];
-#elif defined(WARPX_DIM_3D)
-                    const int ix = i_cell % len[0];
-                    const int iy = (i_cell / len[0]) % len[1];
-                    const int iz = i_cell / (len[0] * len[1]);
-                    xyz_cc.x = xyzmin.x + (ix + half)*dx[0];
-                    xyz_cc.y = xyzmin.y + (iy + half)*dx[1];
-                    xyz_cc.z = xyzmin.z + (iz + half)*dx[2];
-#endif
-
-                    // Compute total weight of products to create in this cell
-                    const amrex::ParticleReal nu_izn = nu_func(xyz_cc.x, xyz_cc.y, xyz_cc.z, cur_time);
-                    const amrex::ParticleReal total_product = wtot1*(1.0_prt - std::exp(-nu_izn*dt));
+                    const amrex::ParticleReal target = target_in_each_cell[i_cell];
+                    const amrex::ParticleReal product = product_in_each_cell[i_cell];
+                    if (product == 0.0_prt) { return; }
 
                     // Compute number of products macro particles to create in this cell
-                    const amrex::ParticleReal num_expected = total_product/fixed_product_weight;
+                    const amrex::ParticleReal num_expected = product/fixed_product_weight;
                     int num_macro_particles = static_cast<int>(std::floor(num_expected + amrex::Random(engine)));
 
-                    // Do not permit total product weight to exceed wtot1
-                    if (num_macro_particles*fixed_product_weight > wtot1) {
-                        num_macro_particles--;
-                    }
+                    // Do not permit product weight to exceed eligible target weight
+                    const int max_macro_particles = static_cast<int>(std::floor(target/fixed_product_weight));
+                    num_macro_particles = amrex::min(num_macro_particles, max_macro_particles);
 
                     p_counts[i_cell] += num_macro_particles;
                 }
@@ -341,7 +324,8 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                             const index_type cand_k = (k + t) % num_in_cell;
                             const index_type idx = cell_start_1 + cand_k;
                             const index_type cand_ip = indices_1[idx];
-                            if (idcpu1[cand_ip] != amrex::ParticleIdCpus::Invalid) {
+                            if (eligible[cand_ip] &&
+                                idcpu1[cand_ip] != amrex::ParticleIdCpus::Invalid) {
                                 k  = cand_k;
                                 ip = cand_ip;
                                 break;
@@ -381,7 +365,8 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                             const index_type idx2 = cell_start_1 + k2;
                             const index_type ip2 = indices_1[idx2];
 
-                            if (idcpu1[ip2] == amrex::ParticleIdCpus::Invalid) { continue; }
+                            if (!eligible[ip2] ||
+                                idcpu1[ip2] == amrex::ParticleIdCpus::Invalid) { continue; }
 
                             const amrex::ParticleReal wp_remove = amrex::min(wp_remaining, w1[ip2]);
                             BinaryCollisionUtils::remove_weight_from_colliding_particle(
