@@ -19,13 +19,16 @@
 #include <string>
 
 /**
- * \brief This class performs the decay of species 1 into species A and B via a user-specified rate.
- *        dnA/dt = +nu(t)*n1(t)= dnB/dt
- *        dn1/dt = -nu(t)*n1(t)
- *        ==> nA(t+dt) - nA(t) = n1(t)*(1 - exp(-nu(t)*t))
+ * \brief This class performs the decay of target species 1 into product species A and B
+ *        via a user-specified rate nu = nu(x,y,z,t).
+ *        dnA/dt = +nu*n1(t)= dnB/dt
+ *        dn1/dt = -nu*n1(t)
+ *        ==> nA(t+dt) - nA(t) = n1(t)*(1 - exp(-nu*t))
  *        For example, this can represent ionization of species 1 from a laser pulse.
- *        The user-specified decay rate nu is a function of space and time.
- *        The velocity of the product particles is set to a random parent species particle plus
+ *        Eligible target weight is pooled by cell to create fixed-weight products while
+ *        conserving target weight; the rate is evaluated at each target position, and
+ *        targets with non-positive rate are excluded.
+ *        The velocity of the product particles is set to a random target species particle plus
  *        a direction-dependent thermal part obtained from a user-specified normal distribution.
  */
 

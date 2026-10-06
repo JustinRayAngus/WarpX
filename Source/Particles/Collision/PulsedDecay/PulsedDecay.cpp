@@ -202,7 +202,7 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
             // Pool eligible target weight by cell to create fixed-weight products while
             // conserving target weight. Compute the expected product weight from each
             // target's local rate. Product placement and target depletion stay cell-based,
-            // but are restricted to targets with nu_izn > 0.
+            // but are restricted to targets with nu > 0.
             // amrex::For: iterations scatter-add into shared per-cell sums (no SIMD pragma, see issue #7097)
             amrex::For( np1,
                 [=] AMREX_GPU_DEVICE (int ip) noexcept
@@ -212,8 +212,8 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                     amrex::ParticleReal xp, yp, zp;
                     GetPosition1(ip, xp, yp, zp);
 
-                    const amrex::ParticleReal nu_izn = nu_func(xp, yp, zp, cur_time);
-                    if (nu_izn <= 0.0_prt) { return; }
+                    const amrex::ParticleReal nu = nu_func(xp, yp, zp, cur_time);
+                    if (nu <= 0.0_prt) { return; }
 
                     eligible[ip] = 1;
 
@@ -221,7 +221,7 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                     amrex::Gpu::Atomic::AddNoRet(&target_in_each_cell[bins_1_ptr[ip]], w1[ip]);
 
                     // Cumulate total product weight in this cell
-                    const amrex::ParticleReal product = w1[ip] * (-std::expm1(-nu_izn*dt));
+                    const amrex::ParticleReal product = w1[ip] * (-std::expm1(-nu*dt));
                     amrex::Gpu::Atomic::AddNoRet(&product_in_each_cell[bins_1_ptr[ip]], product);
 
                 }
@@ -322,7 +322,7 @@ PulsedDecay::doCollisions (amrex::Real cur_time, amrex::Real dt, MultiParticleCo
                         const index_type ip_A = old_npA + new_idx;
                         const index_type ip_B = old_npB + new_idx;
 
-                        // Choose a parent only from the eligible cell pool (nu_izn > 0)
+                        // Choose a parent only from the eligible cell pool (nu > 0)
                         auto k = static_cast<index_type>(amrex::Random(engine) * amrex::Real(num_in_cell));
 
                         // Probe until an eligible, valid particle is found (the cell pool has one).
