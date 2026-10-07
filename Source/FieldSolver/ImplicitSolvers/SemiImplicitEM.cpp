@@ -78,7 +78,8 @@ void SemiImplicitEM::PrintParameters () const
 
 void SemiImplicitEM::SetupStep (amrex::Real start_time)
 {
-    // Save up and xp at the start of the time step
+    // Save particle position and velocity at the start of the time step
+    // Copy x to x_n etc
     m_WarpX->SaveParticlesAtImplicitStepStart();
 
     // Particles at t_{n}
@@ -112,8 +113,8 @@ int SemiImplicitEM::DoSolve (const amrex::Real start_time,
                              const int a_step,
                              const bool verbose_step)
 {
-    // Solve nonlinear system for Eg at t_{n+1/2}
     // Particles will be advanced to t_{n+1/2}
+    // Note that initial guess for m_E is that from previous solve: E^{n-1+theta}
     m_nlsolver->Solve(m_E, m_Eold, start_time, m_dt, a_step, verbose_step);
     // Particles at t_{n+1/2}
     // m_E is at t_{n+1/2}
@@ -149,10 +150,13 @@ void SemiImplicitEM::FinishStep (const amrex::Real start_time, const int a_step)
 
     // Efield_fp is at t_{n+1/2}
 
-    const amrex::Real end_time = start_time + m_dt;
+    const amrex::Real new_time = start_time + m_dt;
 
-    // Advance particles from time n+1/2 to time n+1
-    FinishImplicitParticleUpdate(end_time, a_step);
+    // Advance particles from t_{n+1/2} to t_{n+1}
+    FinishImplicitParticleUpdate(new_time, a_step);
+    if (m_nsubsteps > 1) {
+        m_WarpX->HandleParticlesAtBoundaries(a_step, new_time, 0);
+    }
 
     // Particles at t_{n+1}
 
@@ -160,7 +164,7 @@ void SemiImplicitEM::FinishStep (const amrex::Real start_time, const int a_step)
     // as the initial guess for the next nonlinear solve. E_old retains E^n
     // for checkpointing alongside Efield_fp at E^{n+1}.
     // E^{n+1} = 2*E^{n+1/2} - E^n
-    m_WarpX->FinishElectricFieldAndApplyBCs(m_theta, end_time);
+    m_WarpX->FinishElectricFieldAndApplyBCs(m_theta, new_time);
 
     // Efield_fp is at t_{n+1}
     // m_E is at t_{n+1/2}

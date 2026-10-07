@@ -9,8 +9,6 @@
 #include "Diagnostics/ReducedDiags/MultiReducedDiags.H"
 #include "WarpX.H"
 
-#include <ablastr/warn_manager/WarnManager.H>
-
 using warpx::fields::FieldType;
 using namespace amrex::literals;
 
@@ -153,6 +151,10 @@ void ThetaImplicitEM::FinishStep (const amrex::Real start_time, const int a_step
 
     // Advance particles from t_{n+1/2} to t_{n+1}
     FinishImplicitParticleUpdate(new_time, a_step);
+    if (m_nsubsteps > 1) {
+        m_WarpX->HandleParticlesAtBoundaries(a_step, new_time, 0);
+    }
+
     // Particles at t_{n+1}
 
     // Advance WarpX owned E and B from t_{n+theta} to t_{n+1}
@@ -164,8 +166,6 @@ void ThetaImplicitEM::FinishStep (const amrex::Real start_time, const int a_step
     // m_E_save is at t_{n-1/2}
     // E_old is at t_{n}
     // m_Eold is at t_{n}
-
-    m_WarpX->HandleParticlesAtBoundaries(-1, new_time, 0);
 }
 
 void ThetaImplicitEM::ComputeRHS ( WarpXSolverVec&  a_RHS,
