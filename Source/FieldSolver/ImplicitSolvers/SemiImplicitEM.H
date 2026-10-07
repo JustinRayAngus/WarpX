@@ -57,8 +57,9 @@ public:
 
     void PrintParameters () const override;
 
-    int OneStep (amrex::Real  start_time,
-                 amrex::Real  a_dt,
+    void SetupStep (amrex::Real start_time) override;
+
+    int DoSolve (amrex::Real  start_time,
                  int          a_step,
                  bool verbose_step) override;
 
@@ -68,6 +69,10 @@ public:
                      int             a_nl_iter,
                      bool            a_from_jacobian,
                      const bool      update_pc = true) override;
+
+    void ResetStep (amrex::Real start_time) override;
+
+    void FinishStep (amrex::Real start_time, int a_step) override;
 
     // This parameter is used for the time-step fraction in the PC for implicit
     // treatment of light waves in the curl-curl MLMG solver.
@@ -86,6 +91,14 @@ private:
      * diagnostics, and checkpointing alongside Efield_fp at E^{n+1}.
      */
     WarpXSolverVec m_E, m_Eold;
+
+    /**
+     * \brief m_E_save saves the value in m_E before the nonlinear solve (at n - 1/2).
+     * This is needed when substepping since the nonlinear solver updates m_E
+     * in place. If the solver fails, the data in m_E is corrupted. The saved value in m_E_save
+     * is used to reconstitute m_E for the initial value of the new substep.
+     */
+    WarpXSolverVec m_E_save;
 
 };
 
