@@ -91,6 +91,14 @@ private:
      */
     WarpXSolverVec m_E, m_Eold;
 
+    /**
+     * \brief m_E_save saves the value in m_E before the nonlinear solve (at n - 1/2).
+     * This is needed when substepping since the nonlinear solver updates m_E
+     * in place. If the solver fails, the data in m_E is corrupted. The saved value in m_E_save
+     * is used to reconstitute m_E for the initial value of the new substep.
+     */
+    WarpXSolverVec m_E_save;
+
 };
 
 #endif

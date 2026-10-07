@@ -215,6 +215,11 @@ int ImplicitSolver::OneStep (const amrex::Real  start_time,
         SetupStep(substep_start_time);
 
         while (true) {
+
+            if (m_nsubsteps > 1 and verbose_step) {
+                amrex::Print() << "ImplicitSolver::OneStep: starting substep " << isubstep+1 << " of " << m_nsubsteps << "\n";
+            }
+
             // Solve nonlinear system at t_{n+theta}
             exit_status = DoSolve(substep_start_time, a_step, verbose_step);
 
@@ -225,9 +230,9 @@ int ImplicitSolver::OneStep (const amrex::Real  start_time,
             } else {
                 // Try again, dividing the step size in half.
                 // This will restart from the end of the last substep that succeeded.
-                ablastr::warn_manager::WMRecordWarning("ThetaImplicitEM",
+                ablastr::warn_manager::WMRecordWarning("ImplicitSolver",
                     "Notice: solver failed at step " + std::to_string(a_step+1) +
-                    "during subcycling step " + std::to_string(isubstep+1) +
+                    " during subcycling step " + std::to_string(isubstep+1) +
                     " of " + std::to_string(m_nsubsteps) +
                     " substeps, with exit status " + std::to_string(exit_status) + ".",
                     ablastr::warn_manager::WarnPriority::low);

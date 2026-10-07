@@ -6,17 +6,21 @@
 #
 # This is a script that analyses the simulation results from
 # the script `inputs_test_1d_theta_implicit_planar_pinch`.
+# and script `inputs_test_1d_theta_implicit_planar_pinch_substeps`.
 # and script `inputs_test_2d_theta_implicit_planar_pinch`.
 # and script `inputs_test_rcylinder_theta_implicit_dynamic_pinch`.
 # and script `inputs_test_rz_theta_implicit_dynamic_pinch`.
 # This simulates a planar pinch using the theta-implicit solver with
 # the curl curl PC including the diagonal response from mass matrices.
 
+import os
 import sys
 
 import numpy as np
 import yt
 from scipy.constants import e, epsilon_0
+
+test_name = os.path.split(os.getcwd())[1]
 
 newton_solver = np.loadtxt("diags/reduced_files/newton_solver.txt", skiprows=1)
 num_steps = newton_solver[-1, 0]
@@ -64,7 +68,11 @@ print(f"gmres iters tolerance: {gmres_iters_tol}")
 assert total_gmres_iters / total_newton_iters <= gmres_iters_tol
 
 # check that the number of newton iterations is below tolerance
-newton_iters_tol = 6.0
+if test_name.endswith("substeps"):
+    # The newton_iters_tol includes the iterations for all of the substeps
+    newton_iters_tol = 9.0
+else:
+    newton_iters_tol = 6.0
 print(f"newton iters per time step: {total_newton_iters / num_steps}")
 print(f"newton iters tolerance: {newton_iters_tol}")
 assert total_newton_iters / num_steps <= newton_iters_tol
