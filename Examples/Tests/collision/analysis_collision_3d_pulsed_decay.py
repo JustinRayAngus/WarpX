@@ -43,6 +43,19 @@ ele_weight = particle_number_diag[:, 7]
 ion_weight = particle_number_diag[:, 8]
 neu_weight = particle_number_diag[:, 9]
 
+# check that the total weight of the neutral and ion species is conserved
+neutral_ion_weight = neu_weight + ion_weight
+neutral_ion_weight_initial = neutral_ion_weight[0]
+neutral_ion_weight_rtol = 1.0e-15
+neutral_ion_weight_max_rel_change = np.max(
+    np.abs(neutral_ion_weight - neutral_ion_weight_initial)
+) / np.abs(neutral_ion_weight_initial)
+print(
+    "max relative change in neutral + ion weight = "
+    f"{neutral_ion_weight_max_rel_change}"
+)
+assert neutral_ion_weight_max_rel_change < neutral_ion_weight_rtol
+
 # check that the total weight of the product ions matches the 0D model
 ion_weight_end = ion_weight[-1]
 ion_weight_rtol = 0.5  # half a percent
