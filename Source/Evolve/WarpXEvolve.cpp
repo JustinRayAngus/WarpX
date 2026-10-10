@@ -588,9 +588,9 @@ WarpX::OneStep_nosub (
 
     // Synchronize J and rho:
     // filter (if used), exchange guard cells, interpolate across MR levels
-    // and apply boundary conditions
     SyncCurrentAndRho();
     FinalizeRho();
+    FinalizeJ();
 
     // At this point, J is up-to-date inside the domain, and E and B are
     // up-to-date including enough guard cells for first step of the field
@@ -840,7 +840,6 @@ void WarpX::HandleParticlesAtBoundaries (int step, amrex::Real cur_time, int num
 
 void WarpX::SyncCurrentAndRho ()
 {
-    using ablastr::fields::Direction;
     using warpx::fields::FieldType;
 
     if (electromagnetic_solver_id == ElectromagneticSolverAlgo::PSATD)
@@ -885,23 +884,36 @@ void WarpX::SyncCurrentAndRho ()
         SyncRho();
     }
 
-    // Reflect charge and current density over PEC boundaries, if needed.
+}
+
+void WarpX::FinalizeJ ()
+{
+    using ablastr::fields::Direction;
+    using warpx::fields::FieldType;
+
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        ApplyJfieldBoundary(lev,
-            m_fields.get(FieldType::current_fp, Direction{0}, lev),
-            m_fields.get(FieldType::current_fp, Direction{1}, lev),
-            m_fields.get(FieldType::current_fp, Direction{2}, lev),
-            PatchType::fine);
-        if (lev > 0) {
-            ApplyJfieldBoundary(lev,
+        if (m_fields.has_vector(FieldType::current_fp, lev)) {
+            FinalizeJOnLevel(lev,
+                m_fields.get(FieldType::current_fp, Direction{0}, lev),
+                m_fields.get(FieldType::current_fp, Direction{1}, lev),
+                m_fields.get(FieldType::current_fp, Direction{2}, lev),
+                PatchType::fine);
+        }
+        if (lev > 0 && m_fields.has_vector(FieldType::current_cp, lev)) {
+            FinalizeJOnLevel(lev,
                 m_fields.get(FieldType::current_cp, Direction{0}, lev),
                 m_fields.get(FieldType::current_cp, Direction{1}, lev),
                 m_fields.get(FieldType::current_cp, Direction{2}, lev),
                 PatchType::coarse);
         }
     }
+}
 
+void WarpX::FinalizeJOnLevel (int lev, amrex::MultiFab* Jx, amrex::MultiFab* Jy,
+                              amrex::MultiFab* Jz, PatchType patch_type)
+{
+    ApplyJfieldBoundary(lev, Jx, Jy, Jz, patch_type);
 }
 
 void WarpX::FinalizeRho ()
