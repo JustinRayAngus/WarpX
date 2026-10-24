@@ -10,7 +10,6 @@
 #include "LinearSolverLibrary.H"
 #include "NonlinearSolver.H"
 #include "PreconditionerTypes.H"
-#include "Utils/TextMsg.H"
 
 #include <AMReX_Enum.H>
 #include <AMReX_ParmParse.H>
