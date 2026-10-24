@@ -822,22 +822,22 @@ void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
                                    fpzx, fpzy, fpzz);
 
             doDirectSigmaDepositionKernel<depos_order,full_mass_matrices>(
-                                                        xp_nph, yp_nph, zp_nph,
-                                                        fpxx, fpxy, fpxz,
-                                                        fpyx, fpyy, fpyz,
-                                                        fpzx, fpzy, fpzz,
-                                                        Sxx_arr, Sxy_arr, Sxz_arr,
-                                                        Syx_arr, Syy_arr, Syz_arr,
-                                                        Szx_arr, Szy_arr, Szz_arr,
-                                                        ncomp_xx[0], jx_type, jy_type, jz_type,
-                                                        dinv, xyzmin, lo);
+                                          xp_nph, yp_nph, zp_nph,
+                                          fpxx, fpxy, fpxz,
+                                          fpyx, fpyy, fpyz,
+                                          fpzx, fpzy, fpzz,
+                                          Sxx_arr, Sxy_arr, Sxz_arr,
+                                          Syx_arr, Syy_arr, Syz_arr,
+                                          Szx_arr, Szy_arr, Szz_arr,
+                                          ncomp_xx[0], jx_type, jy_type, jz_type,
+                                          dinv, xyzmin, lo);
 
         }
     );
 }
 
 /**
- * \brief Kernel for the Villasenor deposition of mass matrices S for thread thread_num
+ * \brief Kernel for the Villasenor deposition of mass matrices Sij for thread thread_num
  * \tparam depos_order             Deposition order
  * \tparam full_mass_matrices      Whether to deposit the full mass matrices
  * \tparam max_supported_grid_crossings Maximum number of supported grid crossings in each direction
@@ -865,41 +865,41 @@ void doDirectSigmaDeposition (const GetParticlePosition<PIdx>& GetPosition,
 template <int depos_order, bool full_mass_matrices, int max_supported_grid_crossings>
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void doVillasenorSigmaDepositionKernel ([[maybe_unused]] const amrex::ParticleReal xp_old,
-                                            [[maybe_unused]] const amrex::ParticleReal yp_old,
-                                            [[maybe_unused]] const amrex::ParticleReal zp_old,
-                                            [[maybe_unused]] const amrex::ParticleReal xp_new,
-                                            [[maybe_unused]] const amrex::ParticleReal yp_new,
-                                            [[maybe_unused]] const amrex::ParticleReal zp_new,
-                                            const amrex::ParticleReal fpxx,
-                                            [[maybe_unused]] const amrex::ParticleReal fpxy,
-                                            [[maybe_unused]] const amrex::ParticleReal fpxz,
-                                            [[maybe_unused]] const amrex::ParticleReal fpyx,
-                                            const amrex::ParticleReal fpyy,
-                                            [[maybe_unused]] const amrex::ParticleReal fpyz,
-                                            [[maybe_unused]] const amrex::ParticleReal fpzx,
-                                            [[maybe_unused]] const amrex::ParticleReal fpzy,
-                                            const amrex::ParticleReal fpzz,
-                                            [[maybe_unused]] int max_grid_crossings,
-                                            [[maybe_unused]] int* error_count_x,
-                                            [[maybe_unused]] int* error_count_y,
-                                            [[maybe_unused]] int* error_count_z,
-                                            amrex::Array4<amrex::Real> const& Sxx_arr,
-                                            [[maybe_unused]] amrex::Array4<amrex::Real> const& Sxy_arr,
-                                            [[maybe_unused]] amrex::Array4<amrex::Real> const& Sxz_arr,
-                                            [[maybe_unused]] amrex::Array4<amrex::Real> const& Syx_arr,
-                                            amrex::Array4<amrex::Real> const& Syy_arr,
-                                            [[maybe_unused]] amrex::Array4<amrex::Real> const& Syz_arr,
-                                            [[maybe_unused]] amrex::Array4<amrex::Real> const& Szx_arr,
-                                            [[maybe_unused]] amrex::Array4<amrex::Real> const& Szy_arr,
-                                            amrex::Array4<amrex::Real> const& Szz_arr,
-                                            [[maybe_unused]] const amrex::IntVect& ncomp_xx,
-                                            [[maybe_unused]] const amrex::IntVect& ncomp_yy,
-                                            [[maybe_unused]] const amrex::IntVect& ncomp_zz,
-                                            const amrex::XDim3& dinv,
-                                            const amrex::XDim3& xyzmin,
-                                            const amrex::GpuArray<amrex::GpuArray<double,2>, AMREX_SPACEDIM> & domain_double,
-                                            const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
-                                            const amrex::Dim3 lo)
+                                        [[maybe_unused]] const amrex::ParticleReal yp_old,
+                                        [[maybe_unused]] const amrex::ParticleReal zp_old,
+                                        [[maybe_unused]] const amrex::ParticleReal xp_new,
+                                        [[maybe_unused]] const amrex::ParticleReal yp_new,
+                                        [[maybe_unused]] const amrex::ParticleReal zp_new,
+                                        const amrex::ParticleReal fpxx,
+                                        [[maybe_unused]] const amrex::ParticleReal fpxy,
+                                        [[maybe_unused]] const amrex::ParticleReal fpxz,
+                                        [[maybe_unused]] const amrex::ParticleReal fpyx,
+                                        const amrex::ParticleReal fpyy,
+                                        [[maybe_unused]] const amrex::ParticleReal fpyz,
+                                        [[maybe_unused]] const amrex::ParticleReal fpzx,
+                                        [[maybe_unused]] const amrex::ParticleReal fpzy,
+                                        const amrex::ParticleReal fpzz,
+                                        [[maybe_unused]] int max_grid_crossings,
+                                        [[maybe_unused]] int* error_count_x,
+                                        [[maybe_unused]] int* error_count_y,
+                                        [[maybe_unused]] int* error_count_z,
+                                        amrex::Array4<amrex::Real> const& Sxx_arr,
+                                        [[maybe_unused]] amrex::Array4<amrex::Real> const& Sxy_arr,
+                                        [[maybe_unused]] amrex::Array4<amrex::Real> const& Sxz_arr,
+                                        [[maybe_unused]] amrex::Array4<amrex::Real> const& Syx_arr,
+                                        amrex::Array4<amrex::Real> const& Syy_arr,
+                                        [[maybe_unused]] amrex::Array4<amrex::Real> const& Syz_arr,
+                                        [[maybe_unused]] amrex::Array4<amrex::Real> const& Szx_arr,
+                                        [[maybe_unused]] amrex::Array4<amrex::Real> const& Szy_arr,
+                                        amrex::Array4<amrex::Real> const& Szz_arr,
+                                        [[maybe_unused]] const amrex::IntVect& ncomp_xx,
+                                        [[maybe_unused]] const amrex::IntVect& ncomp_yy,
+                                        [[maybe_unused]] const amrex::IntVect& ncomp_zz,
+                                        const amrex::XDim3& dinv,
+                                        const amrex::XDim3& xyzmin,
+                                        const amrex::GpuArray<amrex::GpuArray<double,2>, AMREX_SPACEDIM> & domain_double,
+                                        const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
+                                        const amrex::Dim3 lo)
 {
 
     using namespace amrex::literals;
