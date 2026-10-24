@@ -1072,7 +1072,6 @@ void ImplicitSolver::InitializeImplicitOptions ()
     m_implicit_options.particle_tolerance = m_particle_tolerance;
     m_implicit_options.print_unconverged_particle_details = m_print_unconverged_particle_details;
     m_implicit_options.use_mass_matrices_jacobian = m_use_mass_matrices_jacobian;
-    m_implicit_options.use_mass_matrices_pc = m_use_mass_matrices_pc;
     m_implicit_options.ncomp_xx = m_ncomp_xx;
     m_implicit_options.ncomp_yy = m_ncomp_yy;
     m_implicit_options.ncomp_zz = m_ncomp_zz;
