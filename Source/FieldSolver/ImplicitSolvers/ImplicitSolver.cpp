@@ -1126,8 +1126,6 @@ void ImplicitSolver::PreRHSOp (const amrex::Real a_cur_time,
     // Copy stable options, then set values specific to this RHS evaluation.
     ImplicitOptions options = m_implicit_options;
     options.linear_stage_of_jfnk = a_from_jacobian;
-
-    options.use_mass_matrices_jacobian = m_use_mass_matrices_jacobian;
     options.evolve_suborbit_particles_only = false;
 
     if (a_nl_iter == 0 && !a_from_jacobian &&

@@ -115,7 +115,7 @@ public:
     /**
      * Prepare for the linear solve. This includes depositing the mass matrices and updating the PC.
      */
-    void PreLinearSolve (bool update_pc = true);
+    void PreLinearSolve (bool update_pc);
 
     [[nodiscard]] int numAMRLevels () const { return m_num_amr_levels; }
 

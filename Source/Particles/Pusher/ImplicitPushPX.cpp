@@ -1046,46 +1046,43 @@ PhysicalParticleContainer::ImplicitPushXPSubOrbits (WarpXParIter& pti,
 
                 const amrex::ParticleReal gaminv = GetImplicitGammaInverse(uxp_n, uyp_n, uzp_n, ux[ip], uy[ip], uz[ip]);
 
-                {
+                const amrex::ParticleReal wq_n = wq/nsuborbits[ip];
 
-                    const amrex::ParticleReal wq_n = wq/nsuborbits[ip];
-
-                    // Only CurrentDepositionAlgo::Villasenor is supported
-                    // The ignore_unused is needed so that the variables are not first-captured
-                    // in a constexpr-if context.
-                    amrex::ignore_unused(Jx_arr, Jy_arr, Jz_arr, invvol);
-                    if constexpr (depos_order_control == order_one) {
-                        //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        VillasenorDepositionShapeNKernel<1>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
-                                                            ux[ip], uy[ip], uz[ip], gaminv,
-                                                            Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
-                                                            lo, invvol, n_rz_azimuthal_modes);
-                    }
-                    else if constexpr (depos_order_control == order_two) {
-                        //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        VillasenorDepositionShapeNKernel<2>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
-                                                            ux[ip], uy[ip], uz[ip], gaminv,
-                                                            Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
-                                                            lo, invvol, n_rz_azimuthal_modes);
-                    }
-                    else if constexpr (depos_order_control == order_three) {
-                        //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        VillasenorDepositionShapeNKernel<3>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
-                                                            ux[ip], uy[ip], uz[ip], gaminv,
-                                                            Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
-                                                            lo, invvol, n_rz_azimuthal_modes);
-                    }
-                    else if constexpr (depos_order_control == order_four) {
-                        //NOLINTNEXTLINE(readability-suspicious-call-argument)
-                        VillasenorDepositionShapeNKernel<4>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
-                                                            ux[ip], uy[ip], uz[ip], gaminv,
-                                                            Jx_arr, Jy_arr, Jz_arr,
-                                                            dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
-                                                            lo, invvol, n_rz_azimuthal_modes);
-                    }
+                // Only CurrentDepositionAlgo::Villasenor is supported
+                // The ignore_unused is needed so that the variables are not first-captured
+                // in a constexpr-if context.
+                amrex::ignore_unused(Jx_arr, Jy_arr, Jz_arr, invvol);
+                if constexpr (depos_order_control == order_one) {
+                    //NOLINTNEXTLINE(readability-suspicious-call-argument)
+                    VillasenorDepositionShapeNKernel<1>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
+                                                        ux[ip], uy[ip], uz[ip], gaminv,
+                                                        Jx_arr, Jy_arr, Jz_arr,
+                                                        dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                        lo, invvol, n_rz_azimuthal_modes);
+                }
+                else if constexpr (depos_order_control == order_two) {
+                    //NOLINTNEXTLINE(readability-suspicious-call-argument)
+                    VillasenorDepositionShapeNKernel<2>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
+                                                        ux[ip], uy[ip], uz[ip], gaminv,
+                                                        Jx_arr, Jy_arr, Jz_arr,
+                                                        dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                        lo, invvol, n_rz_azimuthal_modes);
+                }
+                else if constexpr (depos_order_control == order_three) {
+                    //NOLINTNEXTLINE(readability-suspicious-call-argument)
+                    VillasenorDepositionShapeNKernel<3>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
+                                                        ux[ip], uy[ip], uz[ip], gaminv,
+                                                        Jx_arr, Jy_arr, Jz_arr,
+                                                        dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                        lo, invvol, n_rz_azimuthal_modes);
+                }
+                else if constexpr (depos_order_control == order_four) {
+                    //NOLINTNEXTLINE(readability-suspicious-call-argument)
+                    VillasenorDepositionShapeNKernel<4>(xp_n, yp_n, zp_n, xp_np1, yp_np1, zp_np1, wq_n,
+                                                        ux[ip], uy[ip], uz[ip], gaminv,
+                                                        Jx_arr, Jy_arr, Jz_arr,
+                                                        dt_suborbit, dinv, xyzmin, domain_double, do_cropping,
+                                                        lo, invvol, n_rz_azimuthal_modes);
                 }
             }
 
