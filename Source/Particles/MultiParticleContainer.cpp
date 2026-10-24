@@ -528,9 +528,6 @@ MultiParticleContainer::DepositMassMatrices (ablastr::fields::MultiFabRegister& 
         fields.get(FieldType::MassMatrices_X, Direction{n}, lev)->setVal(0.0);
         fields.get(FieldType::MassMatrices_Y, Direction{n}, lev)->setVal(0.0);
         fields.get(FieldType::MassMatrices_Z, Direction{n}, lev)->setVal(0.0);
-        if (implicit_options.use_mass_matrices_pc) {
-            fields.get(FieldType::MassMatrices_PC, Direction{n}, lev)->setVal(0.0);
-        }
     }
 
     for (auto& pc : allcontainers) {

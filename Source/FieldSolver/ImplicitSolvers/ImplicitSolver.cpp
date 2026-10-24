@@ -1084,10 +1084,7 @@ void ImplicitSolver::PreLinearSolve (const bool update_pc)
 
     // The deposit is skipped when the mass matrices are used only for a PC that is not updated
     if (m_use_mass_matrices_jacobian || (m_use_mass_matrices_pc && update_pc)) {
-        // Preserve the PC coefficients when only the Jacobian matrices are being rebuilt.
-        ImplicitOptions options = m_implicit_options;
-        options.use_mass_matrices_pc = m_use_mass_matrices_pc && update_pc;
-        m_WarpX->DepositMassMatrices(m_dt, options);
+        m_WarpX->DepositMassMatrices(m_dt, m_implicit_options);
         FinishMassMatricesDeposition();
     }
 
