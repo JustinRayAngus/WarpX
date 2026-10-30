@@ -15,6 +15,8 @@ struct ImplicitOptions
     amrex::IntVect ncomp_xx = amrex::IntVect{0};
     amrex::IntVect ncomp_yy = amrex::IntVect{0};
     amrex::IntVect ncomp_zz = amrex::IntVect{0};
+    // Only used to deposit the mass matrices and set by ImplicitSolver::InitializeMassMatrices
+    int particle_shape;
 };
 
 #endif
