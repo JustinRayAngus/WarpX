@@ -970,16 +970,19 @@ WarpX::EvolveB (int lev, amrex::Real a_dt, SubcyclingHalf subcycling_half, amrex
 void
 WarpX::EvolveB (int lev, PatchType patch_type, amrex::Real a_dt, SubcyclingHalf subcycling_half, amrex::Real start_time)
 {
+    const auto Efield = m_fields.get_alldirs(patch_type == PatchType::fine ?
+        FieldType::Efield_cov_fp : FieldType::Efield_cp, lev);
+
     // Evolve B field in regular cells
     if (patch_type == PatchType::fine) {
         m_fdtd_solver_fp[lev]->EvolveB( m_fields,
                                         lev,
-                                        patch_type,
+                                        patch_type, Efield,
                                         m_flag_info_face[lev], m_borrowing[lev], a_dt );
     } else {
         m_fdtd_solver_cp[lev]->EvolveB( m_fields,
                                         lev,
-                                        patch_type,
+                                        patch_type, Efield,
                                         m_flag_info_face[lev], m_borrowing[lev], a_dt );
     }
 

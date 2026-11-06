@@ -581,7 +581,7 @@ WarpX::UpdateAuxiliaryDataStagToNodal ()
     }
 #endif
     ablastr::fields::MultiLevelVectorField const& Bfield_fp = m_fields.get_mr_levels_alldirs(FieldType::Bfield_fp, finest_level);
-    ablastr::fields::MultiLevelVectorField const& Efield_fp = m_fields.get_mr_levels_alldirs(FieldType::Efield_fp, finest_level);
+    ablastr::fields::MultiLevelVectorField const& Efield_cov_fp = m_fields.get_mr_levels_alldirs(FieldType::Efield_cov_fp, finest_level);
     ablastr::fields::MultiLevelVectorField const& Efield_aux = m_fields.get_mr_levels_alldirs(FieldType::Efield_aux, finest_level);
     ablastr::fields::MultiLevelVectorField const& Bfield_aux = m_fields.get_mr_levels_alldirs(FieldType::Bfield_aux, finest_level);
 
@@ -592,7 +592,7 @@ WarpX::UpdateAuxiliaryDataStagToNodal ()
     ablastr::fields::MultiLevelVectorField const & Emf =
         WarpX::fft_do_time_averaging ?
         m_fields.get_mr_levels_alldirs(FieldType::Efield_avg_fp, finest_level) :
-        Efield_fp;
+        Efield_cov_fp;
 
     // Level 0 only needs native-to-nodal centering, optionally from time-averaged fields.
     InterpLevelZeroStagToNodal(
@@ -622,7 +622,7 @@ WarpX::UpdateAuxiliaryDataStagToNodal ()
             FieldType::Bfield_cax, lev, cnba, dm, cperiod, refinement_ratio, ng_src,
             electromagnetic_solver_id);
         UpdateAuxiliaryDataStagToNodalField(
-            m_fields, Efield_fp, Efield_aux, FieldType::Efield_fp, FieldType::Efield_cp,
+            m_fields, Efield_cov_fp, Efield_aux, FieldType::Efield_cov_fp, FieldType::Efield_cp,
             FieldType::Efield_cax, lev, cnba, dm, cperiod, refinement_ratio, ng_src,
             electromagnetic_solver_id);
     }
@@ -634,14 +634,15 @@ WarpX::UpdateAuxiliaryDataSameType ()
     // Update aux fields, including guard cells, up to ng_FieldGather.
     const amrex::IntVect& ng_src = guard_cells.ng_FieldGather;
 
-    ablastr::fields::MultiLevelVectorField const Efield_fp = m_fields.get_mr_levels_alldirs(FieldType::Efield_fp, finest_level);
+    ablastr::fields::MultiLevelVectorField const Efield_cov_fp = m_fields.get_mr_levels_alldirs(FieldType::Efield_cov_fp, finest_level);
     ablastr::fields::MultiLevelVectorField const Bfield_fp = m_fields.get_mr_levels_alldirs(FieldType::Bfield_fp, finest_level);
     ablastr::fields::MultiLevelVectorField const Efield_aux = m_fields.get_mr_levels_alldirs(FieldType::Efield_aux, finest_level);
     ablastr::fields::MultiLevelVectorField const Bfield_aux = m_fields.get_mr_levels_alldirs(FieldType::Bfield_aux, finest_level);
 
-    // Level 0 copies fine to aux. In some configurations aux and fine fields are aliases,
-    // and MultiFab::Copy detects that and does nothing.
-    CopyLevelZeroAuxiliaryData(m_fields, Efield_aux, Efield_fp, FieldType::Efield_avg_fp, ng_src);
+    // Level 0 copies covariant E to aux. For identity mappings these can alias,
+    // while nontrivial mappings require aux storage independent of physical E.
+    // MultiFab::Copy detects aliases and does nothing.
+    CopyLevelZeroAuxiliaryData(m_fields, Efield_aux, Efield_cov_fp, FieldType::Efield_avg_fp, ng_src);
     CopyLevelZeroAuxiliaryData(m_fields, Bfield_aux, Bfield_fp, FieldType::Bfield_avg_fp, ng_src);
 
     // Refined levels add the coarse-patch correction through the same helper for B and E.
@@ -654,7 +655,7 @@ WarpX::UpdateAuxiliaryDataSameType ()
             m_fields, Bfield_fp, Bfield_aux, FieldType::Bfield_cp, FieldType::Bfield_cax,
             lev, ng_src, crse_period, refinement_ratio, electromagnetic_solver_id);
         UpdateAuxiliaryDataSameTypeField(
-            m_fields, Efield_fp, Efield_aux, FieldType::Efield_cp, FieldType::Efield_cax,
+            m_fields, Efield_cov_fp, Efield_aux, FieldType::Efield_cp, FieldType::Efield_cax,
             lev, ng_src, crse_period, refinement_ratio, electromagnetic_solver_id);
     }
 }

@@ -612,6 +612,20 @@ public:
                               amrex::MultiFab* Jy, amrex::MultiFab* Jz,
                               PatchType patch_type);
 
+    /**
+     * Map physical E into the registered covariant E before applying field BCs.
+     * Existing geometries register covariant E as an alias of physical E, so the
+     * mapping is an identity with no copies. A nontrivial geometry will allocate
+     * separate covariant storage and implement its metric conversion here.
+     */
+    void ConvertPhysicalEToCovariant (int /*lev*/, PatchType /*patch_type*/) {}
+
+    /**
+     * Map the BC-updated covariant E back into physical E.
+     * No copies are needed for existing geometries because the fields alias.
+     */
+    void ConvertCovariantEToPhysical (int /*lev*/, PatchType /*patch_type*/) {}
+
     void ApplyEfieldBoundary (int lev, PatchType patch_type, amrex::Real cur_time);
     void ApplyBfieldBoundary (int lev, PatchType patch_type, SubcyclingHalf subcycling_half, amrex::Real cur_time);
 
