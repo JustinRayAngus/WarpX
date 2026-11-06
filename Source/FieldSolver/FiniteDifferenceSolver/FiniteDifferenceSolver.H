@@ -54,9 +54,11 @@ class FiniteDifferenceSolver
             std::array<amrex::Real,3> cell_size,
             ablastr::utils::enums::GridType grid_type );
 
+        // Efield is the prepared working (covariant) representation.
         void EvolveB ( ablastr::fields::MultiFabRegister& fields,
                        int lev,
                        PatchType patch_type,
+                       ablastr::fields::VectorField const& Efield,
                        std::array< std::unique_ptr<amrex::iMultiFab>, 3 >& flag_info_cell,
                        std::array< std::unique_ptr<amrex::LayoutData<FaceInfoBox> >, 3 >& borrowing,
                        amrex::Real dt );

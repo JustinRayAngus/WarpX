@@ -52,21 +52,20 @@ void FiniteDifferenceSolver::EvolveB (
     ablastr::fields::MultiFabRegister& fields,
     int lev,
     PatchType patch_type,
+    ablastr::fields::VectorField const& Efield,
     [[maybe_unused]] std::array< std::unique_ptr<amrex::iMultiFab>, 3 >& flag_info_cell,
     [[maybe_unused]] std::array< std::unique_ptr<amrex::LayoutData<FaceInfoBox> >, 3 >& borrowing,
     [[maybe_unused]] amrex::Real const dt )
 {
 
 #if defined(WARPX_DIM_RSPHERE)
-    amrex::ignore_unused(fields, lev, patch_type, flag_info_cell, borrowing, dt);
+    amrex::ignore_unused(fields, lev, patch_type, Efield, flag_info_cell, borrowing, dt);
 #else
     using ablastr::fields::Direction;
     using warpx::fields::FieldType;
 
     const ablastr::fields::VectorField Bfield = patch_type == PatchType::fine ?
         fields.get_alldirs(FieldType::Bfield_fp, lev) : fields.get_alldirs(FieldType::Bfield_cp, lev);
-    const ablastr::fields::VectorField Efield = patch_type == PatchType::fine ?
-        fields.get_alldirs(FieldType::Efield_fp, lev) : fields.get_alldirs(FieldType::Efield_cp, lev);
 
     // Select algorithm (The choice of algorithm is a runtime option,
     // but we compile code for each algorithm, using templates)

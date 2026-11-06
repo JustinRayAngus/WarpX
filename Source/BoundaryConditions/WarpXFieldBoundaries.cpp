@@ -50,12 +50,14 @@ namespace
 
 void WarpX::ApplyEfieldBoundary(const int lev, PatchType patch_type, amrex::Real time)
 {
-    using ablastr::fields::Direction;
+    ConvertPhysicalEToCovariant(lev, patch_type);
+    const auto Efield = m_fields.get_alldirs(patch_type == PatchType::fine ?
+        FieldType::Efield_cov_fp : FieldType::Efield_cp, lev);
 
     if (::isAnyBoundary<FieldBoundaryType::PEC>(field_boundary_lo, field_boundary_hi)) {
         if (patch_type == PatchType::fine) {
             PEC::ApplyPECtoEfield(
-                    m_fields.get_alldirs(FieldType::Efield_fp, lev),
+                    Efield,
                     field_boundary_lo, field_boundary_hi, FieldBoundaryType::PEC,
                     get_ng_fieldgather(), Geom(lev),
                     lev, patch_type, ref_ratio);
@@ -71,7 +73,7 @@ void WarpX::ApplyEfieldBoundary(const int lev, PatchType patch_type, amrex::Real
             }
         } else {
             PEC::ApplyPECtoEfield(
-                    m_fields.get_alldirs(FieldType::Efield_cp, lev),
+                    Efield,
                     field_boundary_lo, field_boundary_hi, FieldBoundaryType::PEC,
                     get_ng_fieldgather(), Geom(lev),
                     lev, patch_type, ref_ratio);
@@ -91,7 +93,7 @@ void WarpX::ApplyEfieldBoundary(const int lev, PatchType patch_type, amrex::Real
     if (::isAnyBoundary<FieldBoundaryType::PMC>(field_boundary_lo, field_boundary_hi)) {
         if (patch_type == PatchType::fine) {
             PEC::ApplyPECtoBfield(
-                    m_fields.get_alldirs(FieldType::Efield_fp, lev),
+                    Efield,
                     field_boundary_lo, field_boundary_hi, FieldBoundaryType::PMC,
                     get_ng_fieldgather(), Geom(lev),
                     lev, patch_type, ref_ratio);
@@ -107,7 +109,7 @@ void WarpX::ApplyEfieldBoundary(const int lev, PatchType patch_type, amrex::Real
             }
         } else {
             PEC::ApplyPECtoBfield(
-                    m_fields.get_alldirs(FieldType::Efield_cp, lev),
+                    Efield,
                     field_boundary_lo, field_boundary_hi, FieldBoundaryType::PMC,
                     get_ng_fieldgather(), Geom(lev),
                     lev, patch_type, ref_ratio);
@@ -127,7 +129,7 @@ void WarpX::ApplyEfieldBoundary(const int lev, PatchType patch_type, amrex::Real
     if (::isAnyBoundary<FieldBoundaryType::PEC_Insulator>(field_boundary_lo, field_boundary_hi)) {
         if (patch_type == PatchType::fine) {
             pec_insulator_boundary->ApplyPEC_InsulatortoEfield(
-                    m_fields.get_alldirs(FieldType::Efield_fp, lev),
+                    Efield,
                     field_boundary_lo, field_boundary_hi,
                     get_ng_fieldgather(), Geom(lev),
                     lev, patch_type, ref_ratio, time);
@@ -143,7 +145,7 @@ void WarpX::ApplyEfieldBoundary(const int lev, PatchType patch_type, amrex::Real
             }
         } else {
             pec_insulator_boundary->ApplyPEC_InsulatortoEfield(
-                m_fields.get_alldirs(FieldType::Efield_cp, lev),
+                Efield,
                 field_boundary_lo, field_boundary_hi,
                 get_ng_fieldgather(), Geom(lev),
                 lev, patch_type, ref_ratio, time);
@@ -161,16 +163,9 @@ void WarpX::ApplyEfieldBoundary(const int lev, PatchType patch_type, amrex::Real
     }
 
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
-    if (patch_type == PatchType::fine) {
-        ApplyFieldBoundaryOnAxis(m_fields.get(FieldType::Efield_fp, Direction{0}, lev),
-                                 m_fields.get(FieldType::Efield_fp, Direction{1}, lev),
-                                 m_fields.get(FieldType::Efield_fp, Direction{2}, lev), lev);
-    } else {
-        ApplyFieldBoundaryOnAxis(m_fields.get(FieldType::Efield_cp, Direction{0}, lev),
-                                 m_fields.get(FieldType::Efield_cp, Direction{1}, lev),
-                                 m_fields.get(FieldType::Efield_cp, Direction{2}, lev), lev);
-    }
+    ApplyFieldBoundaryOnAxis(Efield[0], Efield[1], Efield[2], lev);
 #endif
+    ConvertCovariantEToPhysical(lev, patch_type);
 }
 
 void WarpX::ApplyBfieldBoundary (const int lev, PatchType patch_type, SubcyclingHalf subcycling_half, amrex::Real time)
