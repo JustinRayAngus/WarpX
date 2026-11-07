@@ -1,4 +1,5 @@
 CEXE_sources += FiniteDifferenceSolver.cpp
+CEXE_sources += PolarYeeSolver.cpp
 CEXE_sources += EvolveB.cpp
 CEXE_sources += EvolveE.cpp
 CEXE_sources += EvolveF.cpp

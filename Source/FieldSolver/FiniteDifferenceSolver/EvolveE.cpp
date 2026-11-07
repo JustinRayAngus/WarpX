@@ -80,6 +80,10 @@ void FiniteDifferenceSolver::EvolveE (
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
     if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee){
         EvolveECylindrical <CylindricalYeeAlgorithm> ( Efield, Bfield, Jfield, eb_update_E, Ffield, lev, dt );
+#elif defined(WARPX_DIM_RTH)
+    if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee){
+        amrex::ignore_unused(eb_update_E);
+        EvolveEPolar(Efield, Bfield, Jfield, Ffield, lev, dt);
 #elif defined(WARPX_DIM_RSPHERE)
     if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee){
         amrex::ignore_unused(eb_update_E, Bfield);

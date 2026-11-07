@@ -56,6 +56,10 @@ void FiniteDifferenceSolver::ComputeDivE (
 
         ComputeDivECylindrical <CylindricalYeeAlgorithm> ( Efield, divEfield );
 
+#elif defined(WARPX_DIM_RTH)
+    if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee){
+        ComputeDivEPolar(Efield, divEfield);
+
 #elif defined(WARPX_DIM_RSPHERE)
     if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee ||
         m_fdtd_algo == ElectromagneticSolverAlgo::HybridPIC){

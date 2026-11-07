@@ -94,6 +94,7 @@ class FiniteDifferenceSolver
             amrex::Array<FieldBoundaryType,AMREX_SPACEDIM> field_boundary_lo,
             amrex::Array<FieldBoundaryType,AMREX_SPACEDIM> field_boundary_hi);
 
+        // Efield contains physical components, including in RTH.
         void ComputeDivE (
             ablastr::fields::VectorField const & Efield,
             amrex::MultiFab& divE
@@ -313,6 +314,35 @@ class FiniteDifferenceSolver
     public:
         // The member functions below contain extended __device__ lambda.
         // In order to compile with nvcc, they need to be public.
+
+#ifdef WARPX_DIM_RTH
+        template <bool upward>
+        void ComputeCurlPolar (
+            ablastr::fields::VectorField const& out,
+            ablastr::fields::VectorField const& in,
+            int lev, amrex::IntVect const& ngrow);
+
+        void EvolveBPolar (
+            ablastr::fields::VectorField const& Bfield,
+            ablastr::fields::VectorField const& Efield,
+            amrex::MultiFab const* Gfield, int lev, amrex::Real dt);
+
+        void EvolveEPolar (
+            ablastr::fields::VectorField const& Efield,
+            ablastr::fields::VectorField const& Bfield,
+            ablastr::fields::VectorField const& Jfield,
+            amrex::MultiFab const* Ffield, int lev, amrex::Real dt);
+
+        void ComputeDivEPolar (
+            ablastr::fields::VectorField const& Efield, amrex::MultiFab& divEfield);
+
+        void EvolveFPolar (
+            amrex::MultiFab* Ffield, ablastr::fields::VectorField const& Efield,
+            amrex::MultiFab const* rhofield, int rho_comp, amrex::Real dt);
+
+        void EvolveGPolar (
+            amrex::MultiFab* Gfield, ablastr::fields::VectorField const& Bfield, amrex::Real dt);
+#endif
 
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
         template< typename T_Algo >

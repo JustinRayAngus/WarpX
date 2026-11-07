@@ -43,6 +43,8 @@ void FiniteDifferenceSolver::EvolveG (
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     // TODO Implement G update equation in RZ geometry
     amrex::ignore_unused(Gfield, Bfield, dt);
+#elif defined(WARPX_DIM_RTH)
+    EvolveGPolar(Gfield, Bfield, dt);
 #else
     // Select algorithm
     if (m_grid_type == GridType::Collocated)

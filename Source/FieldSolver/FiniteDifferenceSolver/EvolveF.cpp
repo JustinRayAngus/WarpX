@@ -59,6 +59,10 @@ void FiniteDifferenceSolver::EvolveF (
 
         EvolveFCylindrical <CylindricalYeeAlgorithm> ( Ffield, Efield, rhofield, rho_comp, dt );
 
+#elif defined(WARPX_DIM_RTH)
+    if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee){
+        EvolveFPolar(Ffield, Efield, rhofield, rho_comp, dt);
+
 #elif defined(WARPX_DIM_RSPHERE)
     if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee){
 

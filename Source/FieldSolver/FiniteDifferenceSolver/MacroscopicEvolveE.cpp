@@ -51,6 +51,10 @@ void FiniteDifferenceSolver::MacroscopicEvolveE (
     amrex::ignore_unused(macroscopic_solver_algo, Efield, Bfield, Jfield, eb_update_E, dt, macroscopic_properties);
 
     WARPX_ABORT_WITH_MESSAGE("currently macro E-push does not work for RZ");
+#elif defined(WARPX_DIM_RTH)
+    amrex::ignore_unused(macroscopic_solver_algo, Efield, Bfield, Jfield,
+                        eb_update_E, dt, macroscopic_properties);
+    WARPX_ABORT_WITH_MESSAGE("Macroscopic E-push is not implemented for RTH.");
 #else
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
         m_grid_type != GridType::Collocated, "Macroscopic E field solver does not work on collocated grids");

@@ -3446,6 +3446,21 @@ WarpX::ComputeDivB (amrex::MultiFab& divB, int const dcomp,
 {
     const Real dxinv = 1._rt/dx[0], dyinv = 1._rt/dx[1], dzinv = 1._rt/dx[2];
 
+#ifdef WARPX_DIM_RTH
+    auto const& geom = GetInstance().Geom(0);
+    const Real rmin = geom.ProbLo(0);
+    const int radial_domain_lo = geom.Domain().smallEnd(0);
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
+        grid_type == GridType::Staggered && divB.ixType().cellCentered(),
+        "RTH div B requires cell-centered output on a Yee staggered grid.");
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
+        ngrow.allGE(IntVect(0)) && divB.nGrowVect().allGE(ngrow) &&
+        B[0]->nGrowVect().allGE(ngrow) && B[1]->nGrowVect().allGE(ngrow),
+        "RTH div B has insufficient guard cells.");
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(rmin + (0.5_rt - ngrow[0])*dx[0] > 0.0_rt,
+        "RTH div B requires positive radii throughout the output guard cells.");
+#endif
+
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     const Real rmin = GetInstance().Geom(0).ProbLo(0);
 #endif
@@ -3469,6 +3484,8 @@ WarpX::ComputeDivB (amrex::MultiFab& divB, int const dcomp,
             warpx_computedivb(i, j, k, dcomp, divBfab, Bxfab, Byfab, Bzfab, dxinv, dyinv, dzinv,
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                               rmin,
+#elif defined(WARPX_DIM_RTH)
+                              rmin, radial_domain_lo,
 #endif
                               collocated_grid_flag);
         });
@@ -3487,8 +3504,14 @@ WarpX::ComputeDivE(amrex::MultiFab& divE, const int lev)
             "ComputeDivE: PSATD requested but not compiled");
 #endif
     } else {
+#ifdef WARPX_DIM_RTH
+        // RTH aux stores covariant E for gathering; divergence takes physical E.
+        const auto Efield = m_fields.get_alldirs(FieldType::Efield_fp, lev);
+        m_fdtd_solver_fp[lev]->ComputeDivE(Efield, divE);
+#else
         const ablastr::fields::VectorField Efield_aux_lev = m_fields.get_alldirs(FieldType::Efield_aux, lev);
         m_fdtd_solver_fp[lev]->ComputeDivE(Efield_aux_lev, divE);
+#endif
     }
 }
 

@@ -40,6 +40,9 @@ void FiniteDifferenceSolver::ComputeCurlA (
         ComputeCurlACylindrical <CylindricalYeeAlgorithm> (
             Bfield, Afield, eb_update_B, lev, ngrow
         );
+#elif defined(WARPX_DIM_RTH)
+        amrex::ignore_unused(eb_update_B);
+        ComputeCurlPolar<true>(Bfield, Afield, lev, ngrow);
 #else
     if (WarpX::grid_type == GridType::Staggered)
     {

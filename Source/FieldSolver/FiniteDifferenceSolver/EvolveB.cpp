@@ -73,6 +73,11 @@ void FiniteDifferenceSolver::EvolveB (
     if ((m_fdtd_algo == ElectromagneticSolverAlgo::Yee)||
         (m_fdtd_algo == ElectromagneticSolverAlgo::HybridPIC)){
         EvolveBCylindrical <CylindricalYeeAlgorithm> ( Bfield, Efield, lev, dt );
+#elif defined(WARPX_DIM_RTH)
+    if (m_fdtd_algo == ElectromagneticSolverAlgo::Yee){
+        auto const* Gfield = fields.has(FieldType::G_fp, lev) ?
+            fields.get(FieldType::G_fp, lev) : nullptr;
+        EvolveBPolar(Bfield, Efield, Gfield, lev, dt);
 #else
     amrex::MultiFab const * Gfield = nullptr;
     if (fields.has(FieldType::G_fp, lev)) {

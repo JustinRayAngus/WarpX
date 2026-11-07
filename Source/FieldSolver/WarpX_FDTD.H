@@ -8,6 +8,10 @@
 #ifndef WARPX_FDTD_H_
 #define WARPX_FDTD_H_
 
+#ifdef WARPX_DIM_RTH
+#include "FiniteDifferenceSolver/FiniteDifferenceAlgorithms/PolarYeeAlgorithm.H"
+#endif
+
 #include <AMReX.H>
 #include <AMReX_FArrayBox.H>
 
@@ -23,6 +27,8 @@ void warpx_computedivb(
     amrex::Real dzinv,
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     amrex::Real const rmin,
+#elif defined(WARPX_DIM_RTH)
+    amrex::Real const rmin, int const radial_domain_lo,
 #endif
     bool collocated = false)
 {
@@ -50,6 +56,8 @@ void warpx_computedivb(
         amrex::ignore_unused(k, By, dyinv);
 #elif defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
         amrex::Abort("Collocated non-Cartesian grids are not a currently supported mode for computing div B.");
+#elif defined(WARPX_DIM_RTH)
+        amrex::Abort("RTH div B requires a Yee staggered grid.");
 #endif
     } else {
 #if defined WARPX_DIM_3D
@@ -76,6 +84,10 @@ void warpx_computedivb(
         divB(i,j,0,dcomp) = (ru*Bx(i+1,j,0) - rd*Bx(i,j,0))*dxinv
                            + (Bz(i,j+1,0) - Bz(i,j,0))*dzinv;
         amrex::ignore_unused(k, By, dyinv);
+#elif defined(WARPX_DIM_RTH)
+        PolarYeeAlgorithm const algo{1.0_rt/dxinv, dxinv, dyinv, rmin, radial_domain_lo};
+        divB(i,j,k,dcomp) = algo.Div<true>(Bx, By, i, j, k);
+        amrex::ignore_unused(Bz, dzinv);
 #endif
     }
 }
