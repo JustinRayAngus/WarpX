@@ -230,7 +230,7 @@ namespace
             bx &= domain;
 
             Vector<Box> bndryboxes;
-    #if defined(WARPX_DIM_3D)
+    #if (AMREX_SPACEDIM == 3)
             const int kbegin = -1, kend = 1;
     #else
             const int kbegin =  0, kend = 0;
@@ -389,7 +389,7 @@ void SigmaBox::define_multiple (const Box& box, const BoxArray& grids, const Int
 #if (AMREX_SPACEDIM >= 2)
         const int jdim = (idim+1) % AMREX_SPACEDIM;
 #endif
-#if defined(WARPX_DIM_3D)
+#if (AMREX_SPACEDIM == 3)
         const int kdim = (idim+2) % AMREX_SPACEDIM;
 #endif
 
@@ -411,7 +411,7 @@ void SigmaBox::define_multiple (const Box& box, const BoxArray& grids, const Int
             {
                 corners.push_back(kv.first);
             }
-#elif defined(WARPX_DIM_3D)
+#elif (AMREX_SPACEDIM == 3)
             else if ((amrex::grow(grid_box, jdim, ncell[jdim]).intersects(box)) ||
                 amrex::grow(grid_box, kdim, ncell[kdim]).intersects(box))
             {
@@ -441,7 +441,7 @@ void SigmaBox::define_multiple (const Box& box, const BoxArray& grids, const Int
 
             Box lobox = amrex::adjCellLo(grid_box, idim, ncell[idim]);
             lobox.grow(jdim,ncell[jdim]);
-#if defined(WARPX_DIM_3D)
+#if (AMREX_SPACEDIM == 3)
             lobox.grow(kdim,ncell[kdim]);
 #endif
             const Box looverlap = lobox & box;
@@ -455,7 +455,7 @@ void SigmaBox::define_multiple (const Box& box, const BoxArray& grids, const Int
 
             Box hibox = amrex::adjCellHi(grid_box, idim, ncell[idim]);
             hibox.grow(jdim,ncell[jdim]);
-#if defined(WARPX_DIM_3D)
+#if (AMREX_SPACEDIM == 3)
             hibox.grow(kdim,ncell[kdim]);
 #endif
             const Box hioverlap = hibox & box;
@@ -473,7 +473,7 @@ void SigmaBox::define_multiple (const Box& box, const BoxArray& grids, const Int
         }
 #endif
 
-#if defined(WARPX_DIM_3D)
+#if (AMREX_SPACEDIM == 3)
         for (auto gid : side_side_edges)
         {
             const Box& grid_box = grids[gid];
