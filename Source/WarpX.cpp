@@ -3310,6 +3310,9 @@ WarpX::CellSize (int lev)
     const Real* dx = gm.CellSize();
 #if defined(WARPX_DIM_3D)
     return { dx[0], dx[1], dx[2] };
+#elif defined(WARPX_DIM_RTH)
+    // Logical polar spacings (dr, dtheta); physical angular spacing is r*dtheta.
+    return { dx[0], dx[1], 1.0 };
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
     return { dx[0], 1.0, dx[1] };
 #elif defined(WARPX_DIM_1D_Z)

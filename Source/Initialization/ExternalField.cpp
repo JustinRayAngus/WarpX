@@ -15,7 +15,7 @@
 
 #include <AMReX_BaseFabUtility.H>
 
-#if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
 #   include <openPMD/openPMD.hpp>
 #endif
 
@@ -229,7 +229,7 @@ ExternalFieldReader::ExternalFieldReader (
 
 void ExternalFieldReader::load_data (amrex::RealBox const& pbox)
 {
-#if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
     using namespace amrex;
 
     auto series = openPMD::Series(m_file, openPMD::Access::READ_ONLY);
@@ -456,7 +456,7 @@ void ExternalFieldReader::load_data (amrex::RealBox const& pbox)
 
 #else
     amrex::ignore_unused(pbox);
-    WARPX_ABORT_WITH_MESSAGE("ExternalFieldReader requires openPMD and it is not supported for 1D RCYLINDER and RSPHERE");
+    WARPX_ABORT_WITH_MESSAGE("ExternalFieldReader requires openPMD and it is not supported for RTH, RCYLINDER and RSPHERE");
 #endif
 }
 
@@ -606,7 +606,7 @@ ExternalFieldView ExternalFieldReader::make_view (amrex::BaseFab<double> const& 
 }
 
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
 ExternalFieldVectorView::ExternalFieldVectorView (
     ExternalFieldReader const* x_reader,
     ExternalFieldReader const* y_reader,

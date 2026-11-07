@@ -192,6 +192,9 @@ ElectrostaticSolver::computePhi (
 #endif
     if (EB::enabled() && efield.has_value())
     {
+#ifdef WARPX_DIM_RTH
+        amrex::Abort("Electrostatic field calculation with embedded boundaries is not supported in RTH.");
+#else
         // EB: use AMReX to directly calculate the electric field since with EB's the
         // simple finite difference scheme in WarpX::computeE sometimes fails
 
@@ -219,6 +222,7 @@ ElectrostaticSolver::computePhi (
             );
         }
         post_phi_calculation = EBCalcEfromPhiPerLevel(e_field);
+#endif
     }
 
 #ifdef AMREX_USE_EB

@@ -33,7 +33,7 @@ struct GetVelocityVector
     amrex::ParserExecutor<3> m_ux_mean_parser, m_uy_mean_parser, m_uz_mean_parser;
 
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
     ExternalFieldVectorView m_from_file;
 #endif
 
@@ -70,7 +70,7 @@ struct GetVelocityVector
                 return amrex::XDim3{ m_ux_mean_parser(x,y,z), m_uy_mean_parser(x,y,z), m_uz_mean_parser(x,y,z) };
             }
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
             case (VelFromFileVector):
             {
                 return m_from_file.getValue(x, y, z);

@@ -218,6 +218,14 @@ void doDirectSigmaDepositionKernel ([[maybe_unused]] const amrex::ParticleReal x
                                     const amrex::XDim3& xyzmin,
                                     const amrex::Dim3 lo)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(xp, yp, zp, fpxx, fpxy, fpxz,
+                         fpyx, fpyy, fpyz, fpzx, fpzy, fpzz,
+                         Sxx_arr, Sxy_arr, Sxz_arr, Syx_arr, Syy_arr, Syz_arr,
+                         Szx_arr, Szy_arr, Szz_arr, diag_ncomp, jx_type, jy_type,
+                         jz_type, dinv, xyzmin, lo);
+    amrex::Abort("doDirectSigmaDepositionKernel is not implemented for RTH.");
+#else
     using namespace amrex::literals;
 
     constexpr int NODE = amrex::IndexType::NODE;
@@ -677,6 +685,7 @@ void doDirectSigmaDepositionKernel ([[maybe_unused]] const amrex::ParticleReal x
         }
     }
 #endif
+#endif
 }
 
 /**
@@ -920,6 +929,15 @@ void doVillasenorSigmaDepositionKernel ([[maybe_unused]] const amrex::ParticleRe
                                         const amrex::GpuArray<amrex::GpuArray<bool,2>, AMREX_SPACEDIM> & do_cropping,
                                         const amrex::Dim3 lo)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(xp_old, yp_old, zp_old, xp_new, yp_new, zp_new,
+                         fpxx, fpxy, fpxz, fpyx, fpyy, fpyz,
+                         fpzx, fpzy, fpzz, max_grid_crossings, error_count_x, error_count_y,
+                         error_count_z, Sxx_arr, Sxy_arr, Sxz_arr, Syx_arr, Syy_arr,
+                         Syz_arr, Szx_arr, Szy_arr, Szz_arr, ncomp_xx, ncomp_yy,
+                         ncomp_zz, dinv, xyzmin, domain_double, do_cropping, lo);
+    amrex::Abort("doVillasenorSigmaDepositionKernel is not implemented for RTH.");
+#else
 
     using namespace amrex::literals;
 
@@ -1923,6 +1941,7 @@ void doVillasenorSigmaDepositionKernel ([[maybe_unused]] const amrex::ParticleRe
 
     }
 
+#endif
 #endif
 }
 

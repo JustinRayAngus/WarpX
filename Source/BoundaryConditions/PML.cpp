@@ -522,7 +522,7 @@ void SigmaBox::define_multiple (const Box& box, const BoxArray& grids, const Int
         for (auto gid : side_faces)
         {
             const Box& grid_box = grids[gid];
-#if defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
+#if (AMREX_SPACEDIM == 2)
             const Box& overlap = amrex::grow(grid_box,jdim,ncell[jdim]) & box;
 #else
             const Box& overlap = amrex::grow(amrex::grow(grid_box,jdim,ncell[jdim]),kdim,ncell[kdim]) & box;
@@ -709,6 +709,9 @@ PML::PML (const int lev, const BoxArray& grid_ba,
       m_geom(geom),
       m_cgeom(cgeom)
 {
+#ifdef WARPX_DIM_RTH
+    WARPX_ABORT_WITH_MESSAGE("PML is not supported in RTH geometry.");
+#endif
 #ifndef AMREX_USE_EB
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE(!eb_enabled, "PML: eb_enabled is true but was not compiled in.");
 #endif
@@ -782,6 +785,7 @@ PML::PML (const int lev, const BoxArray& grid_ba,
         ngf[WarpX::moving_window_dir] = std::max(ngf[WarpX::moving_window_dir], rr);
     }
 
+#ifndef WARPX_DIM_RTH
     if (WarpX::electromagnetic_solver_id == ElectromagneticSolverAlgo::PSATD) {
         using namespace ablastr::utils::enums;
 
@@ -815,6 +819,7 @@ PML::PML (const int lev, const BoxArray& grid_ba,
         ngb = ngFFT;
         ngf = ngFFT;
     }
+#endif
 
     DistributionMapping dm;
     if (do_similar_dm_pml) {

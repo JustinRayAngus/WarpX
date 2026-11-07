@@ -260,6 +260,8 @@ namespace detail
         // if we just write reconstructed 2D fields at theta=0
         vs const cartAxisLabels{"x"};  // x varies fastest in memory
         vs const axisLabels = var_in_theta_mode ? circAxisLabels : cartAxisLabels;
+#elif defined(WARPX_DIM_RTH)
+        vs const axisLabels{"r", "theta"};  // r varies fastest in memory
 #elif defined(WARPX_DIM_XZ)
         vs const axisLabels{"x", "z"};  // x varies fastest in memory
 #elif defined(WARPX_DIM_RZ)

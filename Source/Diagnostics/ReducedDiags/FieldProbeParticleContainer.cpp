@@ -28,6 +28,9 @@ using namespace amrex;
 FieldProbeParticleContainer::FieldProbeParticleContainer (AmrCore* amr_core)
     : ParticleContainerPureSoA<FieldProbePIdx::nattribs, 0>(amr_core->GetParGDB())
 {
+#ifdef WARPX_DIM_RTH
+    amrex::Abort("FieldProbe diagnostics are not implemented for RTH geometry.");
+#endif
     SetParticleSize();
 }
 
@@ -77,7 +80,7 @@ FieldProbeParticleContainer::AddNParticles (int lev,
     DefineAndReturnParticleTile(0, 0, 0);
 
     // for RZ write theta value
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     pinned_tile.push_back_real(FieldProbePIdx::theta, np, 0.0);
 #endif
 #if defined(WARPX_DIM_RSPHERE)
@@ -89,7 +92,7 @@ FieldProbeParticleContainer::AddNParticles (int lev,
 #if defined (WARPX_DIM_3D)
     pinned_tile.push_back_real(FieldProbePIdx::y, y);
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#if !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
     pinned_tile.push_back_real(FieldProbePIdx::z, z);
 #endif
     pinned_tile.push_back_real(FieldProbePIdx::Ex, np, 0.0);

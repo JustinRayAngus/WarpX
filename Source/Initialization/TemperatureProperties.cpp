@@ -77,7 +77,7 @@ parse_temperature_in_eV (
     }
     else if (temperature_in_eV_dist_s == "read_from_file") {
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
         if (WarpX::gamma_boost > 1.0) {
             WARPX_ABORT_WITH_MESSAGE(
                 dist_type_param + " = read_from_file is not "
@@ -102,7 +102,7 @@ parse_temperature_in_eV (
         WARPX_ABORT_WITH_MESSAGE(
             dist_type_param + " = read_from_file requires "
             "WarpX built with openPMD support and is not supported in "
-            "RZ/RCYLINDER/RSPHERE geometries.");
+            "RZ/RTH/RCYLINDER/RSPHERE geometries.");
 #endif
     }
     else {
@@ -181,7 +181,7 @@ TemperatureProperties::TemperatureProperties (const amrex::ParmParse& pp, std::s
             }
             else if (u_std_dist_s == "read_from_file") {
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
                 if (WarpX::gamma_boost > 1.0) {
                     WARPX_ABORT_WITH_MESSAGE(
                         "maxwellian_u_std_distribution_type = read_from_file is not "
@@ -209,7 +209,7 @@ TemperatureProperties::TemperatureProperties (const amrex::ParmParse& pp, std::s
                 WARPX_ABORT_WITH_MESSAGE(
                     "maxwellian_u_std_distribution_type = read_from_file requires "
                     "WarpX built with openPMD support and is not supported in "
-                    "RZ/RCYLINDER/RSPHERE geometries.");
+                    "RZ/RTH/RCYLINDER/RSPHERE geometries.");
 #endif
             }
             else {

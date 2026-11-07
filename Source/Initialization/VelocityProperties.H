@@ -56,7 +56,7 @@ struct VelocityProperties
     std::string m_read_u_mean_path;
 
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
     std::unique_ptr<ExternalFieldReader> m_u_mean_x_reader;
     std::unique_ptr<ExternalFieldReader> m_u_mean_y_reader;
     std::unique_ptr<ExternalFieldReader> m_u_mean_z_reader;

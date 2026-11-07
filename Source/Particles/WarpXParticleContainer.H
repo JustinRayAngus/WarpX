@@ -73,6 +73,10 @@ struct PIdx
 #elif defined(WARPX_DIM_RZ)
     enum                          { r ,  z ,  w ,  ux ,  uy ,  uz ,  theta,        nattribs};
     static constexpr auto names = {"r", "z", "w", "ux", "uy", "uz", "theta"};
+#elif defined(WARPX_DIM_RTH)
+    // AMReX uses the first two attributes as the (r, theta) mesh coordinates.
+    enum                          { r ,  theta ,  w ,  ux ,  uy ,  uz,            nattribs};
+    static constexpr auto names = {"r", "theta", "w", "ux", "uy", "uz"};
 #elif defined(WARPX_DIM_RCYLINDER)
     enum                          { r ,  w ,  ux ,  uy ,  uz ,  theta,             nattribs};
     static constexpr auto names = {"r", "w", "ux", "uy", "uz", "theta"};

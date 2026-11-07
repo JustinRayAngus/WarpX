@@ -209,6 +209,14 @@ computePhi (
     [[maybe_unused]] const std::optional<amrex::Vector<T_FArrayBoxFactory const *> >& eb_farray_box_factory = std::nullopt // only used for EB
 )
 {
+#if defined(WARPX_DIM_RTH)
+    amrex::ignore_unused(rho, phi, beta, mlmg_options, geom, dmap, grids, grid_type,
+                        is_solver_igf_on_lev0, is_igf_2d, eb_enabled,
+                        do_single_precision_comms, rel_ref_ratio, post_phi_calculation,
+                        boundary_handler, current_time, eb_farray_box_factory);
+    amrex::Abort("computePhi: the RTH Poisson solver is not implemented yet.");
+#else
+
     using namespace amrex::literals;
 
     ABLASTR_PROFILE("computePhi");
@@ -450,6 +458,7 @@ computePhi (
         rho[lev]->mult(-ablastr::constant::SI::epsilon_0);  // Multiply rho by epsilon again
 
     } // loop over lev(els)
+#endif
 } // computePhi
 } // namespace ablastr::fields
 

@@ -27,10 +27,13 @@ struct FieldProbePIdx
 #if !defined (WARPX_DIM_1D_Z)
         x,
 #endif
+#if defined(WARPX_DIM_RTH)
+        theta,  ///< Angular mesh coordinate; must be the second position attribute
+#endif
 #if defined (WARPX_DIM_3D)
         y,
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) || !defined(WARPX_DIM_RSPHERE)
+#if !defined(WARPX_DIM_RTH) && (!defined(WARPX_DIM_RCYLINDER) || !defined(WARPX_DIM_RSPHERE))
         z,
 #endif
         Ex, Ey, Ez,

@@ -46,6 +46,10 @@ struct InjectorPositionRandomPlane
         if (dir == 0)  { return amrex::XDim3{0._rt, amrex::Random(engine), amrex::Random(engine)}; }
         if (dir == 1)  { return amrex::XDim3{amrex::Random(engine), 0._rt, amrex::Random(engine)}; }
         else           { return amrex::XDim3{amrex::Random(engine), amrex::Random(engine), 0._rt}; }
+#elif defined(WARPX_DIM_RTH)
+        amrex::ignore_unused(engine);
+        amrex::Abort("Plane injection is not implemented for RTH.");
+        return amrex::XDim3{0._rt, 0._rt, 0._rt};
 #elif (defined(WARPX_DIM_XZ))
         // In 2D, the 2 first components of the `XDim3` vector below correspond to x and z
         if (dir == 0) { return amrex::XDim3{0._rt, amrex::Random(engine), 0._rt}; }
@@ -97,6 +101,11 @@ struct InjectorPositionRegular
         int const nx = ref_fac[0]*ppc.x;
         int const ny = ppc.y; // Number of particles in theta ; no refinement
         int const nz = ppc.z; // Number of particles in phi ; no refinement
+#elif defined(WARPX_DIM_RTH)
+        // Logical mesh coordinates: r and theta.
+        int const nx = ref_fac[0]*ppc.x;
+        int const ny = ref_fac[1]*ppc.y;
+        int const nz = 1;
 #elif (defined WARPX_DIM_XZ)
         int const nx = ref_fac[0]*ppc.x;
         int const ny = ref_fac[1]*ppc.y;

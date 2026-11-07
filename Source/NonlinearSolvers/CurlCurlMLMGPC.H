@@ -187,6 +187,10 @@ void CurlCurlMLMGPC<T,Ops>::Define ( const T& a_U,
     BL_PROFILE("CurlCurlMLMGPC::Define()");
     using namespace amrex;
 
+#if defined(WARPX_DIM_RTH)
+    WARPX_ABORT_WITH_MESSAGE("CurlCurlMLMGPC is not implemented for RTH geometry.");
+#endif
+
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
         !IsDefined(),
         "CurlCurlMLMGPC::Define() called on defined object" );
@@ -308,6 +312,11 @@ void CurlCurlMLMGPC<T,Ops>::Update ()
 template <class T, class Ops>
 void CurlCurlMLMGPC<T,Ops>::Apply (T& a_x, const T& a_b)
 {
+#if defined(WARPX_DIM_RTH)
+    amrex::ignore_unused(a_x, a_b);
+    WARPX_ABORT_WITH_MESSAGE("CurlCurlMLMGPC is not implemented for RTH geometry.");
+#else
+
     //  Given a right-hand-side b, solve:
     //      A x = b
     //  where A is the linear operator, in this case, the curl-curl
@@ -376,6 +385,7 @@ void CurlCurlMLMGPC<T,Ops>::Apply (T& a_x, const T& a_b)
         // preconditioner is a fixed linear operator, as required by GMRES.
         m_solver->solve({&solution}, {&rhs}, m_rtol, m_atol);
     }
+#endif
 }
 
 #endif

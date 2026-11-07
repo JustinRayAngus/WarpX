@@ -159,6 +159,9 @@ namespace
                            << " ; dz = " << dx_lev[0] << '\n';
     #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
                            << " ; dr = " << dx_lev[0] << '\n';
+    #elif defined(WARPX_DIM_RTH)
+                           << " ; dr = " << dx_lev[0]
+                           << " ; dtheta = " << dx_lev[1] << '\n';
     #elif defined(WARPX_DIM_RZ)
                            << " ; dr = " << dx_lev[0]
                            << " ; dz = " << dx_lev[1] << '\n';
@@ -1394,6 +1397,11 @@ void ComputeExternalFieldOnGridUsingParser_template (
     amrex::Vector<std::array< std::unique_ptr<amrex::iMultiFab>,3 > > const& eb_update_field,
     bool use_eb_flags)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(field, fx_parser, fy_parser, fz_parser, lev, patch_type,
+                         eb_update_field, use_eb_flags);
+    amrex::Abort("Parser-based grid-field initialization is not implemented for RTH.");
+#else
     auto &warpx = WarpX::GetInstance();
     auto const &geom = warpx.Geom(lev);
 
@@ -1535,6 +1543,7 @@ void ComputeExternalFieldOnGridUsingParser_template (
             }
         );
     }
+#endif
 }
 
 void WarpX::ComputeExternalFieldOnGridUsingParser (

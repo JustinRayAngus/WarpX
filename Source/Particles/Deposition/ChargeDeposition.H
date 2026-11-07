@@ -45,6 +45,11 @@ void doChargeDepositionShapeN (const GetParticlePosition<PIdx>& GetPosition,
                                amrex::Real q,
                                [[maybe_unused]] int n_rz_azimuthal_modes)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(GetPosition, wp, ion_lev, rho_fab, np_to_deposit, dinv, xyzmin,
+                         lo, q, n_rz_azimuthal_modes);
+    amrex::Abort("RTH charge deposition is not implemented yet.");
+#else
     using namespace amrex;
 
     // Whether ion_lev is a null pointer (do_ionization=0) or a real pointer
@@ -172,6 +177,7 @@ void doChargeDepositionShapeN (const GetParticlePosition<PIdx>& GetPosition,
 #endif
         }
         );
+#endif
 }
 
 /* \brief Perform charge deposition on a tile using shared memory
@@ -214,6 +220,11 @@ void doChargeDepositionSharedShapeN (const GetParticlePosition<PIdx>& GetPositio
                                      const amrex::IntVect bin_size
                                      )
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(GetPosition, wp, ion_lev, rho_fab, ix_type, np_to_deposit, dinv, xyzmin,
+                         lo, q, n_rz_azimuthal_modes, a_bins, box, geom, a_tbox_max_size, bin_size);
+    amrex::Abort("RTH shared-memory charge deposition is not implemented yet.");
+#else
     using namespace amrex;
 
     const auto *permutation = a_bins.permutationPtr();
@@ -444,6 +455,7 @@ void doChargeDepositionSharedShapeN (const GetParticlePosition<PIdx>& GetPositio
 #endif // defined(AMREX_USE_CUDA) || defined(AMREX_USE_HIP)
       }
       );
+#endif
 }
 
 #endif // WARPX_CHARGEDEPOSITION_H_

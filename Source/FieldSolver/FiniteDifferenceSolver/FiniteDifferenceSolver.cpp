@@ -37,6 +37,12 @@ FiniteDifferenceSolver::FiniteDifferenceSolver (
     m_fdtd_algo{fdtd_algo},
     m_grid_type{grid_type}
 {
+#ifdef WARPX_DIM_RTH
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(
+        fdtd_algo == ElectromagneticSolverAlgo::Yee &&
+        grid_type == ablastr::utils::enums::GridType::Staggered,
+        "RTH requires the Yee FDTD solver on a staggered grid.");
+#endif
     // return if not FDTD
     if (fdtd_algo == ElectromagneticSolverAlgo::None || fdtd_algo == ElectromagneticSolverAlgo::PSATD) {
         return;

@@ -15,6 +15,10 @@
 
 Resampling::Resampling (const std::string& species_name)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(species_name);
+    amrex::Abort("Resampling is not supported in RTH geometry.");
+#else
     const amrex::ParmParse pp_species_name(species_name);
     std::string resampling_algorithm_string = "leveling_thinning"; // default resampling algorithm
     pp_species_name.query("resampling_algorithm", resampling_algorithm_string);
@@ -31,6 +35,7 @@ Resampling::Resampling (const std::string& species_name)
     { WARPX_ABORT_WITH_MESSAGE("Unknown resampling algorithm."); }
 
     m_resampling_trigger = ResamplingTrigger(species_name);
+#endif
 }
 
 bool Resampling::triggered (const int timestep, const amrex::Real global_numparts) const

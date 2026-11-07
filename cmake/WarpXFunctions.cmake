@@ -222,12 +222,14 @@ endfunction()
 
 # Set the suffix for targets and binaries depending on dimension
 #
-# User specify 1;2;3;RZ;RCYLINDER;RSPHERE in WarpX_DIMS.
+# User specify 1;2;3;RZ;RTH;RCYLINDER;RSPHERE in WarpX_DIMS.
 # We append to CMake targets and binaries the suffix "Nd" for 1,2,3 or otherwise the lowercase dimension string
 #
 macro(warpx_set_suffix_dims suffix dim)
     if("${dim}" STREQUAL "RZ")
         set(${suffix} rz)
+    elseif("${dim}" STREQUAL "RTH")
+        set(${suffix} rth)
     elseif("${dim}" STREQUAL "RCYLINDER")
         set(${suffix} rcylinder)
     elseif("${dim}" STREQUAL "RSPHERE")
@@ -261,7 +263,7 @@ function(warpx_test_set_pythonpath test_name)
         )
         #   collect all DLL directories into a single PATH entry: repeating the
         #   key in the ENVIRONMENT property would keep only the last one
-        #   note: WarpX_amrex_dim maps RZ->2, RCYLINDER/RSPHERE->1 (see top-level CMakeLists.txt)
+        #   note: WarpX_amrex_dim maps RZ/RTH->2, RCYLINDER/RSPHERE->1 (see top-level CMakeLists.txt)
         set(WIN_DLL_DIRS "$<TARGET_FILE_DIR:pyWarpX_${WarpX_DIMS_LAST}>")
         foreach(D IN LISTS WarpX_amrex_dim)
             string(APPEND WIN_DLL_DIRS "\;$<TARGET_FILE_DIR:AMReX::amrex_${D}d>")
@@ -312,7 +314,7 @@ function(add_warpx_pytest dims)
         return()
     endif()
 
-    # pywarpx cannot select RCYLINDER or RSPHERE yet, even though they are
+    # pywarpx cannot select RTH, RCYLINDER or RSPHERE yet, even though they are
     # valid WarpX_DIMS values, see LibWarpX.load_library
     if(NOT dims IN_LIST _warpx_pytest_dims)
         return()

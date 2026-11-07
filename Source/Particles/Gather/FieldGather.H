@@ -68,14 +68,14 @@ void doDirectGatherVectorField (
 #if defined(WARPX_DIM_3D)
     const double y_bar = (yp - xyzmin.y)*dinv.y;
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     const double z_bar = (zp - xyzmin.z)*dinv.z;
 #endif
 
     const Compute_shape_factor< depos_order_perp > shape_factor_perp;
     const Compute_shape_factor< depos_order_para > shape_factor_para;
 
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     constexpr int zdir = WARPX_ZINDEX;
 
     // Compute shape factors for z-direction
@@ -572,7 +572,7 @@ void doGatherShapeN ([[maybe_unused]] const amrex::ParticleReal xp,
 
 #endif
 
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     // z direction
     const amrex::Real z = (zp-xyzmin.z)*dinv.z;
     amrex::Real sz_node[depos_order + 1] = {0._rt};
@@ -837,7 +837,9 @@ void doGatherShapeN ([[maybe_unused]] const amrex::ParticleReal xp,
     Eyp += sintheta*cosphi*Erp;
     Ezp += sinphi*Erp;
 
-#else // defined(WARPX_DIM_3D)
+#elif defined(WARPX_DIM_RTH)
+    amrex::Abort("doGatherShapeN: RTH field gathering is not implemented yet.");
+#elif defined(WARPX_DIM_3D)
     // Gather field on particle Exp from field on grid ex_arr
     for (int iz=0; iz<=depos_order; iz++){
         for (int iy=0; iy<=depos_order; iy++){
@@ -1001,7 +1003,7 @@ void doGatherShapeNEsirkepovStencilImplicit (
     double y_new = (yp_np1 - xyzmin.y)*dinv.y;
     double const y_old = (yp_n - xyzmin.y)*dinv.y;
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     // Keep these double to avoid bug in single precision
     double z_new = (zp_np1 - xyzmin.z)*dinv.z;
     double const z_old = (zp_n - xyzmin.z)*dinv.z;
@@ -1042,7 +1044,7 @@ void doGatherShapeNEsirkepovStencilImplicit (
     double sy_E_new[depos_order + 3] = {0.};
     double sy_E_old[depos_order + 3] = {0.};
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     // Keep these double to avoid bug in single precision
     double sz_E_new[depos_order + 3] = {0.};
     double sz_E_old[depos_order + 3] = {0.};
@@ -1080,7 +1082,7 @@ void doGatherShapeNEsirkepovStencilImplicit (
     const int j_E_new = compute_shape_factor(sy_E_new+1, y_new);
     const int j_E_old = compute_shifted_shape_factor(sy_E_old, y_old, j_E_new);
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     const int k_E_new = compute_shape_factor(sz_E_new+1, z_new);
     const int k_E_old = compute_shifted_shape_factor(sz_E_old, z_old, k_E_new);
 #endif
@@ -1105,7 +1107,7 @@ void doGatherShapeNEsirkepovStencilImplicit (
     if (j_E_old < j_E_new) { djl_E = 0; }
     if (j_E_old > j_E_new) { dju_E = 0; }
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     int dkl_E = 1, dku_E = 1;
     if (k_E_old < k_E_new) { dkl_E = 0; }
     if (k_E_old > k_E_new) { dku_E = 0; }
@@ -1548,7 +1550,7 @@ void doGatherPicnicShapeN (
     double y_new = (yp_np1 - xyzmin.y)*dinv.y;
     double const y_old = (yp_n   - xyzmin.y)*dinv.y;
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     // Keep these double to avoid bug in single precision
     double z_new = (zp_np1 - xyzmin.z)*dinv.z;
     double const z_old = (zp_n   - xyzmin.z)*dinv.z;
@@ -1562,7 +1564,7 @@ void doGatherPicnicShapeN (
 #if defined(WARPX_DIM_3D)
     const double dyp = y_new - y_old;
 #endif
-#if !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+#ifdef WARPX_ZINDEX
     const double dzp = z_new - z_old;
 #endif
 

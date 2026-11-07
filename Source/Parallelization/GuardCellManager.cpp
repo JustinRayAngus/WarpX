@@ -215,6 +215,10 @@ guardCellManager::Init (
 
     if (electromagnetic_solver_id == ElectromagneticSolverAlgo::PSATD)
     {
+#ifdef WARPX_DIM_RTH
+        amrex::ignore_unused(nox_fft, noy_fft, noz_fft, do_pml, do_pml_in_domain, pml_ncell);
+        WARPX_ABORT_WITH_MESSAGE("PSATD/FFT solvers are not supported in RTH. Use Yee FDTD.");
+#else
         // The number of guard cells should be enough to contain the stencil of the FFT solver.
         //
         // Here, this number (ngFFT) is determined empirically to be the order of the solver or
@@ -280,6 +284,7 @@ guardCellManager::Init (
         }
         ng_alloc_F = IntVect(AMREX_D_DECL(ng_alloc_F_int, ng_alloc_F_int, ng_alloc_F_int));
         ng_alloc_G = IntVect(AMREX_D_DECL(ng_alloc_G_int, ng_alloc_G_int, ng_alloc_G_int));
+#endif
     }
 
     // Compute number of cells required for Field Solver

@@ -65,6 +65,10 @@ void VelocityCoincidenceThinning::operator() (
     const amrex::Geometry& geom_lev, WarpXParIter& pti,
     const int lev, WarpXParticleContainer * const pc) const
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(geom_lev, pti, lev, pc);
+    amrex::Abort("Resampling is not supported in RTH geometry.");
+#else
     using namespace amrex::literals;
 
     auto& ptile = pc->ParticlesAt(lev, pti);
@@ -337,4 +341,5 @@ void VelocityCoincidenceThinning::operator() (
             }
         }
     );
+#endif
 }

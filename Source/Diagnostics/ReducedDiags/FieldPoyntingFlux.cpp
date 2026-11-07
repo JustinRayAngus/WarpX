@@ -43,6 +43,10 @@ using namespace amrex::literals;
 FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
     : ReducedDiags{rd_name}
 {
+#ifdef WARPX_DIM_RTH
+    WARPX_ABORT_WITH_MESSAGE(
+        "FieldPoyntingFlux diagnostics are not implemented for RTH geometry.");
+#endif
     // Resize data array
     // lo and hi is 2
     // space dims is AMREX_SPACEDIM
@@ -74,6 +78,8 @@ FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
             std::vector<std::string> space_coords = {"x", "z"};
 #elif defined(WARPX_DIM_1D_Z)
             std::vector<std::string> space_coords = {"z"};
+#elif defined(WARPX_DIM_RTH)
+            std::vector<std::string> space_coords = {"r", "theta"};
 #elif defined(WARPX_DIM_RZ)
             std::vector<std::string> space_coords = {"r", "z"};
 #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)

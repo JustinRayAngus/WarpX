@@ -959,6 +959,13 @@ PhysicalParticleContainer::applyNCIFilter (
     FArrayBox const * & ez_ptr, FArrayBox const * & bx_ptr,
     FArrayBox const * & by_ptr, FArrayBox const * & bz_ptr)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(lev, box, filtered_Ex, filtered_Ey, filtered_Ez, filtered_Bx,
+                         filtered_By, filtered_Bz, Ex, Ey, Ez, Bx,
+                         By, Bz, ex_ptr, ey_ptr, ez_ptr, bx_ptr,
+                         by_ptr, bz_ptr);
+    amrex::Abort("NCI filtering is not supported in RTH.");
+#else
 
     // Get instances of NCI Godfrey filters
     const auto& nci_godfrey_filter_exeybz = WarpX::GetInstance().nci_godfrey_filter_exeybz;
@@ -1014,6 +1021,7 @@ PhysicalParticleContainer::applyNCIFilter (
 #else
     amrex::ignore_unused(filtered_Ey, filtered_Bx, filtered_Bz,
         Ey, Bx, Bz, ey_ptr, bx_ptr, bz_ptr);
+#endif
 #endif
 }
 
@@ -1990,6 +1998,9 @@ PhysicalParticleContainer::DepositTemperature (
     const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::noz/2));
 #elif   defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2));
+#elif defined(WARPX_DIM_RTH)
+    const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2),
+                                                       static_cast<int>(WarpX::noy/2));
 #elif   defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
     const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2),
                                                        static_cast<int>(WarpX::noz/2));

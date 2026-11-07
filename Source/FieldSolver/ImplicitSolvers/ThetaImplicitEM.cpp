@@ -229,6 +229,9 @@ const amrex::MultiFab* ThetaImplicitEM::GetCurl2BCmask (const int lev, const int
 
 void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
 {
+#ifdef WARPX_DIM_RTH
+    amrex::Abort("RTH curl-curl boundary masks are not implemented yet.");
+#else
 
     // Define masks to incorporate boundary conditions into the curl curl operator matrix
     /*

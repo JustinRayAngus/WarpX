@@ -42,7 +42,10 @@ void FiniteDifferenceSolver::ApplySilverMuellerBoundary (
     amrex::Array<FieldBoundaryType,AMREX_SPACEDIM> field_boundary_lo,
     amrex::Array<FieldBoundaryType,AMREX_SPACEDIM> field_boundary_hi) {
 
-#if defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RTH)
+    amrex::ignore_unused(Efield,Bfield,domain_box,dt,field_boundary_lo,field_boundary_hi);
+    WARPX_ABORT_WITH_MESSAGE("Silver-Mueller boundary conditions are not supported in RTH.");
+#elif defined(WARPX_DIM_RSPHERE)
     amrex::ignore_unused(Efield,Bfield,domain_box,dt,field_boundary_lo,field_boundary_hi);
 #else
 

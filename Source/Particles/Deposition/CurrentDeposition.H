@@ -67,6 +67,13 @@ void doDepositionShapeNKernel([[maybe_unused]] const amrex::ParticleReal xp,
                               const amrex::Dim3 lo,
                               [[maybe_unused]] const int n_rz_azimuthal_modes)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(xp, yp, zp, wq, vx, vy,
+                         vz, jx_arr, jy_arr, jz_arr, jx_type, jy_type,
+                         jz_type, relative_time, dinv, xyzmin, invvol, lo,
+                         n_rz_azimuthal_modes);
+    amrex::Abort("doDepositionShapeNKernel is not implemented for RTH.");
+#else
     using namespace amrex::literals;
 
     constexpr int NODE = amrex::IndexType::NODE;
@@ -289,6 +296,7 @@ void doDepositionShapeNKernel([[maybe_unused]] const amrex::ParticleReal xp,
             }
         }
     }
+#endif
 #endif
 }
 
@@ -1554,6 +1562,13 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
                                        amrex::Real const invvol,
                                        [[maybe_unused]] int const n_rz_azimuthal_modes)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(xp_old, yp_old, zp_old, xp_new, yp_new, zp_new,
+                         wq, uxp_mid, uyp_mid, uzp_mid, gaminv, Jx_arr,
+                         Jy_arr, Jz_arr, dt, dinv, xyzmin, domain_double,
+                         do_cropping, lo, invvol, n_rz_azimuthal_modes);
+    amrex::Abort("VillasenorDepositionShapeNKernel is not implemented for RTH.");
+#else
 
     using namespace amrex::literals;
 
@@ -2175,6 +2190,7 @@ void VillasenorDepositionShapeNKernel ([[maybe_unused]] amrex::ParticleReal cons
     }
 
 #endif
+#endif
 }
 
 /**
@@ -2438,6 +2454,12 @@ void doVayDepositionShapeN (const GetParticlePosition<PIdx>& GetPosition,
                             amrex::Real q,
                             [[maybe_unused]]int n_rz_azimuthal_modes)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(GetPosition, wp, uxp, uyp, uzp, ion_lev,
+                         Dx_fab, Dy_fab, Dz_fab, np_to_deposit, dt, relative_time,
+                         dinv, xyzmin, lo, q, n_rz_azimuthal_modes);
+    amrex::Abort("doVayDepositionShapeN is not implemented for RTH.");
+#else
     using namespace amrex::literals;
 
 #if defined(WARPX_DIM_RZ)
@@ -2707,5 +2729,6 @@ void doVayDepositionShapeN (const GetParticlePosition<PIdx>& GetPosition,
     amrex::Gpu::streamSynchronize();
 
 #endif // #if !(defined WARPX_DIM_RZ || defined WARPX_DIM_1D_Z)
+#endif
 }
 #endif // WARPX_CURRENTDEPOSITION_H_

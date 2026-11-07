@@ -326,6 +326,10 @@ void PlasmaInjector::setupNRandomPerCell (amrex::ParmParse const& pp_species)
 
 void PlasmaInjector::setupNFluxPerCell (amrex::ParmParse const& pp_species)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(pp_species);
+    amrex::Abort("Flux injection is not implemented for RTH.");
+#else
     utils::parser::getWithParser(pp_species, source_name, "num_particles_per_cell", num_particles_per_cell_real);
 #ifdef WARPX_DIM_RZ
     if ((WarpX::n_rz_azimuthal_modes > 1) && (num_particles_per_cell_real < 2*WarpX::n_rz_azimuthal_modes)) {
@@ -417,6 +421,7 @@ void PlasmaInjector::setupNFluxPerCell (amrex::ParmParse const& pp_species)
     SpeciesUtils::parseMomentum(species_name, source_name, "nfluxpercell", h_inj_mom,
                                 h_mom_temp, h_mom_vel,
                                 m_geom, flux_normal_axis, flux_direction);
+#endif
 }
 
 void PlasmaInjector::setupNuniformPerCell (amrex::ParmParse const& pp_species)

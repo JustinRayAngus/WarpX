@@ -88,8 +88,8 @@ if(WarpX_BACKTRACE_INFO)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1")
 endif()
 
-set(WarpX_DIMS_VALUES 1 2 3 RZ RCYLINDER RSPHERE)
-set(WarpX_DIMS 3 CACHE STRING "Simulation dimensionality <1;2;3;RZ;RCYLINDER;RSPHERE>")
+set(WarpX_DIMS_VALUES 1 2 3 RZ RTH RCYLINDER RSPHERE)
+set(WarpX_DIMS 3 CACHE STRING "Simulation dimensionality <1;2;3;RZ;RTH;RCYLINDER;RSPHERE>")
 list(REMOVE_DUPLICATES WarpX_DIMS)
 foreach(D IN LISTS WarpX_DIMS)
     if(NOT D IN_LIST WarpX_DIMS_VALUES)
@@ -215,8 +215,9 @@ try_compile(CXX_HAS_STD_FS_WITH_LINK "${WarpX_BINARY_DIR}/temp"
 
 # AMReX
 #   builds AMReX from source (default) or finds an existing install
-set(WarpX_amrex_dim ${WarpX_DIMS})  # RZ is AMReX 2D
+set(WarpX_amrex_dim ${WarpX_DIMS})  # RZ and RTH are AMReX 2D
 list(TRANSFORM WarpX_amrex_dim REPLACE RZ 2)
+list(TRANSFORM WarpX_amrex_dim REPLACE RTH 2)
 list(TRANSFORM WarpX_amrex_dim REPLACE RCYLINDER 1)
 list(TRANSFORM WarpX_amrex_dim REPLACE RSPHERE 1)
 list(REMOVE_DUPLICATES WarpX_amrex_dim)
@@ -523,7 +524,7 @@ endif()
 # link dependencies
 foreach(D IN LISTS WarpX_DIMS)
     warpx_set_suffix_dims(SD ${D})
-    if(D STREQUAL "RZ")
+    if(D STREQUAL "RZ" OR D STREQUAL "RTH")
         target_link_libraries(ablastr_${SD} PUBLIC WarpX::thirdparty::amrex_2d)
     elseif(D STREQUAL "RCYLINDER")
         target_link_libraries(ablastr_${SD} PUBLIC WarpX::thirdparty::amrex_1d)
@@ -620,6 +621,8 @@ foreach(D IN LISTS WarpX_DIMS)
         target_compile_definitions(ablastr_${SD} PUBLIC WARPX_DIM_1D_Z WARPX_ZINDEX=0)
     elseif(D STREQUAL "RZ")
         target_compile_definitions(ablastr_${SD} PUBLIC WARPX_DIM_RZ WARPX_ZINDEX=1)
+    elseif(D STREQUAL "RTH")
+        target_compile_definitions(ablastr_${SD} PUBLIC WARPX_DIM_RTH)
     elseif(D STREQUAL "RCYLINDER")
         target_compile_definitions(ablastr_${SD} PUBLIC WARPX_DIM_RCYLINDER)
     elseif(D STREQUAL "RSPHERE")

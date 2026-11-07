@@ -48,6 +48,12 @@ bool find_overlap_flux (const amrex::RealBox& tile_realbox, const amrex::RealBox
                         const PlasmaInjector& plasma_injector,
                         amrex::RealBox& overlap_realbox, amrex::Box& overlap_box, amrex::IntVect& shifted)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(tile_realbox, part_realbox, dx, prob_lo, plasma_injector,
+                         overlap_realbox, overlap_box, shifted);
+    amrex::Abort("Flux injection is not implemented for RTH.");
+    return true;
+#else
     using namespace amrex::literals;
 
     bool no_overlap = false;
@@ -108,6 +114,7 @@ bool find_overlap_flux (const amrex::RealBox& tile_realbox, const amrex::RealBox
     }
 
     return no_overlap;
+#endif
 }
 
 PlasmaParserWrapper::PlasmaParserWrapper (const std::size_t a_num_user_int_attribs,

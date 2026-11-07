@@ -182,6 +182,14 @@ void doVarianceDepositionShapeNKernel(
     const amrex::Dim3 lo,
     [[maybe_unused]] const int n_rz_azimuthal_modes)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(xp, yp, zp, wp, vx, vy,
+                         vz, nx_arr, ny_arr, nz_arr, wx_arr, wy_arr,
+                         wz_arr, w2x_arr, w2y_arr, w2z_arr, vxbar_arr, vybar_arr,
+                         vzbar_arr, varx_type, vary_type, varz_type, type, pass,
+                         relative_time, dinv, xyzmin, lo, n_rz_azimuthal_modes);
+    amrex::Abort("doVarianceDepositionShapeNKernel is not implemented for RTH.");
+#else
     using namespace amrex::literals;
 
     constexpr int NODE = amrex::IndexType::NODE;
@@ -417,6 +425,7 @@ void doVarianceDepositionShapeNKernel(
             }
         }
     }
+#endif
 #endif
 }
 

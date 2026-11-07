@@ -364,6 +364,10 @@ PhysicalParticleContainer::CheckAndAddParticle (
 
 void
 PhysicalParticleContainer::AddGaussianBeam (PlasmaInjector const& plasma_injector){
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(plasma_injector);
+    amrex::Abort("Gaussian-beam injection is not implemented for RTH.");
+#else
 
     const amrex::Real x_m = plasma_injector.x_m;
     const amrex::Real y_m = plasma_injector.y_m;
@@ -601,6 +605,7 @@ PhysicalParticleContainer::AddGaussianBeam (PlasmaInjector const& plasma_injecto
 
     AddNParticles(0, np, xp,  yp,  zp, uxp, uyp, uzp,
                   1, attr, 0, attr_int, 1);
+#endif
 }
 
 void
@@ -744,6 +749,10 @@ PhysicalParticleContainer::AddPlasmaFromFile(PlasmaInjector & plasma_injector,
 void
 PhysicalParticleContainer::AddPlasma (PlasmaInjector& plasma_injector, int lev, amrex::RealBox part_realbox)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(plasma_injector, lev, part_realbox);
+    amrex::Abort("Plasma injection is not implemented for RTH.");
+#else
     ABLASTR_PROFILE("PhysicalParticleContainer::AddPlasma()");
 
     // If no part_realbox is provided, initialize particles in the whole domain
@@ -1224,6 +1233,7 @@ PhysicalParticleContainer::AddPlasma (PlasmaInjector& plasma_injector, int lev, 
 #endif
 
     // The function that calls this is responsible for redistributing particles.
+#endif
 }
 
 void

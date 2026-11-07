@@ -46,6 +46,9 @@ WarpXFluidContainer::WarpXFluidContainer(int ispecies, const std::string &name):
     species_id{ispecies},
     species_name{name}
 {
+#ifdef WARPX_DIM_RTH
+    amrex::Abort("Fluid species are not supported in RTH geometry.");
+#endif
     ReadParameters();
 
     WarpX &warpx = WarpX::GetInstance();
@@ -192,6 +195,10 @@ void WarpXFluidContainer::InitData(
     ablastr::fields::MultiFabRegister& fields, amrex::Box init_box, amrex::Real cur_time, int lev,
     const amrex::Geometry& geom_lev, const amrex::Real gamma_boost, const amrex::Real beta_boost)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(fields, init_box, cur_time, lev, geom_lev, gamma_boost, beta_boost);
+    amrex::Abort("Fluid initialization is not implemented for RTH.");
+#else
     using ablastr::fields::Direction;
     ABLASTR_PROFILE("WarpXFluidContainer::InitData");
 
@@ -299,6 +306,7 @@ void WarpXFluidContainer::InitData(
             Gpu::streamSynchronize();
         }
     }
+#endif
 }
 
 
@@ -1141,6 +1149,10 @@ void WarpXFluidContainer::GatherAndPush (
     Real t,
     int lev)
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(fields, Ex, Ey, Ez, Bx, By, Bz, t, lev);
+    amrex::Abort("Fluid gather and push are not implemented for RTH.");
+#else
     using ablastr::fields::Direction;
     ABLASTR_PROFILE("WarpXFluidContainer::GatherAndPush");
 
@@ -1417,6 +1429,7 @@ void WarpXFluidContainer::GatherAndPush (
             }
         );
     }
+#endif
 }
 
 void WarpXFluidContainer::DepositCharge (ablastr::fields::MultiFabRegister& fields, amrex::MultiFab &rho, int lev, int icomp)

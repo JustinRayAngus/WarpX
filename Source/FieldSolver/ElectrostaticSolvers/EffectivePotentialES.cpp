@@ -94,6 +94,10 @@ void EffectivePotentialES::computePhi (
 void EffectivePotentialES::ComputeSigma (
     ablastr::fields::MultiLevelScalarField const& rho_fp )
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(rho_fp);
+    amrex::Abort("The effective-potential electrostatic solver is not supported in RTH.");
+#else
     // Reset the rho array
     for (const auto& rho_lev : rho_fp)
     {
@@ -207,6 +211,7 @@ void EffectivePotentialES::ComputeSigma (
         }
     }
     sigma->plus(time_filter_param, 0);
+#endif
 }
 
 void EffectivePotentialES::computePhi (
@@ -216,6 +221,10 @@ void EffectivePotentialES::computePhi (
     ablastr::fields::MLMGOptions const & mlmg_options
 ) const
 {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(rho, phi, efield, mlmg_options);
+    amrex::Abort("The effective-potential electrostatic solver is not supported in RTH.");
+#else
     // create a vector to our fields, sorted by level
     amrex::Vector<amrex::MultiFab *> sorted_rho;
     amrex::Vector<amrex::MultiFab *> sorted_phi;
@@ -297,4 +306,5 @@ void EffectivePotentialES::computePhi (
         warpx.gett_new(0),
         eb_farray_box_factory
     );
+#endif
 }

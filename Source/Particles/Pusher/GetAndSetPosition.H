@@ -37,7 +37,7 @@ void get_particle_position (const WarpXParticleContainer::SuperParticleType& p,
     x = r*std::cos(theta);
     y = r*std::sin(theta);
     z = p.pos(PIdx::z);
-#elif defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
     amrex::ParticleReal const theta = p.rdata(T_PIdx::theta);
     amrex::ParticleReal const r = p.pos(T_PIdx::r);
     x = r*std::cos(theta);
@@ -79,7 +79,7 @@ struct GetParticlePosition
     const RType* AMREX_RESTRICT m_y = nullptr;
     const RType* AMREX_RESTRICT m_z = nullptr;
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RSPHERE)
     const RType* AMREX_RESTRICT m_theta = nullptr;
 #endif
 #if defined(WARPX_DIM_RSPHERE)
@@ -117,7 +117,7 @@ struct GetParticlePosition
         m_z = soa.GetRealData(PIdx::z).dataPtr() + a_offset;
 #elif defined(WARPX_DIM_1D_Z)
         m_z = soa.GetRealData(PIdx::z).dataPtr() + a_offset;
-#elif defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
         m_x = soa.GetRealData(PIdx::r).dataPtr() + a_offset;
         m_theta = soa.GetRealData(T_PIdx::theta).dataPtr() + a_offset;
 #elif defined(WARPX_DIM_RSPHERE)
@@ -141,7 +141,7 @@ struct GetParticlePosition
         x = r*std::cos(m_theta[i]);
         y = r*std::sin(m_theta[i]);
         z = m_z[i];
-#elif defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
         RType const r = m_x[i];
         x = r*std::cos(m_theta[i]);
         y = r*std::sin(m_theta[i]);
@@ -169,8 +169,8 @@ struct GetParticlePosition
     /** \brief Extract the position coordinates of the particle as stored
      *         located at index `i + a_offset` and store them in the variables
      *         `x`, `y`, `z`
-     *         This is only different for RZ since this returns (r, theta, z)
-     *         in that case. */
+     *         Curvilinear geometries return their stored coordinates; RTH returns
+     *         (r, theta, 0), while RZ returns (r, theta, z). */
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     void AsStored (const long i, RType& x, RType& y, RType& z) const noexcept
     {
@@ -178,7 +178,7 @@ struct GetParticlePosition
         x = m_x[i];
         y = m_theta[i];
         z = m_z[i];
-#elif defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
         x = m_x[i];
         y = m_theta[i];
         z = m_z_default;
@@ -223,11 +223,11 @@ struct SetParticlePosition
     RType* AMREX_RESTRICT m_z;
 #elif defined(WARPX_DIM_1D_Z)
     RType* AMREX_RESTRICT m_z;
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RSPHERE)
     RType* AMREX_RESTRICT m_x = nullptr;
 #endif
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RSPHERE)
     RType* AMREX_RESTRICT m_theta;
 #endif
 #if defined(WARPX_DIM_RSPHERE)
@@ -251,7 +251,7 @@ struct SetParticlePosition
         m_z = soa.GetRealData(PIdx::z).dataPtr() + a_offset;
 #elif defined(WARPX_DIM_1D_Z)
         m_z = soa.GetRealData(PIdx::z).dataPtr() + a_offset;
-#elif defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
         m_x = soa.GetRealData(PIdx::r).dataPtr() + a_offset;
         m_theta = soa.GetRealData(T_PIdx::theta).dataPtr() + a_offset;
 #elif defined(WARPX_DIM_RSPHERE)
@@ -274,7 +274,7 @@ struct SetParticlePosition
         m_theta[i] = std::atan2(y, x);
         m_x[i] = std::sqrt(x*x + y*y);
         m_z[i] = z;
-#elif defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
         m_theta[i] = std::atan2(y, x);
         m_x[i] = std::sqrt(x*x + y*y);
 #elif defined(WARPX_DIM_RSPHERE)
@@ -297,8 +297,8 @@ struct SetParticlePosition
 
     /** \brief Set the position of the particle at index `i + a_offset`
      *         to `x`, `y`, `z`
-     *         This is only different for RZ since the input should
-     *         be (r, theta, z) in that case. */
+     *         Curvilinear geometries accept their stored coordinates; RTH uses
+     *         (r, theta) and ignores z, while RZ uses (r, theta, z). */
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     void AsStored (const long i, RType x, RType y, RType z) const noexcept
     {
@@ -307,7 +307,7 @@ struct SetParticlePosition
         m_x[i] = x;
         m_theta[i] = y;
         m_z[i] = z;
-#elif defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
         m_x[i] = x;
         m_theta[i] = y;
 #elif defined(WARPX_DIM_RSPHERE)

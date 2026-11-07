@@ -172,9 +172,10 @@ macro(find_amrex)
             set(AMReX_INSTALL ${BUILD_SHARED_LIBS} CACHE INTERNAL "Generate Install Targets" FORCE)
         endif()
 
-        # RZ is AMReX 2D
+        # RZ and RTH are AMReX 2D
         set(WarpX_amrex_dim ${WarpX_DIMS})
         list(TRANSFORM WarpX_amrex_dim REPLACE RZ 2)
+        list(TRANSFORM WarpX_amrex_dim REPLACE RTH 2)
         list(TRANSFORM WarpX_amrex_dim REPLACE RCYLINDER 1)
         list(TRANSFORM WarpX_amrex_dim REPLACE RSPHERE 1)
         list(REMOVE_DUPLICATES WarpX_amrex_dim)
@@ -284,6 +285,7 @@ macro(find_amrex)
 
         set(WarpX_amrex_dim ${WarpX_DIMS})
         list(TRANSFORM WarpX_amrex_dim REPLACE RZ 2)
+        list(TRANSFORM WarpX_amrex_dim REPLACE RTH 2)
         list(TRANSFORM WarpX_amrex_dim REPLACE RCYLINDER 1)
         list(TRANSFORM WarpX_amrex_dim REPLACE RSPHERE 1)
         list(REMOVE_DUPLICATES WarpX_amrex_dim)

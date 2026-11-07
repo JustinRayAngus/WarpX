@@ -96,7 +96,10 @@ struct InjectorDensityFromFile
 #if (AMREX_SPACEDIM < 3)
         amrex::ignore_unused(x,y,z);
 #endif
-#if (AMREX_SPACEDIM == 1)
+#if defined(WARPX_DIM_RTH)
+        amrex::Abort("Reading a density profile from file is not implemented for RTH.");
+        return 0.0;
+#elif (AMREX_SPACEDIM == 1)
         return m_external_field_view(amrex::RealVect{z});
 #elif defined(WARPX_DIM_RZ)
         return m_external_field_view(amrex::RealVect{std::sqrt(x*x+y*y),z});

@@ -35,7 +35,7 @@ namespace ablastr::fields
     // Direction: a literal nullptr must fail at compile time
     static_assert(!std::is_constructible_v<Direction, std::nullptr_t>);
     // Direction: string constructors are constexpr, so these also fail to compile if they recurse
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     static_assert(int{Direction{"r"}} == int{Direction::r});
     static_assert(int{Direction{std::string_view{"theta"}}} == int{Direction::theta});
 #endif

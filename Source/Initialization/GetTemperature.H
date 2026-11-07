@@ -55,7 +55,7 @@ struct GetTemperature
     /* q_e / (m c^2) factor, used for temperature_in_eV conversion */
     amrex::Real m_q_e_over_mc2{0.0};
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
     ExternalFieldView m_temperature_in_eV_from_file;
 #endif
 
@@ -85,7 +85,7 @@ struct GetTemperature
                 return m_temperature_parser(x,y,z);
             }
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
             case (TempFromFileValue):
             {
 #if (AMREX_SPACEDIM < 3)
@@ -125,7 +125,7 @@ struct GetTemperatureVector
     amrex::ParserExecutor<3> m_ux_std_parser, m_uy_std_parser, m_uz_std_parser;
     GetTemperature m_temperature; // scalar temperature_in_eV, if m_type is TempConstantValue, TempParserFunction or TempFromFileValue
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
     ExternalFieldVectorView m_u_std_from_file; // Vector openPMD u_std field, if m_type == TempFromFileVector
 #endif
     /**
@@ -168,7 +168,7 @@ struct GetTemperatureVector
                     m_temperature(x,y,z), m_temperature.m_q_e_over_mc2);
             }
 #if defined(WARPX_USE_OPENPMD) && !defined(WARPX_DIM_RZ) && \
-    !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
+    !defined(WARPX_DIM_RTH) && !defined(WARPX_DIM_RCYLINDER) && !defined(WARPX_DIM_RSPHERE)
             case (TempFromFileVector):
             {
                 return m_u_std_from_file.getValue(x, y, z);

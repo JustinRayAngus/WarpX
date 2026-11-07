@@ -326,6 +326,10 @@ namespace ParticleUtils {
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
         const amrex::Real px = x;
         const amrex::Real py = z;
+#elif defined(WARPX_DIM_RTH)
+        // Inputs are logical polar coordinates: x = r, y = theta.
+        const amrex::Real px = x;
+        const amrex::Real py = y;
 #elif defined(WARPX_DIM_1D_Z)
         const amrex::Real px = z;
 #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)

@@ -63,6 +63,7 @@ namespace ablastr::fields
      *
      * Cartesian: always x,y,z in any ND
      * RZ: r,t(heta),z (r,z over azimuthal modes)
+     * RTH: r,t(heta),z (r,theta mesh; uniform in z)
      * RCylinder: r,t(heta),z
      * RSphere: r,t(heta),p(hi)
      * @see https://warpx.readthedocs.io/en/latest/developers/dimensionality.html
@@ -91,7 +92,7 @@ namespace ablastr::fields
             }
         }
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
         static const Direction r;
         static const Direction theta;
 
@@ -123,7 +124,7 @@ namespace ablastr::fields
 
         operator std::string() const // NOLINT(google-explicit-constructor)
         {
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
             if (dir == r) { return std::string{r_string}; }
             if (dir == theta) { return std::string{theta_string}; }
 #endif
@@ -144,7 +145,7 @@ namespace ablastr::fields
         constexpr Direction (const std::string_view sv) : // NOLINT(google-explicit-constructor)
             dir{-1}
         {
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
             if (sv == r_string) { dir = r; }
             if (sv == theta_string) { dir = theta; }
 #endif
@@ -190,7 +191,7 @@ namespace ablastr::fields
 
     };
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     inline constexpr Direction Direction::r = Direction{0};
     inline constexpr Direction Direction::theta = Direction{1};
 #endif
@@ -203,7 +204,7 @@ namespace ablastr::fields
     inline constexpr Direction Direction::y = Direction{1};
 #endif
 
-#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_1D_Z) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_1D_Z) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER)
     inline constexpr Direction Direction::z = Direction{2};
 #endif
 
@@ -1000,6 +1001,7 @@ namespace ablastr::fields
          *
          * Cartesian: always x,y,z in any ND
          * RZ: r,t(heta),z (r,z over azimuthal modes)
+         * RTH: r,t(heta),z (r,theta mesh; uniform in z)
          * RCylinder: r,t(heta),z
          * RSphere: r,t(heta),p(hi)
          * @see https://warpx.readthedocs.io/en/latest/developers/dimensionality.html
@@ -1007,7 +1009,7 @@ namespace ablastr::fields
         static inline std::vector<Direction> m_all_dirs =
 #if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_1D_Z)
             {Direction::x, Direction::y, Direction::z};
-#elif defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#elif defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER)
             {Direction::r, Direction::theta, Direction::z};
 #elif defined(WARPX_DIM_RSPHERE)
             {Direction::r, Direction::theta, Direction::phi};

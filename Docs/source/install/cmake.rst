@@ -316,6 +316,12 @@ On a machine without a visible GPU, e.g. an HPC login node, additionally select 
 
 An executable WarpX binary with the current compile-time options encoded in its file name will be created in ``build/bin/``.
 Note that you need separate binaries to run 1D, 2D, 3D, RZ, RCYLINDER, RSPHERE geometry inputs scripts.
+
+The experimental selector ``WarpX_DIMS=RTH`` reserves the 2D polar (r-theta)
+geometry. It selects AMReX 2D, defines ``WARPX_DIM_RTH``, and uses the target
+suffix ``rth``. This currently provides build-system scaffolding only; the RTH
+geometry implementation is not yet available.
+
 Additionally, a `symbolic link <https://en.wikipedia.org/wiki/Symbolic_link>`__ named ``warpx`` can be found in that directory, which points to the last built WarpX executable.
 
 More details on running simulations are in the section :ref:`Run WarpX <usage_run>`.

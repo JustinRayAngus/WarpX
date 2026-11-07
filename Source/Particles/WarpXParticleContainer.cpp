@@ -1589,6 +1589,9 @@ WarpXParticleContainer::DepositCharge (WarpXParIter& pti, RealVector const& wp,
         const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::noz/2));
 #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
         const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2));
+#elif defined(WARPX_DIM_RTH)
+        const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2+1),
+                                                           static_cast<int>(WarpX::noy/2+1));
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
         const amrex::IntVect shape_extent = amrex::IntVect(static_cast<int>(WarpX::nox/2+1),
                                                            static_cast<int>(WarpX::noz/2+1));
@@ -2699,6 +2702,11 @@ std::array<ParticleReal, 3> WarpXParticleContainer::meanParticleVelocity(bool lo
 }
 
 amrex::ParticleReal WarpXParticleContainer::maxParticleDtInv(bool local) {
+#ifdef WARPX_DIM_RTH
+    amrex::ignore_unused(local);
+    amrex::Abort("The particle timestep estimate is not implemented for RTH.");
+    return 0.0_prt;
+#else
 
     constexpr auto inv_c2 = PhysConst::inv_c2_v<amrex::ParticleReal>;
     ReduceOps<ReduceOpMax> reduce_op;
@@ -2777,6 +2785,7 @@ amrex::ParticleReal WarpXParticleContainer::maxParticleDtInv(bool local) {
     if (!local) { ParallelAllReduce::Max(max_dt_inv, ParallelDescriptor::Communicator()); }
 
     return max_dt_inv;
+#endif
 }
 
 void

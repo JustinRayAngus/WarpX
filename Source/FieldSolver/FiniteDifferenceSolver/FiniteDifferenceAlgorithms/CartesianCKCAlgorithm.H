@@ -31,6 +31,10 @@ struct CartesianCKCAlgorithm {
         amrex::Vector<amrex::Real>& stencil_coefs_y,
         amrex::Vector<amrex::Real>& stencil_coefs_z ) {
 
+#ifdef WARPX_DIM_RTH
+        amrex::ignore_unused(cell_size, stencil_coefs_x, stencil_coefs_y, stencil_coefs_z);
+        amrex::Abort("CKC is not supported in RTH geometry. Use the Yee solver.");
+#else
         using namespace amrex;
 
         // Compute Cole-Karkkainen-Cowan coefficients according
@@ -99,6 +103,7 @@ struct CartesianCKCAlgorithm {
         stencil_coefs_z[2] = betazx;
         stencil_coefs_z[3] = betazy;
         stencil_coefs_z[4] = gammaz*inv_dz;
+#endif
     }
 
     /**
