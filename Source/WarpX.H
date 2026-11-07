@@ -130,6 +130,8 @@ public:
 
     void ApplyPECInsulatorToPCMasks (int lev);
 
+    void ApplyPECInsulatorToPCMasks (int lev);
+
     void InitData ();
 
     void Evolve (int numsteps = -1);
