@@ -10,6 +10,8 @@
 #   include "FieldSolver/FiniteDifferenceSolver/FiniteDifferenceAlgorithms/CylindricalYeeAlgorithm.H"
 #elif defined(WARPX_DIM_RSPHERE)
 #   include "FieldSolver/FiniteDifferenceSolver/FiniteDifferenceAlgorithms/SphericalYeeAlgorithm.H"
+#elif defined(WARPX_DIM_RTH)
+#   include "FieldSolver/FiniteDifferenceSolver/FiniteDifferenceAlgorithms/PolarYeeAlgorithm.H"
 #else
 #   include "FieldSolver/FiniteDifferenceSolver/FiniteDifferenceAlgorithms/CartesianCKCAlgorithm.H"
 #   include "FieldSolver/FiniteDifferenceSolver/FiniteDifferenceAlgorithms/CartesianNodalAlgorithm.H"
@@ -88,6 +90,10 @@ WarpX::ComputeDt ()
         // - In RZ geometry
         if (electromagnetic_solver_id == ElectromagneticSolverAlgo::Yee) {
             deltat = cfl * SphericalYeeAlgorithm::ComputeMaxDt(dx);
+#elif defined(WARPX_DIM_RTH)
+        // - In annular (r, theta) geometry
+        if (electromagnetic_solver_id == ElectromagneticSolverAlgo::Yee) {
+            deltat = cfl * PolarYeeAlgorithm::ComputeMaxDt(dx, geom[max_level].ProbLo(0));
 #else
         // - In Cartesian geometry
         if (grid_type == GridType::Collocated) {

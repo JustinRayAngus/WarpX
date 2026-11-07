@@ -7,9 +7,14 @@
 #ifndef WARPX_FINITE_DIFFERENCE_ALGORITHM_POLAR_YEE_H_
 #define WARPX_FINITE_DIFFERENCE_ALGORITHM_POLAR_YEE_H_
 
+#include "Utils/WarpXConst.H"
+
+#include <AMReX.H>
 #include <AMReX_Array4.H>
 #include <AMReX_GpuQualifiers.H>
 #include <AMReX_REAL.H>
+
+#include <cmath>
 
 /** Yee differences on an annular (r, theta) mesh, with vector order (r, theta, z).
  * `upward` differences go from nodes to cells; downward differences go from
@@ -23,6 +28,17 @@ struct PolarYeeAlgorithm
     amrex::Real m_inv_dtheta;
     amrex::Real m_rmin;
     int m_ilo;
+
+    static amrex::Real ComputeMaxDt (amrex::Real const* dx, amrex::Real rmin)
+    {
+        using namespace amrex::literals;
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(rmin > 0._rt,
+            "RTH CFL calculation requires an annulus with r_min > 0.");
+        // Use the smallest angular arc length, including radially nodal fields.
+        amrex::Real const inv_dr = 1._rt / dx[0];
+        amrex::Real const inv_ds = 1._rt / (rmin * dx[1]);
+        return 1._rt / (PhysConst::c * std::sqrt(inv_dr*inv_dr + inv_ds*inv_ds));
+    }
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real Radius (int i, bool nodal) const
