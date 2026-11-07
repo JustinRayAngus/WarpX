@@ -2474,6 +2474,8 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
 #ifdef WARPX_DIM_RTH
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE(max_level == 0,
         "RTH covariant fields currently support a single mesh level.");
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(!m_do_subcycling,
+        "warpx.do_subcycling is not supported in RTH geometry.");
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE(Geom(lev).ProbLo(0) > 0.0_rt && !Geom(lev).isPeriodic(0),
         "RTH requires an annulus with r_min > 0 and nonperiodic radial boundaries.");
 #endif
@@ -3386,6 +3388,12 @@ WarpX::LowerCorner(const Box& bx, const int lev, const amrex::Real time_shift_de
 
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
     return { grid_min[0] + galilean_shift[0], std::numeric_limits<Real>::lowest(), grid_min[1] + galilean_shift[2] };
+
+#elif defined(WARPX_DIM_RTH)
+    amrex::ignore_unused(galilean_shift);
+    const auto& geom = warpx.Geom(lev);
+    return { grid_min[0] - geom.Domain().smallEnd(0)*geom.CellSize(0),
+             grid_min[1] - geom.Domain().smallEnd(1)*geom.CellSize(1), 0._rt };
 
 #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
     amrex::ignore_unused(galilean_shift);

@@ -941,11 +941,14 @@ WarpX::InitData ()
     }
 
 #ifdef WARPX_DIM_RTH
-    // Prepare E after initialization or restart, including user callbacks,
-    // before diagnostics or auxiliary fields can consume covariant E.
+    // Prepare fields after initialization or restart, including user callbacks.
+    // Both voltage and current drives must be set at the initial/restart time,
+    // before diagnostics or auxiliary fields consume them.
     for (int lev = 0; lev <= finest_level; ++lev) {
         FillBoundaryE(lev, PatchType::fine, guard_cells.ng_alloc_EB, WarpX::sync_nodal_points);
         ApplyEfieldBoundary(lev, PatchType::fine, gett_new(lev));
+        FillBoundaryB(lev, PatchType::fine, guard_cells.ng_alloc_EB, WarpX::sync_nodal_points);
+        ApplyBfieldBoundary(lev, PatchType::fine, SubcyclingHalf::None, gett_new(lev));
     }
 #endif
 
@@ -1019,8 +1022,11 @@ WarpX::AddExternalFields (int const lev)
             amrex::MultiFab::Add(*Bfield_fp[lev][1], *m_fields.get(FieldType::Bfield_fp_external, Direction{1}, lev), 0, 0, 1, guard_cells.ng_alloc_EB);
             amrex::MultiFab::Add(*Bfield_fp[lev][2], *m_fields.get(FieldType::Bfield_fp_external, Direction{2}, lev), 0, 0, 1, guard_cells.ng_alloc_EB);
         }
+#ifndef WARPX_DIM_RTH
+        // RTH prepares B in the shared InitData block, including when external B is zero.
         // Apply B-field boundary such that the initial field satisfies the expected boundary conditions
         ApplyBfieldBoundary(lev, PatchType::fine, SubcyclingHalf::FirstHalf, 0.0);
+#endif
     }
 }
 

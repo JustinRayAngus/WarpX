@@ -40,7 +40,7 @@ namespace
         using namespace amrex::literals;
         amrex::XDim3 result = {0._rt, 0._rt, 0._rt};
 
-#if defined(WARPX_DIM_3D) || defined(WARPX_ZINDEX)
+#if defined(WARPX_DIM_3D) || defined(WARPX_ZINDEX) || defined(WARPX_DIM_RTH)
         if constexpr (AMREX_SPACEDIM > 1){
             amrex::Real const shiftx = (nodal[0] ? 0._rt : 0.5_rt);
             result.x = xyzmin.x + (iv[0] - lo[0] + shiftx)*dx[0];
@@ -50,13 +50,12 @@ namespace
         }
 
 #endif
-        if constexpr (AMREX_SPACEDIM == 3){
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
+        {
             amrex::Real const shifty = nodal[1] ? 0._rt : 0.5_rt;
             result.y = xyzmin.y + (iv[1] - lo[1] + shifty)*dx[1];
         }
-        else{
-            result.y = 0._rt;
-        }
+#endif
 
 #ifndef WARPX_DIM_1D_Z
 #if defined(WARPX_ZINDEX)
@@ -89,7 +88,7 @@ namespace
             t2 = coords.z;
         }
 #endif
-#if defined(WARPX_DIM_3D)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
         if (idim == 1) {
             t1 = coords.x;
             t2 = coords.z;
@@ -333,7 +332,7 @@ namespace
         Fy_parsers_hi.push_back(parser_F1_hi[0]->compile<3>());
         Fz_parsers_hi.push_back(parser_F2_hi[0]->compile<3>());
 #endif
-#if defined(WARPX_DIM_3D)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
         set_Fx_lo[1] = set_field_lo[1];
         set_Fz_lo[1] = set_field_lo[1];
         set_Fx_hi[1] = set_field_hi[1];
@@ -410,7 +409,7 @@ PEC_Insulator::PEC_Insulator ()
     m_set_E_hi[0] |= ::ReadTangentialFieldParser(pp_insulator, m_parsers_E2_hi, "Ez_x_hi(y,z,t)", "y", "z");
 #endif
 
-#if defined(WARPX_DIM_3D)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
     std::string str_area_y_lo = "0";
     std::string str_area_y_hi = "0";
     utils::parser::Query_parserString( pp_insulator, "area_y_lo(x,z)", str_area_y_lo);
@@ -679,8 +678,8 @@ PEC_Insulator::ApplyPEC_InsulatortoField (
             // if split field, the box includes nodal flag
             // For E-field used in Maxwell's update, nodal flag plus cells that particles
             // gather fields from in the guard-cell region are included.
-            // Note that for simulations without particles or laser, ng_field_gather is 0
-            // and the guard-cell values of the E-field multifab will not be modified.
+            // GuardCellManager includes the field-solver stencil in ng_fieldgather,
+            // even when there are no particles.
             amrex::IntVect ng = ng_fieldgather;
             ng.min(field[0]->nGrowVect());
             const amrex::Box tex = (split_pml_field) ? mfi.tilebox(field[0]->ixType().toIntVect())

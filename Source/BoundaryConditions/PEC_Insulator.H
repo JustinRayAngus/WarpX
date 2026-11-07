@@ -26,7 +26,8 @@ public:
      *        In the insulator, the tangential fields are set to the value if specified, otherwise unchanged,
      *        and the normal fields extrapolated from the valid cells.
      *
-     * \param[in,out] Efield
+     * \param[in,out] Efield             covariant E in RTH, physical E otherwise;
+     *                                  prescribed values use the same representation as Efield
      * \param[in]     field_boundary_lo   lower field boundary conditions
      * \param[in]     field_boundary_hi   upper field boundary conditions
      * \param[in]     ng_fieldgather      number of guard cells used by field gather
@@ -53,7 +54,8 @@ public:
      *        In the insulator, the tangential fields are set to the value if specified, otherwise unchanged,
      *        and the normal fields extrapolated from the valid cells.
      *
-     * \param[in,out] Bfield
+     * \param[in,out] Bfield             physical B; prescribed tangential values are set
+     *                                  in the first exterior cell, with further guards extrapolated
      * \param[in]     field_boundary_lo   lower field boundary conditions
      * \param[in]     field_boundary_hi   upper field boundary conditions
      * \param[in]     ng_fieldgather      number of guard cells used by field gather
@@ -121,7 +123,8 @@ public:
      * \param[in]     ref_ratios          vector containing the refinement ratios of the refinement levels
      * \param[in]     time                current time of the simulation
      * \param[in]     split_pml_field     whether pml the multifab is the regular Efield or split pml field
-     * \param[in]     E_like              whether the field is E like or B like
+     * \param[in]     E_like              whether the field is E like or B like;
+     *                                    E-like fields are covariant in RTH
      * \param[in]     only_zero_parallel_field only zero the parallel field on the boundary
      * \param[in]     set_Fx_lo           the flags for the x-field at the lower boundaries
      * \param[in]     set_Fy_lo           the flags for the y-field at the lower boundaries
