@@ -1067,6 +1067,10 @@ WarpX::EvolveE (int lev, PatchType patch_type, amrex::Real a_dt, amrex::Real sta
     }
 
     amrex::Real const new_time = start_time + a_dt;
+#ifdef WARPX_DIM_RTH
+    // Convert only after physical E, including its guard cells, has been exchanged.
+    FillBoundaryE(lev, patch_type, guard_cells.ng_alloc_EB, WarpX::sync_nodal_points);
+#endif
     ApplyEfieldBoundary(lev, patch_type, new_time);
 
     // ECTRhofield must be recomputed at the very end of the Efield update to ensure
@@ -1255,6 +1259,10 @@ WarpX::MacroscopicEvolveE (int lev, PatchType patch_type, amrex::Real a_dt, amre
     }
 
     amrex::Real const new_time = start_time + a_dt;
+#ifdef WARPX_DIM_RTH
+    // Convert only after physical E, including its guard cells, has been exchanged.
+    FillBoundaryE(lev, patch_type, guard_cells.ng_alloc_EB, WarpX::sync_nodal_points);
+#endif
     ApplyEfieldBoundary(lev, patch_type, new_time);
 }
 

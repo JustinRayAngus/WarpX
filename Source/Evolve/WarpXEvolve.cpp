@@ -664,7 +664,9 @@ WarpX::OneStep_nosub (
         } else {
             WARPX_ABORT_WITH_MESSAGE("Medium for EM is unknown");
         }
+#ifndef WARPX_DIM_RTH
         FillBoundaryE(guard_cells.ng_FieldSolver, WarpX::sync_nodal_points);
+#endif
 
         EvolveF(0.5_rt * dt[0], /*rho_comp=*/1);
         EvolveG(0.5_rt * dt[0]);

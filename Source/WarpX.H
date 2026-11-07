@@ -616,17 +616,24 @@ public:
 
     /**
      * Map physical E into the registered covariant E before applying field BCs.
-     * Existing geometries register covariant E as an alias of physical E, so the
-     * mapping is an identity with no copies. A nontrivial geometry will allocate
-     * separate covariant storage and implement its metric conversion here.
+     * RTH stores (Er, r*Etheta, Ez) separately from physical E, including guards.
+     * Other geometries register covariant E as an alias, with no copies.
      */
+#ifdef WARPX_DIM_RTH
+    void ConvertPhysicalEToCovariant (int lev, PatchType patch_type);
+#else
     void ConvertPhysicalEToCovariant (int /*lev*/, PatchType /*patch_type*/) {}
+#endif
 
     /**
      * Map the BC-updated covariant E back into physical E.
      * No copies are needed for existing geometries because the fields alias.
      */
+#ifdef WARPX_DIM_RTH
+    void ConvertCovariantEToPhysical (int lev, PatchType patch_type);
+#else
     void ConvertCovariantEToPhysical (int /*lev*/, PatchType /*patch_type*/) {}
+#endif
 
     void ApplyEfieldBoundary (int lev, PatchType patch_type, amrex::Real cur_time);
     void ApplyBfieldBoundary (int lev, PatchType patch_type, SubcyclingHalf subcycling_half, amrex::Real cur_time);

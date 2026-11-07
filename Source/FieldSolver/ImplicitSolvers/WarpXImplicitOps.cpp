@@ -85,8 +85,8 @@ WarpX::FinishElectricFieldAndApplyBCs(amrex::Real a_theta, amrex::Real a_time)
 
     ablastr::fields::MultiLevelVectorField const & En = m_fields.get_mr_levels_alldirs(FieldType::E_old, 0);
     FinishImplicitField(m_fields.get_mr_levels_alldirs(FieldType::Efield_fp, 0), En, a_theta);
-    ApplyEfieldBoundary(0, PatchType::fine, a_time);
     FillBoundaryE(guard_cells.ng_alloc_EB, WarpX::sync_nodal_points);
+    ApplyEfieldBoundary(0, PatchType::fine, a_time);
 }
 
 void

@@ -2471,6 +2471,13 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
     IntVect phi_nodal_flag;
     amrex::IntVect F_nodal_flag, G_nodal_flag;
 
+#ifdef WARPX_DIM_RTH
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(max_level == 0,
+        "RTH covariant fields currently support a single mesh level.");
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(Geom(lev).ProbLo(0) > 0.0_rt && !Geom(lev).isPeriodic(0),
+        "RTH requires an annulus with r_min > 0 and nonperiodic radial boundaries.");
+#endif
+
     // Set nodal flags
 #if   defined(WARPX_DIM_1D_Z)
     // AMReX convention: x = missing dimension, y = missing dimension, z = only dimension
@@ -2494,6 +2501,17 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
     jx_nodal_flag = IntVect(0);
     jy_nodal_flag = IntVect(1);
     jz_nodal_flag = IntVect(1);
+#elif defined(WARPX_DIM_RTH)
+    // Mesh directions (r, theta); vector components (r, theta, z).
+    Ex_nodal_flag = IntVect(0,1);
+    Ey_nodal_flag = IntVect(1,0);
+    Ez_nodal_flag = IntVect(1,1);
+    Bx_nodal_flag = IntVect(1,0);
+    By_nodal_flag = IntVect(0,1);
+    Bz_nodal_flag = IntVect(0,0);
+    jx_nodal_flag = Ex_nodal_flag;
+    jy_nodal_flag = Ey_nodal_flag;
+    jz_nodal_flag = Ez_nodal_flag;
 #elif  defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
     // AMReX convention: x = first dimension, y = missing dimension, z = second dimension
     Ex_nodal_flag = IntVect(0,1);
@@ -2583,9 +2601,15 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
     m_fields.alloc_init(FieldType::Efield_fp, Direction{1}, lev, amrex::convert(ba, Ey_nodal_flag), dm, ncomps, ngEB, 0.0_rt);
     m_fields.alloc_init(FieldType::Efield_fp, Direction{2}, lev, amrex::convert(ba, Ez_nodal_flag), dm, ncomps, ngEB, 0.0_rt);
 
-    // Existing geometries have an identity mapping: register covariant E without copies.
     for (int dir = 0; dir < 3; ++dir) {
+#ifdef WARPX_DIM_RTH
+        const auto* physical_E = m_fields.get(FieldType::Efield_fp, Direction{dir}, lev);
+        m_fields.alloc_init(FieldType::Efield_cov_fp, Direction{dir}, lev,
+                            physical_E->boxArray(), dm, ncomps, ngEB, 0.0_rt);
+#else
+        // Identity mapping: covariant and physical E share storage.
         m_fields.alias_init(FieldType::Efield_cov_fp, FieldType::Efield_fp, Direction{dir}, lev);
+#endif
     }
 
     m_fields.alloc_init(FieldType::current_fp, Direction{0}, lev, amrex::convert(ba, jx_nodal_flag), dm, ncomps, ngJ, 0.0_rt);
@@ -2932,7 +2956,13 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
                 m_fields.alias_init(FieldType::Bfield_aux, FieldType::Bfield_fp, Direction{1}, lev, 0.0_rt);
                 m_fields.alias_init(FieldType::Bfield_aux, FieldType::Bfield_fp, Direction{2}, lev, 0.0_rt);
             }
-            if (mypc->m_E_ext_particle_s == "read_from_file") {
+#ifdef WARPX_DIM_RTH
+            // Aux receives covariant E and must not overwrite physical E.
+            const bool allocate_E_aux = true;
+#else
+            const bool allocate_E_aux = mypc->m_E_ext_particle_s == "read_from_file";
+#endif
+            if (allocate_E_aux) {
                 m_fields.alloc_init(FieldType::Efield_aux, Direction{0}, lev, amrex::convert(ba, Ex_nodal_flag), dm, ncomps, ngEB, 0.0_rt);
                 m_fields.alloc_init(FieldType::Efield_aux, Direction{1}, lev, amrex::convert(ba, Ey_nodal_flag), dm, ncomps, ngEB, 0.0_rt);
                 m_fields.alloc_init(FieldType::Efield_aux, Direction{2}, lev, amrex::convert(ba, Ez_nodal_flag), dm, ncomps, ngEB, 0.0_rt);
