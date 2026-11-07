@@ -274,6 +274,9 @@ int SparseJacobianMatrix::Assemble (
                     else if (dir == 2) { tdir = 0; }
                     else { tdir = 1; }
                     auto dof_tdir_arr = dofs_mfarrvec[lev][tdir]->const_array(mfi);
+#elif defined(WARPX_DIM_RTH)
+                    const auto dof_r = dofs_mfarrvec[lev][0]->const_array(mfi);
+                    const auto dof_t = dofs_mfarrvec[lev][1]->const_array(mfi);
 #elif defined(WARPX_DIM_3D)
                     const int tdir1 = (dir + 1) % 3;
                     const int tdir2 = (dir + 2) % 3;
@@ -390,6 +393,61 @@ int SparseJacobianMatrix::Assemble (
                                                                         nnz_max, icol );
                                 if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
                             }
+                        }
+#elif defined(WARPX_DIM_RTH)
+                        // Physical E: Er is radial-cell-centered; Et and Ez are radial-nodal.
+                        // The mask slots are (diagonal, neighbors, mixed) for Er/Et,
+                        // and (radial diagonal, radial neighbors, theta diagonal, theta neighbors) for Ez.
+                        const Real dr = dx[0];
+                        const Real rn = prob_lo[0] + (i - domain_lo[0])*dr;
+                        const Real rm = rn - 0.5_rt*dr;
+                        const Real rp = rn + 0.5_rt*dr;
+                        const Real ar = alpha * dxi[0]*dxi[0];
+                        const Real at = alpha * dxi[1]*dxi[1];
+                        const Real art = alpha * dxi[0]*dxi[1];
+                        const Real mask0 = BC_mask_Edir_arr(i,j,k,0);
+                        const Real mask1 = BC_mask_Edir_arr(i,j,k,1);
+                        const Real mask2 = BC_mask_Edir_arr(i,j,k,2);
+                        GpuArray<int,7> columns{};
+                        GpuArray<Real,7> values{};
+                        int nentries = 7;
+                        if (dir == 0) {
+                            // -d_theta^2 Er/r^2 + d_theta[d_r(r*Et)]/r^2
+                            const Real angular = at/(rp*rp);
+                            const Real cross_lo = art*rn/(rp*rp)*mask2;
+                            const Real cross_hi = art*(rn + dr)/(rp*rp)*mask2;
+                            columns = {dof_arr(i,j,k,1), dof_arr(i,j-1,k,1), dof_arr(i,j+1,k,1),
+                                       dof_t(i,j-1,k,1), dof_t(i,j,k,1),
+                                       dof_t(i+1,j-1,k,1), dof_t(i+1,j,k,1)};
+                            values = {2._rt*angular*mask0, -angular*mask1, -angular*mask1,
+                                      cross_lo, -cross_lo, -cross_hi, cross_hi};
+                        } else if (dir == 1) {
+                            // -d_r[d_r(r*Et)/r] + d_r[d_theta Er/r]
+                            const Real cross_lo = art/rm*mask2;
+                            const Real cross_hi = art/rp*mask2;
+                            columns = {dof_arr(i,j,k,1), dof_arr(i-1,j,k,1), dof_arr(i+1,j,k,1),
+                                       dof_r(i-1,j,k,1), dof_r(i,j,k,1),
+                                       dof_r(i-1,j+1,k,1), dof_r(i,j+1,k,1)};
+                            values = {ar*rn*(1._rt/rm + 1._rt/rp)*mask0,
+                                      -ar*(rn - dr)/rm*mask1,
+                                      -ar*(rn + dr)/rp*mask1,
+                                      cross_lo, -cross_hi, -cross_lo, cross_hi};
+                        } else {
+                            // -d_r(r*d_r Ez)/r - d_theta^2 Ez/r^2
+                            const Real angular = at/(rn*rn);
+                            const Real mask3 = BC_mask_Edir_arr(i,j,k,3);
+                            columns = {dof_arr(i,j,k,1), dof_arr(i-1,j,k,1), dof_arr(i+1,j,k,1),
+                                       dof_arr(i,j-1,k,1), dof_arr(i,j+1,k,1), -1, -1};
+                            values = {ar*(rm+rp)/rn*mask0 + 2._rt*angular*mask2,
+                                      -ar*rm/rn*mask1, -ar*rp/rn*mask1,
+                                      -angular*mask3, -angular*mask3, 0._rt, 0._rt};
+                            nentries = 5;
+                        }
+                        for (int n = 0; n < nentries; ++n) {
+                            const auto flag = SparseJacobianMatrixUtil::insertOrAdd(
+                                columns[n], values[n], &c_indices_g_ptr[ridx_l*nnz_max],
+                                &a_ij_ptr[ridx_l*nnz_max], nnz_max, icol);
+                            if (!flag) { Gpu::Atomic::Max(nnz_actual_ptr, icol); }
                         }
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
                         // DIM_XZ:

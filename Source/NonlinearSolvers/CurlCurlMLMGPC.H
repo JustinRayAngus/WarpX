@@ -188,7 +188,7 @@ void CurlCurlMLMGPC<T,Ops>::Define ( const T& a_U,
     using namespace amrex;
 
 #if defined(WARPX_DIM_RTH)
-    WARPX_ABORT_WITH_MESSAGE("CurlCurlMLMGPC is not implemented for RTH geometry.");
+    WARPX_ABORT_WITH_MESSAGE("pc_curl_curl_mlmg is not supported in RTH geometry.");
 #endif
 
     WARPX_ALWAYS_ASSERT_WITH_MESSAGE(

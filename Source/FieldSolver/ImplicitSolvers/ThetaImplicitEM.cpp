@@ -229,10 +229,6 @@ const amrex::MultiFab* ThetaImplicitEM::GetCurl2BCmask (const int lev, const int
 
 void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
 {
-#ifdef WARPX_DIM_RTH
-    amrex::Abort("RTH curl-curl boundary masks are not implemented yet.");
-#else
-
     // Define masks to incorporate boundary conditions into the curl curl operator matrix
     /*
     The curl curl operator:
@@ -292,6 +288,10 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
         const int ncomps_Ex = 3;
         const int ncomps_Ey = 4;
         const int ncomps_Ez = 3;
+#elif defined(WARPX_DIM_RTH)
+        const int ncomps_Ex = 3;
+        const int ncomps_Ey = 3;
+        const int ncomps_Ez = 4;
 #elif defined(WARPX_DIM_3D)
         const int ncomps_Ex = 6;
         const int ncomps_Ey = 6;
@@ -314,8 +314,13 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
 
     ablastr::fields::VectorField curl2_BC_mask = m_WarpX->m_fields.get_alldirs(FieldType::curl2_BC_mask, lev);
 #if AMREX_SPACEDIM < 3
+#ifdef WARPX_DIM_RTH
+    constexpr int out_of_plane = 2;
+#else
+    constexpr int out_of_plane = 1;
+#endif
     // Set the BC masks for the out-of-plane components of the curl curl E operator
-    for (amrex::MFIter mfi(*curl2_BC_mask[1], false); mfi.isValid(); ++mfi) {
+    for (amrex::MFIter mfi(*curl2_BC_mask[out_of_plane], false); mfi.isValid(); ++mfi) {
 
         // Get nodal box that does not include ghost cells
         const amrex::Box node_box = amrex::convert(mfi.validbox(),amrex::IntVect::TheNodeVector());
@@ -366,6 +371,15 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
                         val1 = 1.0_rt;
                     }
                 }
+#ifdef WARPX_DIM_RTH
+                if (bdry_dir == 0 && bc_type == FieldBoundaryType::PEC_Insulator &&
+                    !m_WarpX->GetPECInsulator_IsESet(bdry_dir,bdry_side)) {
+                    // Ez: retain r_inside/(2*r_boundary) of the radial diagonal.
+                    const amrex::Real r = bdry_side == 0 ? geom.ProbLo(0) : geom.ProbHi(0);
+                    const amrex::Real half_dr = 0.5_rt * geom.CellSize(0);
+                    val0 = 0.5_rt * (1.0_rt + (bdry_side == 0 ? half_dr : -half_dr)/r);
+                }
+#endif
 #if defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RZ)
                 amrex::Real val0_Et = val0;
                 amrex::Real val1_Et = val1;
@@ -405,7 +419,7 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
 #elif defined(WARPX_DIM_RCYLINDER)
                 amrex::Array4<amrex::Real> const& maskEz_arr = curl2_BC_mask[2]->array(mfi);
 #endif
-                amrex::Array4<amrex::Real> const& maskEy_arr = curl2_BC_mask[1]->array(mfi);
+                amrex::Array4<amrex::Real> const& mask_out_arr = curl2_BC_mask[out_of_plane]->array(mfi);
                 amrex::ParallelFor(bdry_box, [=] AMREX_GPU_DEVICE (int i, int j, int k) {
 #if defined(WARPX_DIM_1D_Z)
                     maskEx_arr(i,j,k,2*bdry_dir  ) = val0;
@@ -414,8 +428,8 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
                     maskEz_arr(i,j,k,2*bdry_dir  ) = val0_Ez;
                     maskEz_arr(i,j,k,2*bdry_dir+1) = val1_Ez;
 #endif
-                    maskEy_arr(i,j,k,2*bdry_dir  ) = val0;
-                    maskEy_arr(i,j,k,2*bdry_dir+1) = val1;
+                    mask_out_arr(i,j,k,2*bdry_dir  ) = val0;
+                    mask_out_arr(i,j,k,2*bdry_dir+1) = val1;
                 });
 
             } // end loop over boundary sides
@@ -439,9 +453,9 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
                 if (field_dir == bdry_dir) { continue; }
                 const int tdir1 = (field_dir + 1) % AMREX_SPACEDIM; // next direction after field_dir
 #else
-                if (field_dir == 1) { continue; } // this is out-of-plane E in 2D
-                if (bdry_dir == 0 && field_dir == 0) { continue; } // Ex is centered in bdry_dir = 0
-                if (bdry_dir == 1 && field_dir == 2) { continue; } // Ez is centered in bdry_dir = 1
+                if (field_dir == out_of_plane) { continue; }
+                const int field_mesh_dir = field_dir == 0 ? 0 : 1;
+                if (bdry_dir == field_mesh_dir) { continue; }
                 const int tdir1 = bdry_dir;
 #endif
                 // Get edge box for Ecomp (nodal in bdry-direction) that does not include ghost cells
@@ -492,6 +506,15 @@ void ThetaImplicitEM::InitializeCurlCurlBCMasks ()
                         }
                     }
 
+#ifdef WARPX_DIM_RTH
+                    if (bdry_dir == 0 && bc_type == FieldBoundaryType::PEC_Insulator &&
+                        !m_WarpX->GetPECInsulator_IsESet(bdry_dir,bdry_side)) {
+                        // Et: retain (1/r_inside)/(1/r_minus + 1/r_plus) of the diagonal.
+                        const amrex::Real r = bdry_side == 0 ? geom.ProbLo(0) : geom.ProbHi(0);
+                        const amrex::Real half_dr = 0.5_rt * geom.CellSize(0);
+                        val0 = 0.5_rt * (1.0_rt + (bdry_side == 0 ? -half_dr : half_dr)/r);
+                    }
+#endif
 #if defined(WARPX_DIM_RZ)
                     // Need to overwrite BC masks for certain BCs in this geometry
                     if (bdry_dir == 0) {
