@@ -53,6 +53,20 @@
 using namespace amrex::literals;
 using warpx::fields::FieldType;
 
+namespace
+{
+    amrex::MultiFab const* GetDiagnosticEField (
+        WarpX& warpx, ablastr::fields::Direction dir, int lev)
+    {
+#ifdef WARPX_DIM_RTH
+        // RTH aux stores covariant E; output physical components before interpolation.
+        return warpx.m_fields.get(FieldType::Efield_fp, dir, lev);
+#else
+        return warpx.m_fields.get(FieldType::Efield_aux, dir, lev);
+#endif
+    }
+}
+
 FullDiagnostics::FullDiagnostics (int i, const std::string& name, DiagTypes diag_type):
     Diagnostics{i, name, diag_type},
     m_solver_deposits_current{
@@ -920,7 +934,7 @@ FullDiagnostics::InitializeFieldFunctors (int lev)
 
     using ablastr::fields::Direction;
 
-#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
+#if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RTH)
     std::vector<std::string> field_names = {"r", "t", "z"};
 #elif defined(WARPX_DIM_RSPHERE)
     std::vector<std::string> field_names = {"r", "t", "p"};
@@ -943,7 +957,8 @@ FullDiagnostics::InitializeFieldFunctors (int lev)
                         warpx.m_fields.get(FieldType::dA_fp, Direction{idir}, lev),
                         lev, m_crse_ratio);
                 } else {
-                    m_all_field_functors[lev][comp] = std::make_unique<CellCenterFunctor>(warpx.m_fields.get(FieldType::Efield_aux, Direction{idir}, lev), lev, m_crse_ratio);
+                    m_all_field_functors[lev][comp] = std::make_unique<CellCenterFunctor>(
+                        GetDiagnosticEField(warpx, Direction{idir}, lev), lev, m_crse_ratio);
                 }
             } else if ( m_varnames[comp] == "B"+field_names[idir] ){
                 m_all_field_functors[lev][comp] = std::make_unique<CellCenterFunctor>(warpx.m_fields.get(FieldType::Bfield_aux, Direction{idir}, lev), lev, m_crse_ratio);
