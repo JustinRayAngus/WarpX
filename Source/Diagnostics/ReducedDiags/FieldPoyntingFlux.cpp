@@ -43,10 +43,6 @@ using namespace amrex::literals;
 FieldPoyntingFlux::FieldPoyntingFlux (const std::string& rd_name)
     : ReducedDiags{rd_name}
 {
-#ifdef WARPX_DIM_RTH
-    WARPX_ABORT_WITH_MESSAGE(
-        "FieldPoyntingFlux diagnostics are not implemented for RTH geometry.");
-#endif
     // Resize data array
     // lo and hi is 2
     // space dims is AMREX_SPACEDIM
@@ -201,7 +197,7 @@ void FieldPoyntingFlux::ComputePoyntingFlux (amrex::Real dt)
         // For 1D : it is always 2
         int const normal_dir = 2;
 #else
-        // For 3D, RCYLINDER, and RSPHERE : it is the same as the face direction
+        // For 3D, RTH, RCYLINDER, and RSPHERE : it is the same as the face direction
         int const normal_dir = face_dir;
 #endif
 
@@ -238,6 +234,11 @@ void FieldPoyntingFlux::ComputePoyntingFlux (amrex::Real dt)
             amrex::Real const dr = warpx.Geom(lev).CellSize(lev);
             amrex::Real const rmin = xyzmin.x;
             int const irmin = lo.x;
+#elif defined(WARPX_DIM_RTH)
+            auto const& geom = warpx.Geom(lev);
+            amrex::Real const dr = geom.CellSize(0);
+            amrex::Real const rmin = geom.ProbLo(0);
+            int const irmin = geom.Domain().smallEnd(0);
 #endif
 
             auto area_factor = [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
@@ -254,6 +255,9 @@ void FieldPoyntingFlux::ComputePoyntingFlux (amrex::Real dt)
 #elif defined(WARPX_DIM_RSPHERE)
                 return 4._rt*MathConst::pi*r*r;
 #endif
+#elif defined(WARPX_DIM_RTH)
+                // Face measure per unit axial length: r*dtheta or dr.
+                return normal_dir == 0 ? rmin + (i - irmin)*dr : 1._rt;
 #else
                 return 1._rt;
 #endif

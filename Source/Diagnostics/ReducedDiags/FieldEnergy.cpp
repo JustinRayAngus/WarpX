@@ -102,13 +102,20 @@ void FieldEnergy::ComputeDiags (int step)
 
     using ablastr::fields::Direction;
 
+#ifdef WARPX_DIM_RTH
+    // Efield_aux is covariant in RTH; energy requires physical components.
+    constexpr auto E_field = FieldType::Efield_fp;
+#else
+    constexpr auto E_field = FieldType::Efield_aux;
+#endif
+
     // loop over refinement levels
     for (int lev = 0; lev < nLevel; ++lev)
     {
         // get MultiFab data at lev
-        amrex::MultiFab const & Ex = *warpx.m_fields.get(FieldType::Efield_aux, Direction{0}, lev);
-        amrex::MultiFab const & Ey = *warpx.m_fields.get(FieldType::Efield_aux, Direction{1}, lev);
-        amrex::MultiFab const & Ez = *warpx.m_fields.get(FieldType::Efield_aux, Direction{2}, lev);
+        amrex::MultiFab const & Ex = *warpx.m_fields.get(E_field, Direction{0}, lev);
+        amrex::MultiFab const & Ey = *warpx.m_fields.get(E_field, Direction{1}, lev);
+        amrex::MultiFab const & Ez = *warpx.m_fields.get(E_field, Direction{2}, lev);
         amrex::MultiFab const & Bx = *warpx.m_fields.get(FieldType::Bfield_aux, Direction{0}, lev);
         amrex::MultiFab const & By = *warpx.m_fields.get(FieldType::Bfield_aux, Direction{1}, lev);
         amrex::MultiFab const & Bz = *warpx.m_fields.get(FieldType::Bfield_aux, Direction{2}, lev);
@@ -187,6 +194,11 @@ FieldEnergy::ComputeNorm2(amrex::MultiFab const& field, [[maybe_unused]]int lev)
         amrex::Real const dr = geom.CellSize(0);
         amrex::XDim3 const xyzmin = WarpX::LowerCorner(validbox, lev, 0._rt);
         amrex::Real const rmin = xyzmin.x + (is_nodal[0] ? 0._rt : 0.5_rt*dr);
+#elif defined(WARPX_DIM_RTH)
+        auto const& geom = WarpX::GetInstance().Geom(lev);
+        amrex::Real const dr = geom.CellSize(0);
+        amrex::Real const rmin = geom.ProbLo(0);
+        int const irmin = geom.Domain().smallEnd(0);
 #endif
 
         // On the boundaries, if the grid is nodal, use half of the volume.
@@ -217,7 +229,12 @@ FieldEnergy::ComputeNorm2(amrex::MultiFab const& field, [[maybe_unused]]int lev)
             if (i == tb_hi[0] && is_nodal[0]) { v_factor *= 0.5_rt; }
             return v_factor;
 #else
+#ifdef WARPX_DIM_RTH
+            // Polar volume per unit axial length, evaluated at the field staggering.
+            amrex::Real v_factor = rmin + (i - irmin + (is_nodal[0] ? 0._rt : 0.5_rt))*dr;
+#else
             amrex::Real v_factor = 1._rt;
+#endif
             AMREX_D_TERM(
             if (i == tb_lo[0] && is_nodal[0]) { v_factor *= 0.5_rt; },
             if (j == tb_lo[1] && is_nodal[1]) { v_factor *= 0.5_rt; },

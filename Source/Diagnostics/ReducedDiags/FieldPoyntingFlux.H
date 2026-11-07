@@ -17,6 +17,7 @@
 #include <AMReX_Reduce.H>
 
 #include <string>
+#include <type_traits>
 
 struct PoyntingStaggered {
     // This requires the arrays to have Yee centering
@@ -42,7 +43,7 @@ struct PoyntingStaggered {
         return 0.5_rt*(EyBx_dn + EyBx_up);
 #elif defined(WARPX_DIM_1D_Z)
         return Ey_arr(i,j,k,comp)*0.5_rt*(Bx_arr(i-1,j,k,comp) + Bx_arr(i,j,k,comp));
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         amrex::ignore_unused(i, j, k, comp, Ey_arr, Bx_arr);
         return 0._rt;
 #endif
@@ -59,7 +60,7 @@ struct PoyntingStaggered {
         return 0.5_rt*(ExBy_dn + ExBy_up);
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_1D_Z)
         return Ex_arr(i,j,k,comp)*0.5_rt*(By_arr(i-1,j,k,comp) + By_arr(i,j,k,comp));
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         amrex::ignore_unused(i, j, k, comp, Ex_arr, By_arr);
         return 0._rt;
 #endif
@@ -70,7 +71,7 @@ struct PoyntingStaggered {
                             amrex::Array4<const amrex::Real> const & Ez_arr,
                             amrex::Array4<const amrex::Real> const & Bx_arr) {
         using namespace amrex::literals;
-#if defined(WARPX_DIM_3D)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
         const amrex::Real EzBx_dn = Ez_arr(i,j,k,comp)*0.5_rt*(Bx_arr(i,j-1,k,comp) + Bx_arr(i,j,k,comp));
         const amrex::Real EzBx_up = Ez_arr(i+1,j,k,comp)*0.5_rt*(Bx_arr(i+1,j-1,k,comp) + Bx_arr(i+1,j,k,comp));
         return 0.5_rt*(EzBx_dn + EzBx_up);
@@ -89,6 +90,8 @@ struct PoyntingStaggered {
         const amrex::Real ExBz_dn = Ex_arr(i,j,k,comp)*0.5_rt*(Bz_arr(i,j-1,k,comp) + Bz_arr(i,j,k,comp));
         const amrex::Real ExBz_up = Ex_arr(i,j,k+1,comp)*0.5_rt*(Bz_arr(i,j-1,k+1,comp) + Bz_arr(i,j,k+1,comp));
         return 0.5_rt*(ExBz_dn + ExBz_up);
+#elif defined(WARPX_DIM_RTH)
+        return Ex_arr(i,j,k,comp)*0.5_rt*(Bz_arr(i,j-1,k,comp) + Bz_arr(i,j,k,comp));
 #else
         amrex::ignore_unused(i, j, k, comp, Ex_arr, Bz_arr);
         return 0._rt;
@@ -108,7 +111,7 @@ struct PoyntingStaggered {
         const amrex::Real EyBz_dn = Ey_arr(i,j,k,comp)*0.5_rt*(Bz_arr(i-1,j,k,comp) + Bz_arr(i,j,k,comp));
         const amrex::Real EyBz_up = Ey_arr(i,j+1,k,comp)*0.5_rt*(Bz_arr(i-1,j+1,k,comp) + Bz_arr(i,j+1,k,comp));
         return 0.5_rt*(EyBz_dn + EyBz_up);
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         return Ey_arr(i,j,k,comp)*0.5_rt*(Bz_arr(i-1,j,k,comp) + Bz_arr(i,j,k,comp));
 #elif defined(WARPX_DIM_1D_Z)
         amrex::ignore_unused(i, j, k, comp, Ey_arr, Bz_arr);
@@ -121,7 +124,7 @@ struct PoyntingStaggered {
                             amrex::Array4<const amrex::Real> const & Ez_arr,
                             amrex::Array4<const amrex::Real> const & By_arr) {
         using namespace amrex::literals;
-#if defined(WARPX_DIM_3D)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
         const amrex::Real EzBy_dn = Ez_arr(i,j,k,comp)*0.5_rt*(By_arr(i-1,j,k,comp) + By_arr(i,j,k,comp));
         const amrex::Real EzBy_up = Ez_arr(i,j+1,k,comp)*0.5_rt*(By_arr(i-1,j+1,k,comp) + By_arr(i,j+1,k,comp));
         return 0.5_rt*(EzBy_dn + EzBy_up);
@@ -145,7 +148,7 @@ struct PoyntingCellCentered {
 #if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_1D_Z)
         return 0.5_rt*(Ey_arr(i,j,k-1,comp)*Bx_arr(i,j,k-1,comp)
                      + Ey_arr(i,j,k,comp)*Bx_arr(i,j,k,comp));
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         amrex::ignore_unused(i, j, k, comp, Ey_arr, Bx_arr);
         return 0._rt;
 #endif
@@ -159,7 +162,7 @@ struct PoyntingCellCentered {
 #if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_1D_Z)
         return 0.5_rt*(Ex_arr(i,j,k-1,comp)*By_arr(i,j,k-1,comp)
                      + Ex_arr(i,j,k,comp)*By_arr(i,j,k,comp));
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         amrex::ignore_unused(i, j, k, comp, Ex_arr, By_arr);
         return 0._rt;
 #endif
@@ -170,7 +173,7 @@ struct PoyntingCellCentered {
                             amrex::Array4<const amrex::Real> const & Ez_arr,
                             amrex::Array4<const amrex::Real> const & Bx_arr) {
         using namespace amrex::literals;
-#if defined(WARPX_DIM_3D)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
         return 0.5_rt*(Ez_arr(i,j-1,k,comp)*Bx_arr(i,j-1,k,comp)
                      + Ez_arr(i,j,k,comp)*Bx_arr(i,j,k,comp));
 #else
@@ -184,7 +187,7 @@ struct PoyntingCellCentered {
                             amrex::Array4<const amrex::Real> const & Ex_arr,
                             amrex::Array4<const amrex::Real> const & Bz_arr) {
         using namespace amrex::literals;
-#if defined(WARPX_DIM_3D)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RTH)
         return 0.5_rt*(Ex_arr(i,j-1,k,comp)*Bz_arr(i,j-1,k,comp)
                      + Ex_arr(i,j,k,comp)*Bz_arr(i,j,k,comp));
 #else
@@ -198,7 +201,7 @@ struct PoyntingCellCentered {
                             amrex::Array4<const amrex::Real> const & Ey_arr,
                             amrex::Array4<const amrex::Real> const & Bz_arr) {
         using namespace amrex::literals;
-#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         return 0.5_rt*(Ey_arr(i-1,j,k,comp)*Bz_arr(i-1,j,k,comp)
                      + Ey_arr(i,j,k,comp)*Bz_arr(i,j,k,comp));
 #elif defined(WARPX_DIM_1D_Z)
@@ -212,7 +215,7 @@ struct PoyntingCellCentered {
                             amrex::Array4<const amrex::Real> const & Ez_arr,
                             amrex::Array4<const amrex::Real> const & By_arr) {
         using namespace amrex::literals;
-#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#if defined(WARPX_DIM_3D) || defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         return 0.5_rt*(Ez_arr(i-1,j,k,comp)*By_arr(i-1,j,k,comp)
                      + Ez_arr(i,j,k,comp)*By_arr(i,j,k,comp));
 #elif defined(WARPX_DIM_1D_Z)
@@ -240,7 +243,7 @@ struct PoyntingNodal {
                        Ey_arr(i+1,j,k,comp)*Bx_arr(i+1,j,k,comp));
 #elif defined(WARPX_DIM_1D_Z)
         return Ey_arr(i,j,k,comp)*Bx_arr(i,j,k,comp);
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         amrex::ignore_unused(i, j, k, comp, Ey_arr, Bx_arr);
         return 0._rt;
 #endif
@@ -261,7 +264,7 @@ struct PoyntingNodal {
                      + Ex_arr(i+1,j,k,comp)*By_arr(i+1,j,k,comp));
 #elif defined(WARPX_DIM_1D_Z)
         return Ex_arr(i,j,k,comp)*By_arr(i,j,k,comp);
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE) || defined(WARPX_DIM_RTH)
         amrex::ignore_unused(i, j, k, comp, Ex_arr, By_arr);
         return 0._rt;
 #endif
@@ -277,6 +280,9 @@ struct PoyntingNodal {
                       + Ez_arr(i+1,j,k,comp)*Bx_arr(i+1,j,k,comp)
                       + Ez_arr(i,j,k+1,comp)*Bx_arr(i,j,k+1,comp)
                       + Ez_arr(i+1,j,k+1,comp)*Bx_arr(i+1,j,k+1,comp));
+#elif defined(WARPX_DIM_RTH)
+        return 0.5_rt*(Ez_arr(i,j,k,comp)*Bx_arr(i,j,k,comp)
+                     + Ez_arr(i+1,j,k,comp)*Bx_arr(i+1,j,k,comp));
 #else
         amrex::ignore_unused(i, j, k, comp, Ez_arr, Bx_arr);
         return 0._rt;
@@ -293,6 +299,9 @@ struct PoyntingNodal {
                       + Ex_arr(i+1,j,k,comp)*Bz_arr(i+1,j,k,comp)
                       + Ex_arr(i,j,k+1,comp)*Bz_arr(i,j,k+1,comp)
                       + Ex_arr(i+1,j,k+1,comp)*Bz_arr(i+1,j,k+1,comp));
+#elif defined(WARPX_DIM_RTH)
+        return 0.5_rt*(Ex_arr(i,j,k,comp)*Bz_arr(i,j,k,comp)
+                     + Ex_arr(i+1,j,k,comp)*Bz_arr(i+1,j,k,comp));
 #else
         amrex::ignore_unused(i, j, k, comp, Ex_arr, Bz_arr);
         return 0._rt;
@@ -309,7 +318,7 @@ struct PoyntingNodal {
                       + Ey_arr(i,j+1,k,comp)*Bz_arr(i,j+1,k,comp)
                       + Ey_arr(i,j,k+1,comp)*Bz_arr(i,j,k+1,comp)
                       + Ey_arr(i,j+1,k+1,comp)*Bz_arr(i,j+1,k+1,comp));
-#elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
+#elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH)
         return 0.5_rt*(Ey_arr(i,j,k,comp)*Bz_arr(i,j,k,comp)
                      + Ey_arr(i,j+1,k,comp)*Bz_arr(i,j+1,k,comp));
 #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
@@ -330,7 +339,7 @@ struct PoyntingNodal {
                       + Ez_arr(i,j+1,k,comp)*By_arr(i,j+1,k,comp)
                       + Ez_arr(i,j,k+1,comp)*By_arr(i,j,k+1,comp)
                       + Ez_arr(i,j+1,k+1,comp)*By_arr(i,j+1,k+1,comp));
-#elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
+#elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RTH)
         return 0.5_rt*(Ez_arr(i,j,k,comp)*By_arr(i,j,k,comp)
                      + Ez_arr(i,j+1,k,comp)*By_arr(i,j+1,k,comp));
 #elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
@@ -372,6 +381,20 @@ namespace Poynting {
 
                 amrex::Real const af = area_factor(i,j,k);
                 if constexpr (normal_dir == 0) {
+#ifdef WARPX_DIM_RTH
+                    if constexpr (std::is_same_v<T_Algo, PoyntingStaggered>) {
+                        // Interpolate covariant Btheta = r*Btheta to Ez before taking
+                        // the product, then average over the two theta endpoints.
+                        amrex::Real const rm = 0.5_rt*(af + area_factor(i-1,j,k));
+                        amrex::Real const rp = 0.5_rt*(af + area_factor(i+1,j,k));
+                        amrex::Real const EzBy_dn = Ez_arr(i,j,k,comp)*0.5_rt*
+                            (rm*By_arr(i-1,j,k,comp) + rp*By_arr(i,j,k,comp));
+                        amrex::Real const EzBy_up = Ez_arr(i,j+1,k,comp)*0.5_rt*
+                            (rm*By_arr(i-1,j+1,k,comp) + rp*By_arr(i,j+1,k,comp));
+                        return af*T_Algo::EyBz(i,j,k,comp,Ey_arr,Bz_arr)
+                               - 0.5_rt*(EzBy_dn + EzBy_up);
+                    }
+#endif
 #if defined(WARPX_DIM_RZ) || defined(WARPX_DIM_RCYLINDER)
                     amrex::Real const afup1 = area_factor(i+1,j,k);
                     amrex::Real const afdn1 = area_factor(i-1,j,k);
