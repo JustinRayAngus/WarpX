@@ -727,6 +727,10 @@ WarpX::MoveWindow (const int step, bool move_j)
 void
 WarpX::ShiftGalileanBoundary ()
 {
+#if defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+    // These radial geometries use a fixed domain.
+    return;
+#else
     const amrex::Real cur_time = t_new[0];
     amrex::Real new_lo[AMREX_SPACEDIM];
     amrex::Real new_hi[AMREX_SPACEDIM];
@@ -769,16 +773,11 @@ WarpX::ShiftGalileanBoundary ()
         new_lo[0] = current_lo[0] + m_galilean_shift[2];
         new_hi[0] = current_hi[0] + m_galilean_shift[2];
     }
-#elif defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
-    amrex::ignore_unused(time_shift);
-    {
-        new_lo[0] = current_lo[0];
-        new_hi[0] = current_hi[0];
-    }
 #endif
     time_of_last_gal_shift = cur_time;
 
     ResetProbDomain(amrex::RealBox(new_lo, new_hi));
+#endif
 }
 
 void

@@ -179,6 +179,10 @@ void warpx::initialization::read_moving_window_parameters(
 {
     const amrex::ParmParse pp_warpx("warpx");
     pp_warpx.query("do_moving_window", do_moving_window);
+#if defined(WARPX_DIM_RTH) || defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RSPHERE)
+    WARPX_ALWAYS_ASSERT_WITH_MESSAGE(!do_moving_window,
+        "warpx.do_moving_window is not supported in RTH, RCYLINDER, or RSPHERE geometry.");
+#endif
     if (do_moving_window) {
         utils::parser::queryWithParser(
             pp_warpx, "start_moving_window_step", start_moving_window_step);

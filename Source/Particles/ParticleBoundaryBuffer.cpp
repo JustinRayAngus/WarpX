@@ -216,6 +216,11 @@ ParticleBoundaryBuffer::ParticleBoundaryBuffer ()
 #elif (defined WARPX_DIM_RCYLINDER) || (defined WARPX_DIM_RSPHERE)
     constexpr auto idx_xlo = 0;
     constexpr auto idx_xhi = 1;
+#elif defined(WARPX_DIM_RTH)
+    constexpr auto idx_xlo = 0;
+    constexpr auto idx_xhi = 1;
+    constexpr auto idx_ylo = 2;
+    constexpr auto idx_yhi = 3;
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
     constexpr auto idx_xlo = 0;
     constexpr auto idx_xhi = 1;
@@ -241,6 +246,11 @@ ParticleBoundaryBuffer::ParticleBoundaryBuffer ()
 #elif (defined WARPX_DIM_RCYLINDER) || (defined WARPX_DIM_RSPHERE)
         pp_species.query("save_particles_at_xlo", m_do_boundary_buffer[idx_xlo][ispecies]);
         pp_species.query("save_particles_at_xhi", m_do_boundary_buffer[idx_xhi][ispecies]);
+#elif defined(WARPX_DIM_RTH)
+        pp_species.query("save_particles_at_xlo", m_do_boundary_buffer[idx_xlo][ispecies]);
+        pp_species.query("save_particles_at_xhi", m_do_boundary_buffer[idx_xhi][ispecies]);
+        pp_species.query("save_particles_at_ylo", m_do_boundary_buffer[idx_ylo][ispecies]);
+        pp_species.query("save_particles_at_yhi", m_do_boundary_buffer[idx_yhi][ispecies]);
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
         pp_species.query("save_particles_at_xlo", m_do_boundary_buffer[idx_xlo][ispecies]);
         pp_species.query("save_particles_at_xhi", m_do_boundary_buffer[idx_xhi][ispecies]);
@@ -269,6 +279,11 @@ ParticleBoundaryBuffer::ParticleBoundaryBuffer ()
 #elif (defined WARPX_DIM_RCYLINDER) || (defined WARPX_DIM_RSPHERE)
     m_boundary_names[idx_xlo] = "xlo";
     m_boundary_names[idx_xhi] = "xhi";
+#elif defined(WARPX_DIM_RTH)
+    m_boundary_names[idx_xlo] = "xlo";
+    m_boundary_names[idx_xhi] = "xhi";
+    m_boundary_names[idx_ylo] = "ylo";
+    m_boundary_names[idx_yhi] = "yhi";
 #elif defined(WARPX_DIM_XZ) || defined(WARPX_DIM_RZ)
     m_boundary_names[idx_xlo] = "xlo";
     m_boundary_names[idx_xhi] = "xhi";
