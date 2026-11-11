@@ -213,6 +213,11 @@ int SparseJacobianMatrix::Assemble (
 
         const auto& geom = a_geom[lev];
         const auto dxi = geom.InvCellSizeArray();
+#if defined(WARPX_DIM_RTH)
+        const auto dx = geom.CellSizeArray();
+        const auto prob_lo = geom.ProbLoArray();
+        const auto domain_lo = geom.Domain().smallEnd();
+#endif
 #if defined(WARPX_DIM_RCYLINDER) || defined(WARPX_DIM_RZ)
         const amrex::Real rmin_over_dr = geom.ProbLo(0) * dxi[0];
         const int radial_domain_lo = geom.Domain().smallEnd(0);
